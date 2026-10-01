@@ -8,5 +8,7 @@
   <ItemGroup>
     <!-- Excel (.xlsx) -->
     <PackageReference Include="ClosedXML" />
+    <!-- FAC-05: libro de facturas en PDF -->
+    <PackageReference Include="QuestPDF" />
   </ItemGroup>
 </Project>

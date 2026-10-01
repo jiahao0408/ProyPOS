@@ -11,6 +11,9 @@ public partial class DataPageView : UserControl
     private static readonly FilePickerFileType Tables = new("CSV / Excel") { Patterns = ["*.csv", "*.xlsx"] };
     private static readonly FilePickerFileType Excel = new("Excel") { Patterns = ["*.xlsx"] };
     private static readonly FilePickerFileType Backup = new("StarSeaPOS") { Patterns = ["*.sspos"] };
+    private static readonly FilePickerFileType Csv = new("CSV") { Patterns = ["*.csv"] };
+    private static readonly FilePickerFileType Pdf = new("PDF") { Patterns = ["*.pdf"] };
+    private static readonly FilePickerFileType Zip = new("ZIP") { Patterns = ["*.zip"] };
 
     public DataPageView() => InitializeComponent();
 
@@ -53,6 +56,43 @@ public partial class DataPageView : UserControl
         });
         if (file?.TryGetLocalPath() is { } path)
             vm.CreateBackup(path);
+    }
+
+    private async void OnExport(object? sender, RoutedEventArgs e)
+    {
+        if (Vm is not { } vm || Storage is not { } storage)
+            return;
+        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = vm.SuggestedExportName,
+            DefaultExtension = vm.ExportIsPdf ? "pdf" : "xlsx",
+            FileTypeChoices = vm.ExportIsPdf ? [Pdf] : [Excel, Csv],
+        });
+        if (file?.TryGetLocalPath() is { } path)
+            vm.Export(path);
+    }
+
+    private async void OnExportBilling(object? sender, RoutedEventArgs e)
+    {
+        if (Vm is not { } vm || Storage is not { } storage)
+            return;
+        var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = vm.SuggestedBillingName,
+            DefaultExtension = "zip",
+            FileTypeChoices = [Zip],
+        });
+        if (file?.TryGetLocalPath() is { } path)
+            vm.ExportBillingRecord(path);
+    }
+
+    private async void OnVerifyBilling(object? sender, RoutedEventArgs e)
+    {
+        if (Vm is not { } vm || Storage is not { } storage)
+            return;
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions { FileTypeFilter = [Zip] });
+        if (files.Count > 0 && files[0].TryGetLocalPath() is { } path)
+            vm.VerifyBillingRecord(path);
     }
 
     private async void OnChooseRestoreFile(object? sender, RoutedEventArgs e)

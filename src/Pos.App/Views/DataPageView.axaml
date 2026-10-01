@@ -42,7 +42,41 @@
     <!-- DAT-03: copias de seguridad -->
     <ScrollViewer Grid.Column="2">
       <StackPanel>
-        <TextBlock Text="{Binding L[BackupTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,48,0,0" />
+        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}" Margin="0,48,0,0">
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- DAT-02 / FAC-05: exportar -->
+        <TextBlock Text="{Binding L[ExportTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,16,0,0" />
+        <TextBlock Text="{Binding L[ExportHint]}" TextWrapping="Wrap" Opacity="0.75" />
+        <ComboBox HorizontalAlignment="Stretch" Margin="0,8,0,0" ItemsSource="{Binding ExportKinds}" SelectedItem="{Binding ExportKind}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Grid ColumnDefinitions="*,8,*" Margin="0,8,0,0" IsVisible="{Binding ExportNeedsDates}">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{Binding L[From]}" />
+            <CalendarDatePicker SelectedDate="{Binding ExportFrom}" HorizontalAlignment="Stretch" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Classes="label" Text="{Binding L[To]}" />
+            <CalendarDatePicker SelectedDate="{Binding ExportTo}" HorizontalAlignment="Stretch" />
+          </StackPanel>
+        </Grid>
+        <Button Classes="primary" Margin="0,8,0,0" Content="{Binding L[ExportButton]}" Click="OnExport" />
+
+        <!-- DAT-04: registro de facturación -->
+        <TextBlock Text="{Binding L[BillingRecordTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+        <TextBlock Text="{Binding L[BillingRecordHint]}" TextWrapping="Wrap" Opacity="0.75" />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button Content="{Binding L[BillingExport]}" Click="OnExportBilling" />
+          <Button Content="{Binding L[BillingVerify]}" Click="OnVerifyBilling" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding L[BackupTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
         <TextBlock Text="{Binding L[BackupHint]}" TextWrapping="Wrap" Opacity="0.75" />
         <TextBlock Text="{Binding L[ErrorBackupUnavailable]}" IsVisible="{Binding !BackupsAvailable}" Foreground="{StaticResource ErrorBrush}" />
 
@@ -59,10 +93,6 @@
         <TextBox Text="{Binding RestorePassword}" PasswordChar="●" />
         <Button Classes.danger="{Binding IsRestorePending}" Margin="0,8,0,0" Content="{Binding L[Restore]}"
                 Command="{Binding RestoreCommand}" IsEnabled="{Binding CanRestore}" />
-
-        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
-          <TextBlock Text="{Binding Message}" />
-        </Border>
       </StackPanel>
     </ScrollViewer>
   </Grid>

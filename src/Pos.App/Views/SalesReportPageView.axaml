@@ -1,0 +1,113 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.SalesReportPageView"
+             x:DataType="vm:SalesReportPageViewModel">
+  <!-- CAJ-03: informe de ventas -->
+  <UserControl.Styles>
+    <Style Selector="Border.tileStat">
+      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="14,10" />
+      <Setter Property="Margin" Value="0,0,12,0" />
+      <Setter Property="MinWidth" Value="150" />
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel>
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+      <TextBlock Classes="title" Text="{Binding L[NavReports]}" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+        <Button MinHeight="40" FontSize="15" Content="{Binding L[Today]}" Command="{Binding TodayCommand}" />
+        <Button MinHeight="40" FontSize="15" Content="{Binding L[Yesterday]}" Command="{Binding YesterdayCommand}" />
+        <Button MinHeight="40" FontSize="15" Content="{Binding L[ThisMonth]}" Command="{Binding ThisMonthCommand}" />
+        <TextBlock Text="{Binding L[From]}" VerticalAlignment="Center" Margin="8,0,0,0" />
+        <CalendarDatePicker SelectedDate="{Binding From}" MinHeight="40" FontSize="16" />
+        <TextBlock Text="{Binding L[To]}" VerticalAlignment="Center" />
+        <CalendarDatePicker SelectedDate="{Binding To}" MinHeight="40" FontSize="16" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,8,0,16">
+      <Border Classes="tileStat">
+        <StackPanel>
+          <TextBlock Text="{Binding L[ReportTicketCount]}" FontSize="13" Opacity="0.7" />
+          <TextBlock Text="{Binding TicketsText}" FontSize="24" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Classes="tileStat">
+        <StackPanel>
+          <TextBlock Text="{Binding L[ReportSales]}" FontSize="13" Opacity="0.7" />
+          <TextBlock Text="{Binding SalesText}" FontSize="24" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Classes="tileStat">
+        <StackPanel>
+          <TextBlock Text="{Binding L[ReportReturns]}" FontSize="13" Opacity="0.7" />
+          <TextBlock Text="{Binding ReturnsText}" FontSize="24" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Classes="tileStat">
+        <StackPanel>
+          <TextBlock Text="{Binding L[ReportNet]}" FontSize="13" Opacity="0.7" />
+          <TextBlock Text="{Binding NetText}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+        </StackPanel>
+      </Border>
+      <Border Classes="tileStat">
+        <StackPanel>
+          <TextBlock Text="{Binding L[ReportAverageTicket]}" FontSize="13" Opacity="0.7" />
+          <TextBlock Text="{Binding AverageText}" FontSize="24" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Grid ColumnDefinitions="2*,16,*,16,*">
+      <DockPanel Grid.Column="0">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding L[ReportByProduct]}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <ListBox ItemsSource="{Binding ByProduct}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ReportRowView">
+              <Grid ColumnDefinitions="*,Auto,110">
+                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Text="{Binding Count}" Opacity="0.7" Margin="8,0" />
+                <TextBlock Grid.Column="2" Text="{Binding Total}" FontWeight="SemiBold" TextAlignment="Right" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <DockPanel Grid.Column="2">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding L[ReportByPayment]}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <ListBox ItemsSource="{Binding ByPayment}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ReportRowView">
+              <StackPanel>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Name}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Total}" FontWeight="SemiBold" />
+                </Grid>
+                <TextBlock Text="{Binding Count}" FontSize="13" Opacity="0.7" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <DockPanel Grid.Column="4">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding L[ReportByCashier]}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <ListBox ItemsSource="{Binding ByCashier}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ReportRowView">
+              <StackPanel>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Name}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Total}" FontWeight="SemiBold" />
+                </Grid>
+                <TextBlock Text="{Binding Count}" FontSize="13" Opacity="0.7" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</UserControl>

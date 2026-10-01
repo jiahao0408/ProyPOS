@@ -13,13 +13,30 @@ public static class TabularFile
 
     public static IReadOnlyList<string[]> Read(string path) => IsExcel(path) ? ReadExcel(path) : ReadCsv(path);
 
-    public static void Write(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+    public static void Write(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows) =>
+        Write(path, headers, rows, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Escribe valores con tipo: en Excel los importes (decimal) y las cantidades (int) son números y las
+    /// fechas son fechas, para poder sumarlos; en CSV se escriben con el formato de <paramref name="culture"/>
+    /// (en español, "12,50"), que es lo que espera Excel al abrirlo con doble clic.
+    /// </summary>
+    public static void Write(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<object?>> rows, CultureInfo culture)
     {
         if (IsExcel(path))
             WriteExcel(path, headers, rows);
         else
-            WriteCsv(path, headers, rows);
+            WriteCsv(path, headers, rows.Select(r => (IReadOnlyList<string>)r.Select(v => CsvText(v, culture)).ToList()));
     }
+
+    private static string CsvText(object? value, CultureInfo culture) => value switch
+    {
+        null => "",
+        decimal d => d.ToString("0.00", culture),
+        DateTime t => t.ToString(t.TimeOfDay == TimeSpan.Zero ? "d" : "g", culture),
+        IFormattable f => f.ToString(null, culture),
+        _ => value.ToString() ?? "",
+    };
 
     private static IReadOnlyList<string[]> ReadExcel(string path)
     {
@@ -42,7 +59,7 @@ public static class TabularFile
             ? cell.GetDouble().ToString(CultureInfo.InvariantCulture)
             : cell.GetFormattedString().Trim();
 
-    private static void WriteExcel(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+    private static void WriteExcel(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<object?>> rows)
     {
         using var workbook = new XLWorkbook();
         var sheet = workbook.AddWorksheet("Datos");
@@ -54,11 +71,34 @@ public static class TabularFile
         foreach (var row in rows)
         {
             for (var c = 0; c < row.Count; c++)
-                sheet.Cell(r, c + 1).Value = row[c];
+                SetCell(sheet.Cell(r, c + 1), row[c]);
             r++;
         }
         sheet.Columns().AdjustToContents();
         workbook.SaveAs(path);
+    }
+
+    private static void SetCell(IXLCell cell, object? value)
+    {
+        switch (value)
+        {
+            case null:
+                break;
+            case decimal d:
+                cell.Value = d;
+                cell.Style.NumberFormat.Format = "#,##0.00";
+                break;
+            case int i:
+                cell.Value = i;
+                break;
+            case DateTime t:
+                cell.Value = t;
+                cell.Style.DateFormat.Format = t.TimeOfDay == TimeSpan.Zero ? "dd/mm/yyyy" : "dd/mm/yyyy hh:mm";
+                break;
+            default:
+                cell.Value = value.ToString();
+                break;
+        }
     }
 
     /// <summary>
@@ -131,7 +171,11 @@ public static class TabularFile
     }
 
     /// <summary>CSV en UTF-8 con BOM y ";" para que Excel en español lo abra bien con doble clic.</summary>
-    private static void WriteCsv(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
+    private static void WriteCsv(string path, IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows) =>
+        File.WriteAllText(path, ToCsv(headers, rows), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+    /// <summary>Texto CSV con ";" y comillas donde hace falta.</summary>
+    public static string ToCsv(IReadOnlyList<string> headers, IEnumerable<IReadOnlyList<string>> rows)
     {
         static string Quote(string s) => s.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
 
@@ -139,6 +183,6 @@ public static class TabularFile
         sb.AppendLine(string.Join(';', headers.Select(Quote)));
         foreach (var row in rows)
             sb.AppendLine(string.Join(';', row.Select(Quote)));
-        File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        return sb.ToString();
     }
 }

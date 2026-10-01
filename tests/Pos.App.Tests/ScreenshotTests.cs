@@ -250,6 +250,17 @@ public class ScreenshotTests
         prices7.PreviewCommand.Execute(null);
         Capture(window, "63-precios");
 
+        // Sección 8: informe de ventas, exportar y registro de facturación
+        OpenAdmin(typeof(SalesReportPageViewModel));
+        Capture(window, "70-informe-ventas");
+        OpenAdmin(typeof(DataPageViewModel));
+        var data8 = (DataPageViewModel)workspace.CurrentPage!;
+        data8.ExportKind = data8.ExportKinds.Single(k => k.Value == ExportChoice.InvoiceBookPdf);
+        data8.Export(Path.Combine(Folder!, "71-libro-facturas.pdf"));
+        data8.ExportKind = data8.ExportKinds.Single(k => k.Value == ExportChoice.Invoices);
+        data8.ExportBillingRecord(Path.Combine(Folder!, "72-registro.zip"));
+        Capture(window, "71-datos-exportar");
+
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");
 

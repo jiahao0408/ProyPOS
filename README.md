@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) y sección 7 (cambio masivo de precios, variantes, verificador de precios) hechas, e idioma de impresión de los tickets propio. 298 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) y sección 8 (informe de ventas, exportaciones y registro de facturación) hechas, e idioma de impresión de los tickets propio. 310 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -245,6 +245,17 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 
 Al cambiar el precio del producto, las variantes que tenían el mismo precio lo siguen; las de precio propio lo mantienen. Desactivar el producto desactiva sus variantes.
 
+### Cómo está hecha la sección 8 (informes y exportaciones)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| CAJ-03 Informe de ventas | Página **Informe de ventas** (solo administrador), `SalesReportService` | Hoy, ayer, este mes o dos fechas cualesquiera. Tickets, vendido, devoluciones, neto y ticket medio; ventas por producto (unidades e importe), por forma de pago y por cajero. Las devoluciones restan; el vale de un cambio no cuenta como dinero |
+| DAT-02 Exportar datos | **Datos y copias** → Exportar, `ExportService` | Productos, clientes y ventas (una fila por línea, con filtro de fechas) a Excel o CSV, con los encabezados en el idioma de la aplicación. En Excel los importes son números (se pueden sumar). Lo exportado de productos y clientes se puede volver a importar. Sin stock: la tienda no lo lleva |
+| FAC-05 Facturas para la gestoría | **Datos y copias** → Exportar, `ExportService`, `InvoiceBookPdf` | Excel/CSV con una fila por factura (base y cuota de cada tipo de IVA) y una fila de totales; y el **libro de facturas emitidas** en PDF con los totales por tipo de IVA. Un ticket que luego se facturó (FAC-06) sale tachado y no suma: si no, se contaría dos veces |
+| DAT-04 Registro de facturación | **Datos y copias** → Registro de facturación, `BillingRecordExport` | ZIP con todas las facturas, todos los registros de Verifactu con su huella, un manifiesto con la SHA-256 de cada fichero y un LEEME. **Verificar exportación** comprueba que ningún fichero ha cambiado, recalcula cada huella y el encadenamiento, compara los importes con las facturas y comprueba que la cadena es la de esta base de datos |
+
+**Por qué no se puede alterar sin que se note (DAT-04):** cambiar un importe rompe la huella de ese registro y la de todos los siguientes. Si alguien recalcula la cadena entera, la huella final ya no coincide con la de la base de datos (ni con la que tiene la AEAT, que recibió cada registro). La huella final sale en pantalla al exportar para poder anotarla.
+
 ## Primeros pasos
 
 Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, problemas frecuentes): [entornoDeConfiguracion.md](entornoDeConfiguracion.md).
@@ -339,7 +350,8 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 | **Sprint 5 — Verifactu** | Huella y QR, certificado, envío a la AEAT, cola sin conexión, pruebas e instalador para Windows | FAC-04, VFA-01, VFA-02, VFA-03, VFA-06 |
 | **Sección 6 — Devoluciones y descuentos** ✅ | Descuentos con límite de cajero, devoluciones con rectificativa, cambios, ticket regalo, auditoría | VEN-05, VEN-06, FAC-03, BAZ-07, USR-03 |
 | **Sección 7 — Precios y variantes** ✅ | Cambio masivo de precios, variantes por talla y color, verificador de precios, idioma de impresión | PRE-03, BAZ-05, BAZ-06 |
-| **Versión 2 (resto)** | Pantalla de cliente, cajón, modalidad y panel Verifactu, informe de ventas, exportaciones, auditoría, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
+| **Sección 8 — Informes y exportaciones** ✅ | Informe de ventas, exportar datos y facturas, registro de facturación | CAJ-03, DAT-02, FAC-05, DAT-04 |
+| **Versión 2 (resto)** | Pantalla de cliente, cajón, modalidad y panel Verifactu, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
 | **Versión 3** | Historial de precios, ticket digital, migración desde otro TPV, módulos ampliables (fidelización, venta online, multi-tienda) | Historias **C** |
 
 ## Decisiones abiertas

@@ -13,6 +13,9 @@ public sealed class DataTransferModule : IModule
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ImportService>();
+        services.AddSingleton<ExportService>();
+        services.AddSingleton<InvoiceBookPdf>();
+        services.AddSingleton<BillingRecordExport>();
         // La BD puede no ser un fichero (tests en memoria): entonces las copias no están disponibles.
         services.AddSingleton(sp => new BackupService(sp.GetService<DatabaseFile>(), sp.GetRequiredService<TimeProvider>()));
     }
