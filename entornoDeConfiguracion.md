@@ -147,6 +147,16 @@ dotnet build
 
 El ejecutable se llama `StarSeaPOS.exe`. Al compilar se copian los idiomas a `bin/.../locales/`.
 
+### Generar el instalador (MSI)
+
+```powershell
+.\installer\build-installer.ps1 -Version 1.0.0
+```
+
+Pasa los tests, publica la app *self-contained* para `win-x64` (el PC de la tienda no necesita .NET) y genera `artifacts\installer\StarSeaPOS-1.0.0.msi` con WiX Toolset 5 (se descarga solo como paquete NuGet). El MSI instala en `C:\Program Files\StarSeaPOS`, crea accesos directos en el menú Inicio y el escritorio, solo se instala en Windows 11 y, al instalar una versión nueva, sustituye a la anterior. Desinstalar **no** borra los datos de `%LOCALAPPDATA%\StarSeaPOS`.
+
+Antes de entregar una versión: completar `src\Pos.App\producer.json` (datos del productor para Verifactu).
+
 ## 6. Base de datos local
 
 - Motor: **SQLite cifrado con SQLCipher**, a través de EF Core 8.

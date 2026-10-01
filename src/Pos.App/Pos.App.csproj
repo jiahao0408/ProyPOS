@@ -40,6 +40,7 @@
 
   <!-- Las traducciones se copian junto al ejecutable como ficheros sueltos: se pueden añadir sin recompilar. -->
   <ItemGroup>
+    <None Include="producer.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\locales\*.json" Link="locales\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

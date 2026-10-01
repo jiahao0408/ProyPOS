@@ -47,7 +47,8 @@ public sealed record AppEnvironment(
 /// <summary>Raíz de composición: el único sitio que conoce todos los módulos.</summary>
 internal static class Composition
 {
-    public static IServiceProvider BuildServices(AppEnvironment env)
+    /// <param name="overrides">Solo para los tests: sustituir servicios (por ejemplo, la conexión con la AEAT).</param>
+    public static IServiceProvider BuildServices(AppEnvironment env, Action<IServiceCollection>? overrides = null)
     {
         var services = new ServiceCollection();
 
@@ -115,7 +116,10 @@ internal static class Composition
         services.AddTransient<ReceiptsPageViewModel>();
         services.AddTransient<LabelsPageViewModel>();
         services.AddTransient<DataPageViewModel>();
+        services.AddTransient<VerifactuPageViewModel>();
+        services.AddTransient<AboutPageViewModel>();
 
+        overrides?.Invoke(services);
         return services.BuildServiceProvider();
     }
 }

@@ -1,0 +1,46 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!--
+    UpgradeCode fijo: identifica a StarSeaPOS en todas sus versiones, para que instalar una versión
+    nueva sustituya a la anterior (MajorUpgrade). No cambiarlo nunca.
+    Los datos (BD, copias, certificado) están en %LOCALAPPDATA%\StarSeaPOS: desinstalar NO los borra.
+  -->
+  <Package Name="StarSeaPOS"
+           Manufacturer="StarSeaPOS"
+           Version="$(ProductVersion)"
+           UpgradeCode="6F0B4C1E-2A8D-4E7B-9C35-5D1A7E9B3F42"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <MajorUpgrade DowngradeErrorMessage="Ya hay instalada una versión más nueva de StarSeaPOS." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Solo Windows 11 (build 22000 o superior) -->
+    <Launch Condition="Installed OR WindowsBuild &gt;= 22000"
+            Message="StarSeaPOS necesita Windows 11." />
+
+    <Icon Id="AppIcon" SourceFile="$(PublishDir)\StarSeaPOS.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="StarSeaPOS" />
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="StarSeaPOS">
+      <!-- Todo lo publicado (ejecutable, librerías, idiomas, producer.json) -->
+      <Files Directory="INSTALLFOLDER" Include="$(PublishDir)\**" />
+      <ComponentRef Id="Shortcuts" />
+    </Feature>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="Shortcuts" Guid="9B3E2D41-7C6A-4F58-8E12-3A4B5C6D7E80">
+        <Shortcut Id="StartMenuShortcut" Name="StarSeaPOS" Description="TPV StarSeaPOS"
+                  Target="[INSTALLFOLDER]StarSeaPOS.exe" WorkingDirectory="INSTALLFOLDER" />
+        <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="StarSeaPOS" Description="TPV StarSeaPOS"
+                  Target="[INSTALLFOLDER]StarSeaPOS.exe" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\StarSeaPOS" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+  </Package>
+</Wix>

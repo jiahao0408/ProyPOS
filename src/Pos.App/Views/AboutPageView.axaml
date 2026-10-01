@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.AboutPageView"
+             x:DataType="vm:AboutPageViewModel">
+  <!-- VFA-06: declaración responsable del software -->
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+      <TextBlock Classes="title" Text="{Binding L[NavAbout]}" />
+      <TextBlock FontSize="18">
+        <Run Text="{Binding Producer.SystemName}" FontWeight="SemiBold" />
+        <Run Text=" · " />
+        <Run Text="{Binding L[Version]}" />
+        <Run Text="{Binding Producer.Version}" />
+      </TextBlock>
+      <Border Classes="message error" IsVisible="{Binding IsIncomplete}">
+        <TextBlock Text="{Binding L[ProducerIncomplete]}" />
+      </Border>
+      <TextBlock Classes="label" Margin="0,16,0,4" Text="{Binding L[ResponsibleDeclaration]}" />
+    </StackPanel>
+    <Border Background="White" CornerRadius="4" Padding="16" BoxShadow="0 2 8 0 #30000000">
+      <ScrollViewer>
+        <SelectableTextBlock Text="{Binding Declaration}" FontFamily="Consolas, Courier New, monospace" FontSize="13"
+                             Foreground="Black" TextWrapping="Wrap" />
+      </ScrollViewer>
+    </Border>
+  </DockPanel>
+</UserControl>

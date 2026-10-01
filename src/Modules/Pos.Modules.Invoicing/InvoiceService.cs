@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Pos.Core;
 using Pos.Core.Domain;
 using Pos.Core.Invoicing;
+using Pos.Core.Verifactu;
 using Pos.Data;
 
 namespace Pos.Modules.Invoicing;
@@ -12,9 +13,19 @@ public sealed record InvoiceSummary(
     string? CustomerName, bool IsReplaced, string? ReplacedByCode);
 
 /// <summary>Consulta de facturas, factura completa a partir de un ticket (FAC-06) y clientes.</summary>
-public sealed class InvoiceService(IDbContextFactory<PosDbContext> dbFactory, ProfileStore profiles, TimeProvider clock)
+public sealed class InvoiceService(
+    IDbContextFactory<PosDbContext> dbFactory,
+    ProfileStore profiles,
+    TimeProvider clock,
+    IEnumerable<IInvoiceHook> invoiceHooks,
+    SettingsStore? settings = null)
     : IInvoiceDocuments
 {
+    public InvoiceService(IDbContextFactory<PosDbContext> dbFactory, ProfileStore profiles, TimeProvider clock)
+        : this(dbFactory, profiles, clock, [])
+    {
+    }
+
     /// <summary>Facturas de un día (hora local), las más recientes primero.</summary>
     public IReadOnlyList<InvoiceSummary> ListByDay(DateOnly day)
     {
@@ -30,7 +41,8 @@ public sealed class InvoiceService(IDbContextFactory<PosDbContext> dbFactory, Pr
     /// </summary>
     public IReadOnlyList<InvoiceSummary> Search(string text)
     {
-        text = text.Trim().ToUpperInvariant();
+        // QR de cotejo de Verifactu: la URL trae el número en el parámetro numserie.
+        text = (VerifactuQr.InvoiceNumberFrom(text.Trim()) ?? text).Trim().ToUpperInvariant();
         if (text.Length == 0)
             return [];
 
@@ -90,6 +102,8 @@ public sealed class InvoiceService(IDbContextFactory<PosDbContext> dbFactory, Pr
         var invoice = InvoiceIssuer.Create(db, InvoiceType.Complete, sale, sale.Lines, business, customer,
             clock.GetUtcNow().UtcDateTime, replacesInvoiceId: original.Id);
         db.Invoices.Add(invoice);
+        foreach (var hook in invoiceHooks)
+            hook.OnInvoiceIssued(db, invoice);
         InvoiceIssuer.RememberCustomer(db, customer);
         db.SaveChanges();
         transaction.Commit();
@@ -118,7 +132,7 @@ public sealed class InvoiceService(IDbContextFactory<PosDbContext> dbFactory, Pr
             .ToList();
     }
 
-    private static InvoiceDocument? ToDocument(PosDbContext db, int invoiceId)
+    private InvoiceDocument? ToDocument(PosDbContext db, int invoiceId)
     {
         var invoice = db.Invoices.AsNoTracking().Include(i => i.VatLines).FirstOrDefault(i => i.Id == invoiceId);
         if (invoice is null)
@@ -141,6 +155,10 @@ public sealed class InvoiceService(IDbContextFactory<PosDbContext> dbFactory, Pr
                 .Select(l => new InvoiceDocumentLine(l.Description, l.Quantity, l.UnitPrice, l.VatRate, l.LineTotal)).ToList(),
             invoice.VatLines.OrderByDescending(v => v.Rate).ToList(),
             sale.Payments.OrderBy(p => p.Id).Select(p => new InvoiceDocumentPayment(p.Method, p.Amount)).ToList(),
-            invoice.Total, sale.CashTendered, sale.Change);
+            invoice.Total, sale.CashTendered, sale.Change,
+            // FAC-04: QR de cotejo de la AEAT con el NIF, el número, la fecha y el importe.
+            VerifactuQr.Build(invoice.IssuerNif, invoice.Code, invoice.IssuedAtUtc.ToLocalTime(), invoice.Total,
+                testEnvironment: settings?.Get(VerifactuSettingKeys.Environment) != VerifactuSettingKeys.Production),
+            VerifactuMode: settings?.Get(VerifactuSettingKeys.Enabled) == "true");
     }
 }

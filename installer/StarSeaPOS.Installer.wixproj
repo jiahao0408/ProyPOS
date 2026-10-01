@@ -1,0 +1,23 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    Instalador MSI de StarSeaPOS para Windows 11 x64.
+    Antes hay que publicar la app (lo hace build-installer.ps1):
+      dotnet publish src/Pos.App -c Release -r win-x64 -self-contained -o artifacts/publish
+  -->
+  <PropertyGroup>
+    <OutputName>StarSeaPOS-$(ProductVersion)</OutputName>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.0.0</ProductVersion>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <PublishDir Condition="'$(PublishDir)' == ''">..\artifacts\publish</PublishDir>
+    <DefineConstants>ProductVersion=$(ProductVersion);PublishDir=$(PublishDir)</DefineConstants>
+    <BindPaths>publish=$(PublishDir)</BindPaths>
+    <SuppressValidation>false</SuppressValidation>
+    <!--
+      Instalación por máquina: los accesos directos van al menú Inicio y escritorio comunes, pero las
+      reglas ICE38/43/57 los tratan como del perfil del usuario (falso positivo conocido en instaladores
+      perMachine). ICE60: avisos de idioma en DLL de terceros, sin efecto.
+    -->
+    <SuppressIces>ICE38;ICE43;ICE57;ICE60</SuppressIces>
+  </PropertyGroup>
+</Project>

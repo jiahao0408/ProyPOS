@@ -97,8 +97,12 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
                 foreach (var wrapped in Wrap(line.Trim(), width))
                     r.Add(new ReceiptText(wrapped, ReceiptAlign.Center));
         }
+        // FAC-04: QR de cotejo de la AEAT (si no hay, el número de factura para encontrarla luego, FAC-06).
         r.Add(new ReceiptBlankLine());
-        r.Add(new ReceiptQr(doc.Code));
+        r.Add(new ReceiptText(L["QrHint"], ReceiptAlign.Center));
+        r.Add(new ReceiptQr(doc.QrUrl ?? doc.Code));
+        if (doc.VerifactuMode)
+            r.Add(new ReceiptText(Pos.Core.Verifactu.VerifactuQr.VerifactuLegend, ReceiptAlign.Center, Bold: true));
         r.Add(new ReceiptCut());
         return r;
     }

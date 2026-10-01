@@ -179,6 +179,13 @@ public class ScreenshotTests
         salePage.StartCloseCashCommand.Execute(null);
         ((CloseCashViewModel)salePage.Dialog!).CountedText = "170";
         Capture(window, "33-cierre-caja");
+        ((CloseCashViewModel)salePage.Dialog!).CancelCommand.Execute(null);
+
+        // Sección 5: Verifactu y Acerca de
+        OpenAdmin(typeof(VerifactuPageViewModel));
+        Capture(window, "40-verifactu");
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(AboutPageViewModel)));
+        Capture(window, "41-acerca-de");
 
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");

@@ -102,8 +102,13 @@ internal static class InvoiceIssuer
 }
 
 /// <summary>Al cobrar, cada venta genera su factura: simplificada o, si el cliente lo pide, completa.</summary>
-public sealed class InvoiceSaleHook(ProfileStore profiles) : ISaleHook
+public sealed class InvoiceSaleHook(ProfileStore profiles, IEnumerable<IInvoiceHook> invoiceHooks) : ISaleHook
 {
+    public InvoiceSaleHook(ProfileStore profiles)
+        : this(profiles, [])
+    {
+    }
+
     public string? Validate(CheckoutContext context) =>
         profiles.GetBusiness().ValidateFiscalData()
         ?? (context.Customer is { } customer ? InvoiceIssuer.ValidateCustomer(customer) : null);
@@ -114,6 +119,8 @@ public sealed class InvoiceSaleHook(ProfileStore profiles) : ISaleHook
         var invoice = InvoiceIssuer.Create(db, type, context.Sale, context.Sale.Lines,
             profiles.GetBusiness(), context.Customer, context.NowUtc);
         db.Invoices.Add(invoice);
+        foreach (var hook in invoiceHooks)
+            hook.OnInvoiceIssued(db, invoice);
 
         if (context.Customer is { } customer)
             InvoiceIssuer.RememberCustomer(db, customer);

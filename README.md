@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, inventario, tickets, facturas, caja y Verifactu**. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **Secciones 1 a 4 terminadas** (Sprints 1 a 4): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Entradas de mercancía por cajas, cierre Z, etiquetas, importación de catálogo y copias de seguridad. 242 tests. Siguiente: sección 5 (Verifactu). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Entradas de mercancía por cajas, cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. 267 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -209,6 +209,22 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 
 **Rendimiento de la BD cifrada:** la clave del PC son 32 bytes aleatorios, así que se abre con la clave "en bruto" de SQLCipher (`x'…'`), sin la derivación PBKDF2 que está pensada para contraseñas humanas. Cada conexión pasa de ~1 s a milisegundos.
 
+### Cómo está hecha la sección 5 (Verifactu)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| FAC-04 Huella y QR | `VerifactuHash`, `VerifactuRecorder`, `VerifactuQr` | Cada factura genera, en la misma transacción, su registro de alta con huella SHA-256 encadenada a la anterior (algoritmo de la Orden HAC/1177/2024; un test lo comprueba contra el ejemplo oficial de la AEAT). Tipo F2 (ticket), F1 (factura completa) o F3 (completa que sustituye a un ticket, FAC-06). Registros y huellas no se pueden modificar ni borrar (triggers). El ticket lleva el QR de cotejo de la AEAT y, con el envío activado, la leyenda VERI\*FACTU |
+| VFA-01 Certificado | Página **Verifactu** | Carga del `.pfx` con su contraseña; se guarda cifrado con DPAPI dentro de la BD cifrada. Muestra titular, NIF y caducidad. Entorno de pruebas o producción y botón **Probar conexión** (TLS con el certificado contra el servicio web de la AEAT) |
+| VFA-02 Envío | `VerifactuXml`, `VerifactuSender` | Mensaje SOAP `RegFactuSistemaFacturacion` (hasta 1000 registros) con certificado de cliente. Se guarda la respuesta de cada registro: aceptado, aceptado con errores o rechazado, con su código de error |
+| VFA-03 Cola sin conexión | `VerifactuQueue` | Cola persistente en la BD; un proceso en segundo plano intenta enviar cada 30 s. Respeta el `TiempoEsperaEnvio` de la AEAT; sin conexión reintenta con esperas crecientes (hasta 1 h). La venta nunca espera a la AEAT |
+| VFA-06 Declaración responsable | Página **Acerca de** | Texto con sistema, versión, productor, NIF, dirección, fecha y lugar (art. 13 de la Orden HAC/1177/2024). Los datos del productor se leen de `producer.json` junto al ejecutable |
+| Instalador | `installer/` | MSI (WiX 5) por máquina, solo Windows 11, con la app *self-contained* (no hace falta instalar .NET), accesos directos en el menú Inicio y el escritorio. Desinstalar no borra los datos. `.\installer\build-installer.ps1 -Version 1.0.0` |
+
+**Antes de usar Verifactu en producción:**
+1. Completar `producer.json` con los datos reales del productor del software (la página Acerca de avisa mientras falten).
+2. Cargar el certificado y probar en el **entorno de pruebas** de la AEAT: enviar facturas de prueba y revisar que se aceptan. El XML sigue los esquemas `SuministroLR.xsd` / `SuministroInformacion.xsd`, pero no se ha podido validar contra el servidor real sin certificado.
+3. Activar el envío y pasar a producción.
+
 ## Primeros pasos
 
 Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, problemas frecuentes): [entornoDeConfiguracion.md](entornoDeConfiguracion.md).
@@ -307,8 +323,6 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 
 Puntos de la especificación que conviene cerrar antes de empezar:
 
-- **Fecha de Verifactu vs. sprint 5:** con sprints de 2 semanas, Verifactu llega en la semana 10. Si el negocio es una sociedad, la obligación empieza el 1 de enero de 2027, así que el desarrollo tendría que empezar como muy tarde a finales de octubre de 2026, sin margen para homologar con el entorno de pruebas de la AEAT. Conviene confirmar si el titular es sociedad o autónomo (1 de julio de 2027).
-- **Rectificativas y Verifactu:** FAC-06 sustituye una simplificada por una completa, y VFA-02 envía registros de anulación, pero las rectificativas (FAC-03) son de la versión 2. Hay que confirmar qué tipo de registro Verifactu genera FAC-06 en el MVP.
 - **Sección vs. categoría (BAZ-02, BAZ-03):** las historias de bazar hablan de "secciones" (hogar, papelería, juguetes…) y PRE-02 de "categorías". Propuesta: que sean lo mismo, con una marca para las que admiten artículo genérico.
 - **Clientes (DAT-01):** se importan clientes, pero ninguna historia los gestiona. FAC-02 y FAC-06 piden datos fiscales: propuesta de guardar los clientes de esas facturas y reutilizarlos.
 - **Búsqueda en 30.000 productos:** un `LIKE '%texto%'` no usa índices. Propuesta: índice FTS5 de SQLite para nombre y búsqueda exacta indexada para el código.
@@ -316,7 +330,6 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Escáner por cámara (HW-04):** implementado el lector USB en modo teclado; la lectura con cámara queda para la versión 2 (exige una librería de visión). Confirmar que basta con el lector.
 - **IVA del artículo genérico y del alta rápida (BAZ-02, BAZ-03):** se usa el 21 %. Si alguna sección vende con otro tipo (por ejemplo libros al 4 %), habría que añadir un IVA por sección.
 - **Stock negativo:** se permite vender aunque el stock sea 0, para no parar la venta por un recuento mal hecho; se muestra en rojo.
-- **QR del ticket (FAC-06):** de momento contiene el número de factura, para encontrarla escaneándolo. En la sección 5 se sustituye por el QR de cotejo de Verifactu (la búsqueda ya entiende un QR con más datos). El lector debe leer QR (2D); los lectores solo 1D no lo leen.
 - **Series:** `T` (simplificadas) y `F` (completas) más el año, numeración que vuelve a 1 cada año. Confirmar con la gestoría.
 - **Precio sin IVA en la factura completa:** se redondea a 2 decimales por línea; el desglose por tipo (base y cuota) es el que vale fiscalmente.
 - **PDF:** QuestPDF con licencia Community (gratuita para empresas con menos de 1 M$ de ingresos anuales).
@@ -324,6 +337,9 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Impresora de etiquetas (BAZ-01):** las etiquetas salen en ESC/POS (nombre, precio, código de barras y corte), que funciona en impresoras térmicas de tickets y en muchas de etiquetas en modo ESC/POS. Las impresoras de etiquetas que solo hablan ZPL o TSPL necesitarían otro formato: confirmar el modelo.
 - **Importación:** las columnas se leen por posición (el orden de la plantilla), no por nombre.
 - **Copias:** sin la contraseña de la copia no hay forma de recuperarla. Conviene apuntarla en un lugar seguro.
+- **Verifactu, homologación:** la huella coincide con el ejemplo oficial de la AEAT, pero el mensaje SOAP completo no se ha probado contra el servidor (hace falta un certificado real). Puntos a confirmar en el entorno de pruebas: formato del importe en el QR (`17.40`), código de "registro duplicado" (se ha supuesto el 3000, que se trata como aceptado) y, si el certificado es de sello, la dirección del servicio (`www10`).
+- **Registros de anulación:** el algoritmo está hecho (`VerifactuHash.ForAnulacion`), pero el MVP no anula facturas (las rectificativas, FAC-03, son de la versión 2), así que no se generan.
+- **QR en entorno de pruebas:** mientras Verifactu esté en "Pruebas", el QR del ticket apunta al servidor de pruebas de la AEAT. Al pasar a producción apunta al real.
 - **Backend:** ASP.NET Core o Node.js. ASP.NET Core permite compartir modelos con la app en C#.
 
 ## Contribuir

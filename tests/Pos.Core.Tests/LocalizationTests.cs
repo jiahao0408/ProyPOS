@@ -59,6 +59,7 @@ public class LocalizationTests
         ];
         var used = Directory.EnumerateFiles(Path.Combine(root.FullName, "src"), "*.*", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}")) // nombres de columnas, no textos
             .SelectMany(f => (f.EndsWith(".axaml") ? xamlPatterns : f.EndsWith(".cs") ? csharpPatterns : [])
                 .SelectMany(p => p.Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)))
             .ToHashSet();

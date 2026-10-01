@@ -35,7 +35,7 @@ public sealed class TestApp : IDisposable
     private readonly SqliteConnection _connection;
     private readonly string _dataDirectory;
 
-    public TestApp()
+    public TestApp(Action<Microsoft.Extensions.DependencyInjection.IServiceCollection>? overrides = null)
     {
         SQLitePCL.Batteries_V2.Init();
         _connection = new SqliteConnection("Data Source=:memory:");
@@ -46,7 +46,7 @@ public sealed class TestApp : IDisposable
 
         _dataDirectory = Directory.CreateTempSubdirectory("starseapos-test-").FullName;
         Services = Composition.BuildServices(new AppEnvironment(
-            factory, _dataDirectory, Path.Combine(AppContext.BaseDirectory, "locales"), Clock));
+            factory, _dataDirectory, Path.Combine(AppContext.BaseDirectory, "locales"), Clock), overrides);
 
         // Negocio con datos fiscales (sin ellos no se puede cobrar) e "impresora" de fichero.
         var profiles = Get<ProfileStore>();

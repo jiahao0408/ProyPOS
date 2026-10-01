@@ -35,7 +35,9 @@ public sealed record InvoiceDocument(
     IReadOnlyList<InvoiceDocumentPayment> Payments,
     decimal Total,
     decimal CashTendered,
-    decimal Change);
+    decimal Change,
+    string? QrUrl = null,
+    bool VerifactuMode = false);
 
 /// <summary>Acceso a los documentos de factura para imprimirlos; lo implementa el módulo de facturación.</summary>
 public interface IInvoiceDocuments

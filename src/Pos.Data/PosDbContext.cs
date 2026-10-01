@@ -18,6 +18,7 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
     public DbSet<InvoiceVatLine> InvoiceVatLines => Set<InvoiceVatLine>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
     public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
     public DbSet<GoodsReceiptLine> GoodsReceiptLines => Set<GoodsReceiptLine>();
 
@@ -67,6 +68,29 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Ignore(s => s.Difference);
             e.HasIndex(s => s.ClosedAtUtc);
             e.HasIndex(s => s.ZNumber).IsUnique();
+        });
+
+        model.Entity<VerifactuRecord>(e =>
+        {
+            e.Property(r => r.IssuerNif).HasMaxLength(20);
+            e.Property(r => r.IssuerName).HasMaxLength(200);
+            e.Property(r => r.InvoiceNumber).HasMaxLength(60);
+            e.Property(r => r.IssueDate).HasMaxLength(10);
+            e.Property(r => r.InvoiceType).HasMaxLength(2);
+            e.Property(r => r.TotalVat).HasPrecision(12, 2);
+            e.Property(r => r.Total).HasPrecision(12, 2);
+            e.Property(r => r.PreviousHash).HasMaxLength(64);
+            e.Property(r => r.GeneratedAt).HasMaxLength(25);
+            e.Property(r => r.Hash).HasMaxLength(64);
+            e.Property(r => r.ErrorCode).HasMaxLength(20);
+            e.Property(r => r.ErrorMessage).HasMaxLength(1000);
+            e.Property(r => r.Environment).HasMaxLength(20);
+            e.HasIndex(r => r.Status);
+            e.HasIndex(r => r.InvoiceId);
+            e.HasIndex(r => r.Hash).IsUnique();
+            e.HasIndex(r => r.PreviousRecordId).IsUnique(); // la cadena no tiene ramas
+            e.HasOne(r => r.Invoice).WithMany().HasForeignKey(r => r.InvoiceId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(r => r.PreviousRecord).WithMany().HasForeignKey(r => r.PreviousRecordId).OnDelete(DeleteBehavior.Restrict);
         });
 
         model.Entity<Supplier>(e =>

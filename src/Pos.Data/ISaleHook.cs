@@ -7,6 +7,15 @@ namespace Pos.Data;
 public sealed record CheckoutContext(Sale Sale, InvoiceCustomer? Customer, int UserId, DateTime NowUtc);
 
 /// <summary>
+/// Punto de extensión de la facturación: se llama con cada factura nueva (al cobrar o al facturar un
+/// ticket), dentro de la misma transacción. Lo usa Verifactu para generar el registro con su huella.
+/// </summary>
+public interface IInvoiceHook
+{
+    void OnInvoiceIssued(PosDbContext db, Invoice invoice);
+}
+
+/// <summary>
 /// Punto de extensión del cobro: otros módulos (facturación, y más adelante Verifactu) añaden
 /// sus datos a la venta dentro de la misma transacción, sin que el módulo de ventas los conozca.
 /// </summary>

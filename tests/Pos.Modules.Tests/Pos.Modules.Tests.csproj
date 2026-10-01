@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Hardware\Pos.Modules.Hardware.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Bazaar\Pos.Modules.Bazaar.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.DataTransfer\Pos.Modules.DataTransfer.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Verifactu\Pos.Modules.Verifactu.csproj" />
   </ItemGroup>
 
   <ItemGroup>
