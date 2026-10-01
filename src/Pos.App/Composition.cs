@@ -25,21 +25,22 @@ public sealed record AppEnvironment(
     IDbContextFactory<PosDbContext> Database,
     string DataDirectory,
     string LocalesDirectory,
-    TimeProvider Clock)
+    TimeProvider Clock,
+    DatabaseFile? DatabaseFile = null)
 {
     public string PhotosDirectory => Path.Combine(DataDirectory, "photos");
 
     /// <summary>Carpeta de datos estándar, o la de la variable STARSEAPOS_DATA_DIR (para desarrollar y probar).</summary>
     public static AppEnvironment Default()
     {
-        var dataDirectory = Environment.GetEnvironmentVariable("STARSEAPOS_DATA_DIR") is { Length: > 0 } custom
-            ? custom
-            : PosDatabase.DefaultDataDirectory;
+        var dataDirectory = Program.DataDirectory;
+        var file = PosDatabase.OpenFile(dataDirectory);
         return new AppEnvironment(
-            PosDatabase.Open(dataDirectory),
+            file.Factory,
             dataDirectory,
             Path.Combine(AppContext.BaseDirectory, "locales"),
-            TimeProvider.System);
+            TimeProvider.System,
+            file);
     }
 }
 
@@ -53,8 +54,11 @@ internal static class Composition
         services.AddSingleton(env);
         services.AddSingleton(env.Database);
         services.AddSingleton(env.Clock);
+        if (env.DatabaseFile is { } databaseFile)
+            services.AddSingleton(databaseFile);
         services.AddSingleton<ISession, Session>();
         services.AddSingleton<SettingsStore>();
+        services.AddSingleton<ProfileStore>();
 
         // CFG-01 / CFG-04: idioma y formatos guardados en los ajustes.
         services.AddSingleton<ILocalizer>(sp =>
@@ -105,6 +109,12 @@ internal static class Composition
         services.AddTransient<CategoriesPageViewModel>();
         services.AddTransient<UsersPageViewModel>();
         services.AddTransient<SettingsPageViewModel>();
+        services.AddTransient<TicketsPageViewModel>();
+        services.AddTransient<BusinessPageViewModel>();
+        services.AddTransient<PrinterPageViewModel>();
+        services.AddTransient<ReceiptsPageViewModel>();
+        services.AddTransient<LabelsPageViewModel>();
+        services.AddTransient<DataPageViewModel>();
 
         return services.BuildServiceProvider();
     }

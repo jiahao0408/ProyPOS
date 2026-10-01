@@ -11,5 +11,6 @@ public sealed class BazaarModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<LabelService>();
     }
 }

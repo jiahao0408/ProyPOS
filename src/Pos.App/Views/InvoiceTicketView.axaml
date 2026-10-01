@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:v="using:Pos.App.Views"
+             x:Class="Pos.App.Views.InvoiceTicketView"
+             x:DataType="vm:InvoiceTicketViewModel">
+  <!-- FAC-06: datos fiscales para facturar un ticket ya emitido -->
+  <Border Classes="dialog" Width="460">
+    <StackPanel>
+      <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding L[InvoiceTicketHint]}" FontSize="14" Opacity="0.75" TextWrapping="Wrap" />
+      <v:CustomerFormView DataContext="{Binding Customer}" />
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,16,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Content="{Binding L[IssueInvoice]}" Command="{Binding IssueCommand}" />
+      </Grid>
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

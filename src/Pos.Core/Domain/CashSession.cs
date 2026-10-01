@@ -18,5 +18,24 @@ public class CashSession
     /// <summary>Efectivo contado en el arqueo.</summary>
     public decimal? CountedCash { get; set; }
 
+    // --- Cierre Z: foto de los totales en el momento del cierre ---
+
+    /// <summary>Número correlativo del cierre Z.</summary>
+    public int? ZNumber { get; set; }
+
+    /// <summary>Fondo inicial + cobros en efectivo del turno.</summary>
+    public decimal? ExpectedCash { get; set; }
+
+    public int? SalesCount { get; set; }
+
+    public decimal? SalesTotal { get; set; }
+
+    public decimal? CashTotal { get; set; }
+
+    public decimal? CardTotal { get; set; }
+
     public bool IsOpen => ClosedAtUtc is null;
+
+    /// <summary>Descuadre: positivo si sobra dinero, negativo si falta.</summary>
+    public decimal? Difference => CountedCash - ExpectedCash;
 }

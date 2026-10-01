@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.BusinessPageView"
+             x:DataType="vm:BusinessPageViewModel">
+  <!-- IMP-03: cabecera y pie del ticket, con vista previa -->
+  <Grid ColumnDefinitions="*,24,420">
+    <ScrollViewer Grid.Column="0">
+      <StackPanel MaxWidth="560" HorizontalAlignment="Left">
+        <TextBlock Classes="title" Text="{Binding L[NavBusiness]}" />
+        <TextBlock Text="{Binding L[BusinessFiscalHint]}" TextWrapping="Wrap" Opacity="0.75" />
+
+        <TextBlock Classes="label" Text="{Binding L[BusinessName]}" />
+        <TextBox Text="{Binding Name}" />
+        <TextBlock Classes="label" Text="{Binding L[NifLabel]}" />
+        <TextBox Text="{Binding Nif}" />
+        <TextBlock Classes="label" Text="{Binding L[CustomerAddress]}" />
+        <TextBox Text="{Binding Address}" />
+        <Grid ColumnDefinitions="140,8,*">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{Binding L[PostalCode]}" />
+            <TextBox Text="{Binding PostalCode}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Classes="label" Text="{Binding L[City]}" />
+            <TextBox Text="{Binding City}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Classes="label" Text="{Binding L[Phone]}" />
+        <TextBox Text="{Binding Phone}" />
+        <TextBlock Classes="label" Text="{Binding L[FooterMessage]}" />
+        <TextBox Text="{Binding FooterMessage}" AcceptsReturn="True" MinHeight="80" TextWrapping="Wrap" />
+
+        <TextBlock Classes="label" Text="{Binding L[Logo]}" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="{Binding L[ChooseLogo]}" Click="OnChooseLogo" />
+          <Button Content="{Binding L[RemovePhoto]}" Command="{Binding RemoveLogoCommand}" IsVisible="{Binding HasLogo}" />
+        </StackPanel>
+
+        <Button Classes="primary" Margin="0,20,0,0" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />
+        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+          <TextBlock Text="{Binding Message}" />
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <DockPanel Grid.Column="2">
+      <TextBlock DockPanel.Dock="Top" Classes="label" Text="{Binding L[Preview]}" />
+      <Border Background="White" CornerRadius="4" Padding="12" BoxShadow="0 2 8 0 #30000000">
+        <ScrollViewer>
+          <TextBlock Text="{Binding Preview}" FontFamily="Consolas, Courier New, monospace" FontSize="13" Foreground="Black" />
+        </ScrollViewer>
+      </Border>
+    </DockPanel>
+  </Grid>
+</UserControl>

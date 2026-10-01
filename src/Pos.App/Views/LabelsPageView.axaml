@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:domain="using:Pos.Core.Domain"
+             x:Class="Pos.App.Views.LabelsPageView"
+             x:DataType="vm:LabelsPageViewModel">
+  <!-- BAZ-01: etiquetas de precio con código de barras -->
+  <DockPanel>
+    <TextBlock DockPanel.Dock="Top" Classes="title" Text="{Binding L[NavLabels]}" />
+    <TextBlock DockPanel.Dock="Top" Text="{Binding L[LabelsHint]}" TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,8" />
+    <TextBox DockPanel.Dock="Top" Watermark="{Binding L[SaleSearchHint]}" Text="{Binding SearchText}" FontSize="20">
+      <TextBox.KeyBindings>
+        <KeyBinding Gesture="Enter" Command="{Binding SubmitSearchCommand}" />
+      </TextBox.KeyBindings>
+    </TextBox>
+    <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding SearchResults}" Margin="0,4,0,0">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="domain:Product">
+          <Button Margin="0,0,6,6" Content="{Binding Name}"
+                  Command="{Binding $parent[ItemsControl].((vm:LabelsPageViewModel)DataContext).AddProductCommand}"
+                  CommandParameter="{Binding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+      <Button Classes="primary" Content="{Binding L[PrintLabels]}" Command="{Binding PrintCommand}" />
+      <Border Classes="message" Margin="0" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+
+    <ScrollViewer Margin="0,8,0,0">
+      <ItemsControl ItemsSource="{Binding Lines}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LabelLineViewModel">
+            <Border Padding="0,6" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+              <Grid ColumnDefinitions="*,Auto,Auto,110,Auto">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Barcode}" FontSize="13" Opacity="0.7" FontFamily="Consolas, monospace" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="17" VerticalAlignment="Center" Margin="8,0" />
+                <TextBlock Grid.Column="2" Text="{Binding $parent[ItemsControl].((vm:LabelsPageViewModel)DataContext).L[Copies]}"
+                           VerticalAlignment="Center" Opacity="0.7" Margin="8,0,4,0" />
+                <TextBox Grid.Column="3" Text="{Binding CopiesText}" />
+                <Button Grid.Column="4" Content="✕" Margin="8,0,0,0"
+                        Command="{Binding $parent[ItemsControl].((vm:LabelsPageViewModel)DataContext).RemoveLineCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

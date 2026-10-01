@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PrinterPageView"
+             x:DataType="vm:PrinterPageViewModel">
+  <!-- HW-01: impresora térmica; IMP-01: impresión al cobrar -->
+  <ScrollViewer>
+    <StackPanel MaxWidth="560" HorizontalAlignment="Left">
+      <TextBlock Classes="title" Text="{Binding L[NavPrinter]}" />
+
+      <TextBlock Classes="label" Text="{Binding L[PrinterConnection]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Connections}" SelectedItem="{Binding Connection}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice">
+            <TextBlock Text="{Binding Title}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Classes="label" Text="{Binding TargetHint}" TextWrapping="Wrap" />
+      <AutoCompleteBox Text="{Binding Target}" ItemsSource="{Binding TargetSuggestions}" FilterMode="None"
+                       MinimumPrefixLength="0" MinHeight="44" FontSize="18" />
+
+      <StackPanel IsVisible="{Binding ShowBaudRate}">
+        <TextBlock Classes="label" Text="{Binding L[BaudRate]}" />
+        <TextBox Text="{Binding BaudRateText}" />
+      </StackPanel>
+
+      <TextBlock Classes="label" Text="{Binding L[PaperWidth]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding PaperWidth}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice">
+            <TextBlock Text="{Binding Title}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Classes="label" Text="{Binding L[PrinterEncoding]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Encodings}" SelectedItem="{Binding Encoding}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice">
+            <TextBlock Text="{Binding Title}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <TextBlock Classes="label" Text="{Binding L[AutoPrint]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding AutoPrintModes}" SelectedItem="{Binding AutoPrint}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice">
+            <TextBlock Text="{Binding Title}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <!-- BAZ-01: impresora de etiquetas -->
+      <TextBlock Text="{Binding L[LabelPrinter]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <CheckBox Content="{Binding L[LabelsSameAsReceipt]}" IsChecked="{Binding LabelsSameAsReceipt}" />
+      <StackPanel IsVisible="{Binding !LabelsSameAsReceipt}">
+        <TextBlock Classes="label" Text="{Binding L[PrinterConnection]}" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Connections}" SelectedItem="{Binding LabelConnection}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Classes="label" Text="{Binding LabelTargetHint}" TextWrapping="Wrap" />
+        <TextBox Text="{Binding LabelTarget}" />
+        <TextBlock Classes="label" Text="{Binding L[PaperWidth]}" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding LabelPaperWidth}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
+        <Button Classes="primary" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />
+        <Button Content="{Binding L[PrinterTest]}" Command="{Binding TestCommand}" IsEnabled="{Binding !IsTesting}" />
+      </StackPanel>
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

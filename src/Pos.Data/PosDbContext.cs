@@ -14,6 +14,12 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
     public DbSet<SaleLine> SaleLines => Set<SaleLine>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceVatLine> InvoiceVatLines => Set<InvoiceVatLine>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
+    public DbSet<GoodsReceiptLine> GoodsReceiptLines => Set<GoodsReceiptLine>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -37,6 +43,7 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Property(p => p.Name).HasMaxLength(200);
             e.Property(p => p.Price).HasPrecision(10, 2);
             e.Property(p => p.VatRate).HasPrecision(5, 2);
+            e.Property(p => p.CostPrice).HasPrecision(12, 4);
             e.Property(p => p.Barcode).HasMaxLength(64);
             e.HasIndex(p => p.Barcode).IsUnique(); // PRE-01; SQLite admite varios NULL en un índice único
             e.HasIndex(p => p.Name);
@@ -52,8 +59,38 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
         {
             e.Property(s => s.OpeningFloat).HasPrecision(10, 2);
             e.Property(s => s.CountedCash).HasPrecision(10, 2);
+            e.Property(s => s.ExpectedCash).HasPrecision(10, 2);
+            e.Property(s => s.SalesTotal).HasPrecision(10, 2);
+            e.Property(s => s.CashTotal).HasPrecision(10, 2);
+            e.Property(s => s.CardTotal).HasPrecision(10, 2);
             e.Ignore(s => s.IsOpen);
+            e.Ignore(s => s.Difference);
             e.HasIndex(s => s.ClosedAtUtc);
+            e.HasIndex(s => s.ZNumber).IsUnique();
+        });
+
+        model.Entity<Supplier>(e =>
+        {
+            e.Property(s => s.Name).HasMaxLength(200);
+            e.Property(s => s.Nif).HasMaxLength(20);
+            e.Property(s => s.Phone).HasMaxLength(40);
+            e.HasIndex(s => s.Name).IsUnique();
+        });
+
+        model.Entity<GoodsReceipt>(e =>
+        {
+            e.Property(r => r.Reference).HasMaxLength(100);
+            e.Property(r => r.TotalCost).HasPrecision(12, 2);
+            e.HasIndex(r => r.CreatedAtUtc);
+            e.HasOne<Supplier>().WithMany().HasForeignKey(r => r.SupplierId).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(r => r.Lines).WithOne().HasForeignKey(l => l.GoodsReceiptId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<GoodsReceiptLine>(e =>
+        {
+            e.Property(l => l.UnitCost).HasPrecision(12, 4);
+            e.Property(l => l.LineCost).HasPrecision(12, 2);
+            e.HasOne<Product>().WithMany().HasForeignKey(l => l.ProductId).OnDelete(DeleteBehavior.Restrict);
         });
 
         model.Entity<Setting>(e =>
@@ -90,6 +127,45 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
         model.Entity<Payment>(e =>
         {
             e.Property(p => p.Amount).HasPrecision(10, 2);
+        });
+
+        model.Entity<Invoice>(e =>
+        {
+            e.Property(i => i.Series).HasMaxLength(10);
+            e.Property(i => i.Code).HasMaxLength(20);
+            e.Property(i => i.Total).HasPrecision(10, 2);
+            e.Property(i => i.IssuerName).HasMaxLength(200);
+            e.Property(i => i.IssuerNif).HasMaxLength(20);
+            e.Property(i => i.IssuerAddress).HasMaxLength(400);
+            e.Property(i => i.CustomerNif).HasMaxLength(20);
+            e.Property(i => i.CustomerName).HasMaxLength(200);
+            e.Property(i => i.CustomerAddress).HasMaxLength(400);
+            e.HasIndex(i => new { i.Series, i.Number }).IsUnique(); // FAC-01: sin números repetidos
+            e.HasIndex(i => i.Code).IsUnique();
+            e.HasIndex(i => i.IssuedAtUtc);
+            e.HasIndex(i => i.SaleId);
+            e.HasIndex(i => i.ReplacesInvoiceId).IsUnique(); // FAC-06: un ticket solo se factura una vez
+            e.HasOne(i => i.Sale).WithMany().HasForeignKey(i => i.SaleId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Invoice>().WithMany().HasForeignKey(i => i.ReplacesInvoiceId).OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(i => i.VatLines).WithOne().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        model.Entity<InvoiceVatLine>(e =>
+        {
+            e.Property(l => l.Rate).HasPrecision(5, 2);
+            e.Property(l => l.Base).HasPrecision(10, 2);
+            e.Property(l => l.VatAmount).HasPrecision(10, 2);
+            e.Property(l => l.Total).HasPrecision(10, 2);
+        });
+
+        model.Entity<Customer>(e =>
+        {
+            e.Property(c => c.Nif).HasMaxLength(20);
+            e.Property(c => c.Name).HasMaxLength(200);
+            e.Property(c => c.Address).HasMaxLength(300);
+            e.Property(c => c.PostalCode).HasMaxLength(10);
+            e.Property(c => c.City).HasMaxLength(100);
+            e.HasIndex(c => c.Nif).IsUnique();
         });
 
         model.Entity<StockMovement>(e =>

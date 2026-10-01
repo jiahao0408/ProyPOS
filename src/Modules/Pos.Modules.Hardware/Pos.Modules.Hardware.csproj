@@ -4,4 +4,9 @@
     <ProjectReference Include="..\..\Pos.Core\Pos.Core.csproj" />
     <ProjectReference Include="..\..\Pos.Data\Pos.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Lista de impresoras de Windows y puertos COM -->
+    <PackageReference Include="System.Drawing.Common" />
+    <PackageReference Include="System.IO.Ports" />
+  </ItemGroup>
 </Project>

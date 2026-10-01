@@ -90,9 +90,15 @@ public partial class WorkspaceViewModel : ViewModelBase
         NavItems =
         [
             new NavItemViewModel(localizer, "NavSale", typeof(SalePageViewModel), requiresAdmin: false),
+            new NavItemViewModel(localizer, "NavTickets", typeof(TicketsPageViewModel), requiresAdmin: false),
+            new NavItemViewModel(localizer, "NavReceipts", typeof(ReceiptsPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavLabels", typeof(LabelsPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavProducts", typeof(ProductsPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavCategories", typeof(CategoriesPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavUsers", typeof(UsersPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavBusiness", typeof(BusinessPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavPrinter", typeof(PrinterPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavData", typeof(DataPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavSettings", typeof(SettingsPageViewModel), requiresAdmin: true),
         ];
         localizer.LanguageChanged += (_, _) => OnPropertyChanged(nameof(RoleTitle));

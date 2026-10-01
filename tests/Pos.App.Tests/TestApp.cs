@@ -47,7 +47,23 @@ public sealed class TestApp : IDisposable
         _dataDirectory = Directory.CreateTempSubdirectory("starseapos-test-").FullName;
         Services = Composition.BuildServices(new AppEnvironment(
             factory, _dataDirectory, Path.Combine(AppContext.BaseDirectory, "locales"), Clock));
+
+        // Negocio con datos fiscales (sin ellos no se puede cobrar) e "impresora" de fichero.
+        var profiles = Get<ProfileStore>();
+        profiles.SaveBusiness(new BusinessProfile("Bazar Estrella del Mar", "B12345674", "Calle Mayor 1", "28001", "Madrid",
+            "910000000", "¡Gracias por su visita!", null));
+        profiles.SavePrinter(PrinterProfile.Default with
+        {
+            Connection = PrinterConnection.File,
+            Target = PrintFolder,
+            AutoPrint = AutoPrintMode.No,
+        });
     }
+
+    /// <summary>Carpeta donde la "impresora" de fichero deja los tickets.</summary>
+    public string PrintFolder => Path.Combine(_dataDirectory, "printed");
+
+    public int PrintedTickets => Directory.Exists(PrintFolder) ? Directory.GetFiles(PrintFolder, "*.bin").Length : 0;
 
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero));
 

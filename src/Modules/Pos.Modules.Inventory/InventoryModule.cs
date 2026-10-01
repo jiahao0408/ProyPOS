@@ -12,5 +12,6 @@ public sealed class InventoryModule : IModule
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<StockService>();
+        services.AddSingleton<ReceiptService>();
     }
 }

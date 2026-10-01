@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PrintPromptView"
+             x:DataType="vm:PrintPromptViewModel">
+  <!-- IMP-01 en modo "preguntar" -->
+  <Border Classes="dialog" Width="440">
+    <StackPanel Spacing="12">
+      <TextBlock Text="{Binding Info}" FontSize="18" TextWrapping="Wrap" Foreground="{StaticResource OkBrush}" />
+      <TextBlock Text="{Binding L[PrintTicketQuestion]}" FontSize="24" FontWeight="SemiBold" />
+      <Grid ColumnDefinitions="*,8,*">
+        <Button Name="NoButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="64"
+                Content="{Binding L[No]}" Command="{Binding SkipCommand}" />
+        <Button Grid.Column="2" Name="YesButton" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                MinHeight="64" Content="{Binding L[Yes]}" Command="{Binding PrintCommand}" IsDefault="True" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

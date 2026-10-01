@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.DataPageView"
+             x:DataType="vm:DataPageViewModel">
+  <Grid ColumnDefinitions="*,24,400">
+    <!-- DAT-01: importar -->
+    <DockPanel Grid.Column="0">
+      <TextBlock DockPanel.Dock="Top" Classes="title" Text="{Binding L[NavData]}" />
+      <TextBlock DockPanel.Dock="Top" Text="{Binding L[ImportTitle]}" FontSize="20" FontWeight="SemiBold" />
+      <TextBlock DockPanel.Dock="Top" Text="{Binding L[ImportHint]}" TextWrapping="Wrap" Opacity="0.75" />
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,8">
+        <ComboBox MinWidth="200" ItemsSource="{Binding Kinds}" SelectedItem="{Binding Kind}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice">
+              <TextBlock Text="{Binding Title}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Content="{Binding L[DownloadTemplate]}" Click="OnSaveTemplate" />
+        <Button Content="{Binding L[ChooseFile]}" Click="OnChooseImportFile" />
+      </StackPanel>
+      <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+        <TextBlock Text="{Binding PreviewSummary}" VerticalAlignment="Center" FontSize="16" />
+        <Button Classes="primary" Content="{Binding L[ImportValidRows]}" Command="{Binding ImportCommand}" IsEnabled="{Binding CanImport}" />
+      </StackPanel>
+      <ListBox ItemsSource="{Binding PreviewRows}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ImportRowView">
+            <Grid ColumnDefinitions="48,*">
+              <TextBlock Text="{Binding Line}" Opacity="0.6" />
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="{Binding Values}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Error}" IsVisible="{Binding !IsValid}" Foreground="{StaticResource ErrorBrush}" FontSize="13" />
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- DAT-03: copias de seguridad -->
+    <ScrollViewer Grid.Column="2">
+      <StackPanel>
+        <TextBlock Text="{Binding L[BackupTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,48,0,0" />
+        <TextBlock Text="{Binding L[BackupHint]}" TextWrapping="Wrap" Opacity="0.75" />
+        <TextBlock Text="{Binding L[ErrorBackupUnavailable]}" IsVisible="{Binding !BackupsAvailable}" Foreground="{StaticResource ErrorBrush}" />
+
+        <TextBlock Classes="label" Text="{Binding L[BackupPassword]}" />
+        <TextBox Text="{Binding BackupPassword}" PasswordChar="●" />
+        <TextBlock Classes="label" Text="{Binding L[BackupPasswordConfirm]}" />
+        <TextBox Text="{Binding BackupPasswordConfirm}" PasswordChar="●" />
+        <Button Classes="primary" Margin="0,8,0,0" Content="{Binding L[CreateBackup]}" Click="OnCreateBackup" IsEnabled="{Binding BackupsAvailable}" />
+
+        <TextBlock Text="{Binding L[RestoreTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+        <Button Margin="0,8,0,0" Content="{Binding L[ChooseFile]}" Click="OnChooseRestoreFile" IsEnabled="{Binding BackupsAvailable}" />
+        <TextBlock Text="{Binding RestoreFileName}" Opacity="0.75" Margin="0,4,0,0" />
+        <TextBlock Classes="label" Text="{Binding L[BackupPassword]}" />
+        <TextBox Text="{Binding RestorePassword}" PasswordChar="●" />
+        <Button Classes.danger="{Binding IsRestorePending}" Margin="0,8,0,0" Content="{Binding L[Restore]}"
+                Command="{Binding RestoreCommand}" IsEnabled="{Binding CanRestore}" />
+
+        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+          <TextBlock Text="{Binding Message}" />
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

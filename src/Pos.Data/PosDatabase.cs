@@ -18,32 +18,45 @@ public static class PosDatabase
 
         SQLitePCL.Batteries_V2.Init();
 
+        // Sin pool: la clave se pone en cada apertura (con clave en bruto cuesta muy poco), así nunca
+        // se reutiliza una conexión que no haya pasado por el interceptor.
         var connectionString = new SqliteConnectionStringBuilder
         {
             DataSource = databasePath,
             Mode = SqliteOpenMode.ReadWriteCreate,
-            Password = encryptionKey,
+            Pooling = false,
         }.ToString();
 
         return new DbContextOptionsBuilder<PosDbContext>()
             .UseSqlite(connectionString)
-            .AddInterceptors(new DurableSqliteInterceptor())
+            .AddInterceptors(new SqlCipherInterceptor(encryptionKey))
             .Options;
     }
 
     /// <summary>Abre (o crea) la BD de la carpeta indicada y aplica las migraciones pendientes.</summary>
-    public static IDbContextFactory<PosDbContext> Open(string dataDirectory)
+    public static IDbContextFactory<PosDbContext> Open(string dataDirectory) => OpenFile(dataDirectory).Factory;
+
+    /// <summary>Como <see cref="Open"/>, pero devuelve también la ruta y la clave (para copias de seguridad).</summary>
+    public static DatabaseFile OpenFile(string dataDirectory)
     {
         Directory.CreateDirectory(dataDirectory);
         var key = DatabaseKeyStore.GetOrCreateKey(Path.Combine(dataDirectory, "pos.key"));
-        var options = CreateOptions(Path.Combine(dataDirectory, "pos.db"), key);
-        var factory = new PosDbContextFactory(options);
+        var path = Path.Combine(dataDirectory, "pos.db");
+        var factory = new PosDbContextFactory(CreateOptions(path, key));
 
         using var db = factory.CreateDbContext();
         db.Database.Migrate();
 
-        return factory;
+        return new DatabaseFile(factory, path, key);
     }
+}
+
+/// <summary>BD abierta: el factory para usarla, y su fichero y clave para copiarla o restaurarla (DAT-03).</summary>
+public sealed record DatabaseFile(IDbContextFactory<PosDbContext> Factory, string Path, string Key)
+{
+    public string DataDirectory => System.IO.Path.GetDirectoryName(Path)!;
+
+    public string BackupsDirectory => System.IO.Path.Combine(DataDirectory, "backups");
 }
 
 public sealed class PosDbContextFactory(DbContextOptions<PosDbContext> options) : IDbContextFactory<PosDbContext>
@@ -55,5 +68,5 @@ public sealed class PosDbContextFactory(DbContextOptions<PosDbContext> options) 
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<PosDbContext>
 {
     public PosDbContext CreateDbContext(string[] args) =>
-        new(PosDatabase.CreateOptions("pos-design.db", "design-time-only"));
+        new(PosDatabase.CreateOptions("pos-design.db", new string('0', 64)));
 }

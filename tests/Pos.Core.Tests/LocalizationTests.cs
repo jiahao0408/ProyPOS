@@ -54,7 +54,7 @@ public class LocalizationTests
         Regex[] csharpPatterns =
         [
             new(@"L\[""([A-Za-z0-9]+)""\]"),
-            new(@"""((?:Error|Confirm|Nav|Role|Module)[A-Z][A-Za-z]+)"""),
+            new(@"""((?:Error|Confirm|Nav|Role|Module|Col)[A-Z][A-Za-z]+)"""),
             new(@"Show(?:Error|Info)\(""([A-Za-z]+)""\)"),
         ];
         var used = Directory.EnumerateFiles(Path.Combine(root.FullName, "src"), "*.*", SearchOption.AllDirectories)

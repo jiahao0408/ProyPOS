@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pos.Core;
 using Pos.Core.Domain;
+using Pos.Core.Invoicing;
 using Pos.Data;
 
 namespace Pos.Modules.Sales;
@@ -18,9 +19,17 @@ public sealed record PaymentRequest(decimal CardAmount, decimal CashTendered)
 
 public sealed record CheckoutResult(Sale Sale, decimal Change);
 
-/// <summary>Cobro de un ticket (VEN-03, VEN-04) con descuento de stock (INV-01), todo en una transacción.</summary>
-public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, TimeProvider clock)
+/// <summary>
+/// Cobro de un ticket (VEN-03, VEN-04) con descuento de stock (INV-01), todo en una transacción.
+/// Los módulos registrados como <see cref="ISaleHook"/> (por ejemplo, la facturación) añaden sus datos en la misma transacción.
+/// </summary>
+public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, TimeProvider clock, IEnumerable<ISaleHook> hooks)
 {
+    public SalesService(IDbContextFactory<PosDbContext> dbFactory, TimeProvider clock)
+        : this(dbFactory, clock, [])
+    {
+    }
+
     /// <summary>Lo que falta pagar en efectivo y el cambio, sin guardar nada (para mostrarlo mientras se teclea).</summary>
     public static (decimal CashDue, decimal Change) Preview(decimal total, PaymentRequest payment)
     {
@@ -28,7 +37,8 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         return (cashDue, Math.Max(0m, payment.CashTendered - cashDue));
     }
 
-    public OperationResult<CheckoutResult> Checkout(Ticket ticket, PaymentRequest payment, int userId)
+    /// <param name="customer">Datos del cliente si pide factura completa (FAC-02); null = factura simplificada.</param>
+    public OperationResult<CheckoutResult> Checkout(Ticket ticket, PaymentRequest payment, int userId, InvoiceCustomer? customer = null)
     {
         if (ticket.IsEmpty)
             return OperationResult<CheckoutResult>.Fail("ErrorTicketEmpty");
@@ -83,13 +93,26 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         if (cashDue > 0)
             sale.Payments.Add(new Payment { Method = PaymentMethod.Cash, Amount = cashDue });
 
+        var context = new CheckoutContext(sale, customer, userId, now);
+        foreach (var hook in hooks)
+        {
+            if (hook.Validate(context) is { } error)
+                return OperationResult<CheckoutResult>.Fail(error);
+        }
+
+        // Una sola transacción: venta, pagos, stock y factura, o nada.
+        using var transaction = db.Database.BeginTransaction();
         db.Sales.Add(sale);
 
         // INV-01: vender 3 unidades resta 3.
         foreach (var line in ticket.Lines.Where(l => l.Item.ProductId is not null))
             StockLedger.Record(db, products[line.Item.ProductId!.Value], -line.Quantity, StockMovementReason.Sale, now, userId, sale);
 
-        db.SaveChanges(); // una sola transacción: venta, pagos y stock, o nada
+        foreach (var hook in hooks)
+            hook.OnSaleCreated(db, context);
+
+        db.SaveChanges();
+        transaction.Commit();
         return OperationResult<CheckoutResult>.Ok(new CheckoutResult(sale, change));
     }
 

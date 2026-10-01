@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.TicketsPageView"
+             x:DataType="vm:TicketsPageViewModel">
+  <Grid>
+    <Grid ColumnDefinitions="*,16,420">
+      <!-- Búsqueda y lista (IMP-02, FAC-06) -->
+      <DockPanel Grid.Column="0">
+        <TextBlock DockPanel.Dock="Top" Classes="title" Text="{Binding L[NavTickets]}" />
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,8,Auto" Margin="0,0,0,8">
+          <TextBox Name="SearchBox" Watermark="{Binding L[TicketSearchHint]}" Text="{Binding SearchText}">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <CalendarDatePicker Grid.Column="2" SelectedDate="{Binding Day}" MinHeight="44" FontSize="18" />
+        </Grid>
+        <ListBox ItemsSource="{Binding Invoices}" SelectedItem="{Binding Selected}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:InvoiceRow">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel>
+                  <TextBlock FontSize="17">
+                    <Run Text="{Binding Code}" FontWeight="SemiBold" />
+                    <Run Text="  " />
+                    <Run Text="{Binding Kind}" FontSize="13" />
+                  </TextBlock>
+                  <TextBlock FontSize="13" Opacity="0.7">
+                    <Run Text="{Binding Time}" />
+                    <Run Text="  " />
+                    <Run Text="{Binding Status}" />
+                  </TextBlock>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Total}" FontSize="17" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Vista previa y acciones -->
+      <DockPanel Grid.Column="2">
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+          <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+            <TextBlock Text="{Binding Message}" />
+          </Border>
+          <UniformGrid Columns="3">
+            <Button Margin="0,0,6,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[Reprint]}" Command="{Binding ReprintCommand}" IsEnabled="{Binding HasSelection}" />
+            <Button Margin="0,0,6,0" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[InvoiceTicket]}" Command="{Binding InvoiceTicketCommand}" IsEnabled="{Binding CanInvoice}" />
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[SavePdf]}" Click="OnSavePdf" IsEnabled="{Binding HasSelection}" />
+          </UniformGrid>
+        </StackPanel>
+        <Border Background="White" CornerRadius="4" Padding="12" BoxShadow="0 2 8 0 #30000000">
+          <ScrollViewer>
+            <SelectableTextBlock Text="{Binding Preview}" FontFamily="Consolas, Courier New, monospace" FontSize="13" Foreground="Black" />
+          </ScrollViewer>
+        </Border>
+      </DockPanel>
+    </Grid>
+
+    <Border IsVisible="{Binding IsDialogOpen}" Background="#80000000">
+      <ContentControl Content="{Binding Dialog}" />
+    </Border>
+  </Grid>
+</UserControl>

@@ -64,7 +64,7 @@ public sealed class EncryptedDatabaseTests : IDisposable
             _ = db.Users.Count();
         SqliteConnection.ClearAllPools();
 
-        using var wrong = new Data.PosDbContext(PosDatabase.CreateOptions(Path.Combine(_directory, "pos.db"), "clave-incorrecta"));
+        using var wrong = new Data.PosDbContext(PosDatabase.CreateOptions(Path.Combine(_directory, "pos.db"), new string('A', 64)));
 
         Assert.ThrowsAny<SqliteException>(() => wrong.Users.Count());
     }

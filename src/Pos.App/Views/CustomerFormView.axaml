@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.CustomerFormView"
+             x:DataType="vm:CustomerFormViewModel">
+  <!-- FAC-02: NIF, razón social y dirección -->
+  <StackPanel>
+    <TextBlock Classes="label" Text="{Binding L[CustomerNif]}" />
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBox Text="{Binding Nif}" />
+      <TextBlock Grid.Column="1" Text="✓" FontSize="22" Margin="8,0,0,0" VerticalAlignment="Center"
+                 Foreground="{StaticResource OkBrush}" IsVisible="{Binding NifIsValid}" />
+    </Grid>
+    <TextBlock Classes="label" Text="{Binding L[CustomerName]}" />
+    <TextBox Text="{Binding Name}" />
+    <TextBlock Classes="label" Text="{Binding L[CustomerAddress]}" />
+    <TextBox Text="{Binding Address}" />
+    <Grid ColumnDefinitions="140,8,*">
+      <StackPanel>
+        <TextBlock Classes="label" Text="{Binding L[PostalCode]}" />
+        <TextBox Text="{Binding PostalCode}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Classes="label" Text="{Binding L[City]}" />
+        <TextBox Text="{Binding City}" />
+      </StackPanel>
+    </Grid>
+  </StackPanel>
+</UserControl>

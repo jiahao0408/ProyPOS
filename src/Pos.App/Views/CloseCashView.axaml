@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.CloseCashView"
+             x:DataType="vm:CloseCashViewModel">
+  <!-- CAJ-02: arqueo y cierre Z -->
+  <Border Classes="dialog" Width="480">
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding L[CloseCashTitle]}" FontSize="24" FontWeight="SemiBold" />
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,8,0,0">
+        <TextBlock Grid.Row="0" Text="{Binding L[ZSalesCount]}" />
+        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SalesCountText}" />
+        <TextBlock Grid.Row="1" Text="{Binding L[ZSalesTotal]}" />
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SalesTotalText}" />
+        <TextBlock Grid.Row="2" Text="{Binding L[PayCard]}" />
+        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CardTotalText}" />
+        <TextBlock Grid.Row="3" Text="{Binding L[OpeningFloat]}" />
+        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding OpeningFloatText}" />
+        <TextBlock Grid.Row="4" Text="{Binding L[ZCashSales]}" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding CashTotalText}" />
+        <TextBlock Grid.Row="5" Text="{Binding L[ZExpectedCash]}" FontWeight="SemiBold" FontSize="18" Margin="0,6,0,0" />
+        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ExpectedCashText}" FontWeight="SemiBold" FontSize="18" Margin="0,6,0,0" />
+      </Grid>
+
+      <TextBlock Classes="label" Text="{Binding L[ZCountedCash]}" />
+      <TextBox Name="CountedBox" Text="{Binding CountedText}" FontSize="24">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding CloseCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+
+      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasDifference}">
+        <TextBlock Text="{Binding L[ZDifference]}" FontSize="22" />
+        <TextBlock Grid.Column="1" Text="{Binding DifferenceText}" FontSize="26" FontWeight="Bold"
+                   Classes.short="{Binding IsShort}" />
+      </Grid>
+
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,12,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                MinHeight="56" Content="{Binding L[CloseCashConfirm]}" Command="{Binding CloseCommand}" />
+      </Grid>
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

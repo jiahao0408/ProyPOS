@@ -37,7 +37,11 @@
             <KeyBinding Gesture="Enter" Command="{Binding SubmitSearchCommand}" />
           </TextBox.KeyBindings>
         </TextBox>
-        <TextBlock DockPanel.Dock="Top" Text="{Binding CashInfo}" FontSize="13" Opacity="0.6" Margin="0,4,0,0" />
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+          <TextBlock Text="{Binding CashInfo}" FontSize="13" Opacity="0.6" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+                  Content="{Binding L[CloseCash]}" Command="{Binding StartCloseCashCommand}" />
+        </Grid>
 
         <Border DockPanel.Dock="Top" Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
           <TextBlock Text="{Binding Message}" FontSize="18" />

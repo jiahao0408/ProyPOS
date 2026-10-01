@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Core;
 using Pos.Core.Domain;
+using Pos.Core.Invoicing;
 using Pos.Core.Localization;
 using Pos.Localization;
 using Pos.Modules.Sales;
@@ -22,12 +23,16 @@ public sealed record QuickCashOption(decimal Amount, string Title);
 public sealed partial class PaymentViewModel : ViewModelBase
 {
     private readonly RegionFormatter _formatter;
-    private readonly Func<PaymentRequest, OperationResult> _confirm;
+    private readonly Func<PaymentRequest, InvoiceCustomer?, OperationResult> _confirm;
     private readonly Action _cancel;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCash), nameof(IsCard), nameof(IsMixed), nameof(ShowCashInput), nameof(ShowCardInput))]
     private PaymentMode _mode = PaymentMode.Cash;
+
+    /// <summary>FAC-02: el cliente pide factura completa con sus datos fiscales.</summary>
+    [ObservableProperty]
+    private bool _wantsCompleteInvoice;
 
     [ObservableProperty]
     private string _cashTenderedText = "";
@@ -42,12 +47,14 @@ public sealed partial class PaymentViewModel : ViewModelBase
     private string _changeText = "";
 
     public PaymentViewModel(ILocalizer localizer, RegionFormatter formatter, decimal total,
-        Func<PaymentRequest, OperationResult> confirm, Action cancel)
+        Func<PaymentRequest, InvoiceCustomer?, OperationResult> confirm, Action cancel,
+        Func<string, Customer?> findCustomer)
         : base(localizer)
     {
         _formatter = formatter;
         _confirm = confirm;
         _cancel = cancel;
+        Customer = new CustomerFormViewModel(localizer, findCustomer);
         Total = total;
         TotalText = formatter.FormatMoney(total);
 
@@ -65,6 +72,8 @@ public sealed partial class PaymentViewModel : ViewModelBase
     public decimal Total { get; }
 
     public string TotalText { get; }
+
+    public CustomerFormViewModel Customer { get; }
 
     public IReadOnlyList<QuickCashOption> QuickCash { get; }
 
@@ -105,7 +114,7 @@ public sealed partial class PaymentViewModel : ViewModelBase
             ShowError("ErrorAmountFormat");
             return;
         }
-        Check(_confirm(request));
+        Check(_confirm(request, WantsCompleteInvoice ? Customer.ToCustomer() : null));
     }
 
     /// <summary>
@@ -197,6 +206,95 @@ public sealed partial class QuickCreateViewModel : ViewModelBase
 
     [RelayCommand]
     private void Cancel() => _cancel();
+}
+
+/// <summary>CAJ-02: arqueo. Se teclea el efectivo contado y se ve el descuadre antes de cerrar.</summary>
+public sealed partial class CloseCashViewModel : ViewModelBase
+{
+    private readonly RegionFormatter _formatter;
+    private readonly Func<decimal, OperationResult> _close;
+    private readonly Action _cancel;
+
+    [ObservableProperty]
+    private string _countedText = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDifference))]
+    private string _differenceText = "";
+
+    [ObservableProperty]
+    private bool _isShort;
+
+    public CloseCashViewModel(ILocalizer localizer, RegionFormatter formatter, Pos.Modules.CashRegister.CashSummary summary,
+        Func<decimal, OperationResult> close, Action cancel)
+        : base(localizer)
+    {
+        _formatter = formatter;
+        _close = close;
+        _cancel = cancel;
+        ExpectedCash = summary.ExpectedCash;
+        SalesCountText = summary.SalesCount.ToString(localizer.Culture);
+        SalesTotalText = formatter.FormatMoney(summary.SalesTotal);
+        CashTotalText = formatter.FormatMoney(summary.CashTotal);
+        CardTotalText = formatter.FormatMoney(summary.CardTotal);
+        OpeningFloatText = formatter.FormatMoney(summary.Session.OpeningFloat);
+        ExpectedCashText = formatter.FormatMoney(summary.ExpectedCash);
+    }
+
+    public decimal ExpectedCash { get; }
+
+    public string SalesCountText { get; }
+
+    public string SalesTotalText { get; }
+
+    public string CashTotalText { get; }
+
+    public string CardTotalText { get; }
+
+    public string OpeningFloatText { get; }
+
+    public string ExpectedCashText { get; }
+
+    public bool HasDifference => DifferenceText.Length > 0;
+
+    partial void OnCountedTextChanged(string value)
+    {
+        if (!_formatter.TryParseAmount(value, out var counted))
+        {
+            DifferenceText = "";
+            return;
+        }
+        var difference = counted - ExpectedCash;
+        IsShort = difference < 0;
+        DifferenceText = (difference > 0 ? "+" : "") + _formatter.FormatMoney(difference);
+    }
+
+    [RelayCommand]
+    private void Close()
+    {
+        if (!_formatter.TryParseAmount(CountedText, out var counted))
+        {
+            ShowError("ErrorAmountFormat");
+            return;
+        }
+        Check(_close(counted));
+    }
+
+    [RelayCommand]
+    private void Cancel() => _cancel();
+}
+
+/// <summary>IMP-01 en modo "preguntar": ¿imprimir el ticket de la venta recién cobrada?</summary>
+public sealed partial class PrintPromptViewModel(ILocalizer localizer, string info, Action print, Action skip)
+    : ViewModelBase(localizer)
+{
+    public string Info { get; } = info;
+
+    [RelayCommand]
+    private void Print() => print();
+
+    [RelayCommand]
+    private void Skip() => skip();
 }
 
 /// <summary>BAZ-02: artículo genérico de una sección con precio libre.</summary>

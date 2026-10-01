@@ -95,6 +95,91 @@ public class ScreenshotTests
         Capture(window, "15-alta-rapida");
         ((QuickCreateViewModel)sale.Dialog!).CancelCommand.Execute(null);
 
+        // Sección 3: factura completa al cobrar, tickets, negocio e impresora
+        sale.SearchText = "8410000000011";
+        sale.SubmitSearchCommand.Execute(null);
+        sale.ChargeCommand.Execute(null);
+        var pay = (PaymentViewModel)sale.Dialog!;
+        pay.WantsCompleteInvoice = true;
+        pay.Customer.Nif = "B12345674";
+        pay.Customer.Name = "Papelería Pérez S.L.";
+        pay.Customer.Address = "Calle Sol 5";
+        pay.Customer.PostalCode = "08001";
+        pay.Customer.City = "Barcelona";
+        Capture(window, "20-cobro-factura-completa");
+        pay.ConfirmCommand.Execute(null);
+
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(TicketsPageViewModel)));
+        var tickets = (TicketsPageViewModel)workspace.CurrentPage!;
+        tickets.Selected = tickets.Invoices.Single(i => i.Code == "T2026-000001");
+        Capture(window, "21-tickets");
+        tickets.InvoiceTicketCommand.Execute(null);
+        var invoiceDialog = (InvoiceTicketViewModel)tickets.Dialog!;
+        invoiceDialog.Customer.Nif = "12345678Z";
+        invoiceDialog.Customer.Name = "Juan García López";
+        invoiceDialog.Customer.Address = "Calle Luna 3, 2º B";
+        invoiceDialog.Customer.PostalCode = "28005";
+        invoiceDialog.Customer.City = "Madrid";
+        Capture(window, "22-facturar-ticket");
+        invoiceDialog.IssueCommand.Execute(null);
+        Capture(window, "23-factura-emitida");
+
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(BusinessPageViewModel)));
+        foreach (var d in "1111")
+            workspace.AdminPrompt!.PinEntry.Digit(d.ToString());
+        Capture(window, "24-negocio");
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(PrinterPageViewModel)));
+        foreach (var d in "1111")
+            workspace.AdminPrompt!.PinEntry.Digit(d.ToString());
+        Capture(window, "25-impresora");
+
+        // Sección 4: entradas, etiquetas, datos y cierre de caja
+        void OpenAdmin(Type page)
+        {
+            workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == page));
+            if (workspace.AdminPrompt is { } prompt)
+                foreach (var d in "1111")
+                    prompt.PinEntry.Digit(d.ToString());
+        }
+
+        OpenAdmin(typeof(ReceiptsPageViewModel));
+        var receiptsPage = (ReceiptsPageViewModel)workspace.CurrentPage!;
+        receiptsPage.NewSupplierName = "Mayorista Oriente";
+        receiptsPage.AddSupplierCommand.Execute(null);
+        receiptsPage.Reference = "ALB-2026-0815";
+        foreach (var code in new[] { "8410000000035", "8410000000011" })
+        {
+            receiptsPage.SearchText = code;
+            receiptsPage.SubmitSearchCommand.Execute(null);
+        }
+        receiptsPage.Lines[0].QuantityText = "3";
+        receiptsPage.Lines[0].CostText = "12";
+        receiptsPage.Lines[1].QuantityText = "24";
+        receiptsPage.Lines[1].CostText = "1,10";
+        Capture(window, "30-entrada");
+
+        OpenAdmin(typeof(LabelsPageViewModel));
+        var labelsPage = (LabelsPageViewModel)workspace.CurrentPage!;
+        labelsPage.SearchText = "Cuaderno";
+        labelsPage.SubmitSearchCommand.Execute(null);
+        labelsPage.SearchText = "Taza";
+        labelsPage.SubmitSearchCommand.Execute(null);
+        labelsPage.Lines[1].CopiesText = "12";
+        Capture(window, "31-etiquetas");
+
+        OpenAdmin(typeof(DataPageViewModel));
+        var dataPage = (DataPageViewModel)workspace.CurrentPage!;
+        var csv = Path.Combine(Folder!, "import.csv");
+        File.WriteAllText(csv, "Nombre;Precio;IVA;Código;Categoría\nPlato hondo;4,50;21;8410000000023;Hogar\n;1;21;;\nGoma;0,40;7;;Papelería\nLibro de cuentos;10,40;4;;Papelería\n");
+        dataPage.LoadFile(csv);
+        Capture(window, "32-datos");
+
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(SalePageViewModel)));
+        var salePage = (SalePageViewModel)workspace.CurrentPage!;
+        salePage.StartCloseCashCommand.Execute(null);
+        ((CloseCashViewModel)salePage.Dialog!).CountedText = "170";
+        Capture(window, "33-cierre-caja");
+
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");
 

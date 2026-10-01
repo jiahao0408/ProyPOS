@@ -48,6 +48,9 @@ public class Product
     /// </summary>
     public int Stock { get; set; }
 
+    /// <summary>Coste medio de una unidad sin IVA (INV-03). Se recalcula con cada entrada de mercancía.</summary>
+    public decimal CostPrice { get; set; }
+
     /// <summary>Unidades por caja del mayorista: recibir 3 cajas de 12 suma 36 unidades (BAZ-04).</summary>
     public int UnitsPerBox { get; set; } = 1;
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Pos.Core.Hardware;
 using Pos.Core.Modules;
 
 namespace Pos.Modules.Hardware;
@@ -11,5 +12,6 @@ public sealed class HardwareModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<IRawPrinter, RawPrinter>();
     }
 }

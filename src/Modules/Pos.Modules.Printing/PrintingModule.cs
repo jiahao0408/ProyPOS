@@ -11,5 +11,8 @@ public sealed class PrintingModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<ReceiptBuilder>();
+        services.AddSingleton<ReportBuilder>();
+        services.AddSingleton<PrintService>();
     }
 }

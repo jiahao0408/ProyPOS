@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, inventario, tickets, facturas, caja y Verifactu**. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **Secciones 1 y 2 terminadas** (Sprints 1 y 2): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. 144 tests. Siguiente: sección 3 (imprimir y facturar). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **Secciones 1 a 4 terminadas** (Sprints 1 a 4): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Entradas de mercancía por cajas, cierre Z, etiquetas, importación de catálogo y copias de seguridad. 242 tests. Siguiente: sección 5 (Verifactu). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -143,7 +143,7 @@ StarSeaPOS/
 └── README.md
 ```
 
-Regla de dependencias: los módulos dependen de `Pos.Core` y `Pos.Data`, nunca entre sí ni de `Pos.App`. Cada módulo registra sus servicios en `ConfigureServices`; las vistas y ViewModels viven en `Pos.App`. CFG no es un módulo aparte: vive en `Pos.Localization` y en la página de Ajustes.
+Regla de dependencias: los módulos dependen de `Pos.Core`, `Pos.Data` y `Pos.Localization`, nunca entre sí ni de `Pos.App`. Cuando un módulo necesita algo de otro, se comunica por una interfaz del núcleo (`IRawPrinter`, `IInvoiceDocuments`) o un punto de extensión de datos (`ISaleHook`: la facturación se engancha al cobro sin que el módulo de ventas la conozca). Cada módulo registra sus servicios en `ConfigureServices`; las vistas y ViewModels viven en `Pos.App`. CFG no es un módulo aparte: vive en `Pos.Localization` y en la página de Ajustes.
 
 ### Cómo está hecha la sección 1
 
@@ -180,6 +180,34 @@ Atajos: **F12** cobrar · **Esc** cerrar la ventana de cobro / alta rápida · *
 - SQLite con `synchronous = FULL`: cuando la app dice "cobrada", la venta ya está en disco aunque se vaya la luz.
 - Triggers en la BD impiden **modificar o borrar** ventas, líneas y pagos (datos de facturación).
 - La línea guarda nombre, precio e IVA del momento: cambiar el producto después no altera ventas pasadas.
+
+### Cómo está hecha la sección 3
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| FAC-01 Factura simplificada | `InvoiceSaleHook`, `InvoiceIssuer` | Cada venta genera su factura **en la misma transacción**. Serie por tipo y año (`T2026`), número correlativo sin huecos (un cobro fallido no gasta número; índice único serie+número). Desglose de base, cuota y total por tipo de IVA |
+| FAC-02 Factura completa | Casilla en la ventana de cobro | NIF validado con su dígito de control (DNI, NIE, CIF), razón social y dirección. Serie `F2026`. El cliente se guarda y se rellena solo al teclear su NIF |
+| FAC-06 Facturar un ticket | Página **Tickets** | Busca por número, fecha o escaneando el QR del ticket. Emite una factura completa que sustituye y referencia a la simplificada; un ticket solo se factura una vez (índice único). Se imprime y se puede guardar en PDF |
+| IMP-01 Imprimir al cobrar | Ajustes > Impresora | Sí / no / preguntar. Se imprime en segundo plano: si la impresora falla, la venta ya está guardada y solo se avisa |
+| IMP-02 Reimprimir | Página **Tickets** | Por número o fecha; la reimpresión lleva `*** COPIA ***` |
+| IMP-03 Cabecera y pie | Ajustes > Negocio y ticket | Logo, nombre, NIF, dirección, teléfono y mensaje, con vista previa en vivo. Sin datos fiscales válidos no se puede cobrar |
+| HW-01 Impresora térmica | `RawPrinter`, `EscPosEncoder` | ESC/POS por **USB** (impresora instalada en Windows, envío RAW), **COM** (también Bluetooth emparejado, que Windows expone como COM), **red** (puerto 9100) o **fichero** (sin impresora). Papel de 58 u 80 mm. Juego de caracteres occidental (PC858: €, ñ, acentos) o chino (GB18030). Botón de prueba |
+
+Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni borrar: triggers en la BD.
+
+### Cómo está hecha la sección 4
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| INV-03 Entradas de mercancía | Página **Entradas**, `ReceiptService` | Proveedor (se crea al vuelo), nº de albarán, productos escaneados o buscados, cantidad y coste. Suma stock y recalcula el **coste medio ponderado** (si el stock era 0 o negativo, vale el coste nuevo). Un código desconocido abre el alta rápida |
+| BAZ-04 Cajas y unidades | Casilla "Caja de N" en cada línea | Con unidades por caja en la ficha, se recibe por cajas: 3 cajas de 12 = 36 unidades; coste unitario = coste de la caja / 12 |
+| CAJ-02 Cierre con arqueo | Botón **Cerrar caja** en Venta | Muestra ventas, efectivo y tarjeta, efectivo esperado (fondo + cobros en efectivo) y el descuadre en vivo al teclear lo contado. Guarda una foto de los totales con número Z correlativo e imprime el cierre Z. No deja cerrar con un ticket a medias |
+| BAZ-01 Etiquetas | Página **Etiquetas**, `LabelService` | Cantidad por producto; imprime nombre, precio y código de barras (EAN-13 o CODE128). Los productos sin código reciben uno interno EAN-13 que empieza por **29** (rango reservado para uso interno) y ya se pueden escanear. Impresora de etiquetas propia o la de tickets |
+| DAT-01 Importar | Página **Datos y copias** | Productos (nombre, precio, IVA, código, categoría, unidades por caja, coste, stock) y clientes. CSV (`;` o `,`, UTF-8 o el Windows-1252 de Excel en español) o Excel. Plantilla descargable, vista previa con el error de cada fila; los códigos o NIF duplicados no se importan; las categorías que no existen se crean |
+| DAT-03 Copia y restauración | Página **Datos y copias**, `BackupService` | Fichero `.sspos` cifrado con contraseña (AES-256-GCM, PBKDF2 600.000 iteraciones): se puede guardar en un USB o en OneDrive y **restaurar en otro PC**. Restaurar pide confirmación y antes guarda una copia del estado actual |
+| Copia diaria automática | Al arrancar | Copia cifrada en `%LOCALAPPDATA%\StarSeaPOS\backups`, una al día, se guardan las 7 últimas |
+
+**Rendimiento de la BD cifrada:** la clave del PC son 32 bytes aleatorios, así que se abre con la clave "en bruto" de SQLCipher (`x'…'`), sin la derivación PBKDF2 que está pensada para contraseñas humanas. Cada conexión pasa de ~1 s a milisegundos.
 
 ## Primeros pasos
 
@@ -220,6 +248,7 @@ $env:STARSEAPOS_SCREENSHOTS = "<carpeta>"; dotnet test tests/Pos.App.Tests --fil
 - Fichero: `%LOCALAPPDATA%\StarSeaPOS\pos.db`, cifrado con SQLCipher.
 - Clave: aleatoria, guardada en `pos.key` junto a la BD y protegida con DPAPI (solo esa cuenta de Windows en ese PC puede usarla). Copiar `pos.db` a otro PC no sirve sin la clave: las copias de seguridad (DAT-03) tendrán su propia contraseña.
 - Las migraciones se aplican solas al arrancar.
+- Copia automática diaria en `backups\` (se guardan 7). Errores no controlados en `logs\errores.log`.
 
 ```powershell
 # Crear una migración nueva (usa DesignTimeDbContextFactory, no necesita la clave real)
@@ -283,11 +312,18 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Sección vs. categoría (BAZ-02, BAZ-03):** las historias de bazar hablan de "secciones" (hogar, papelería, juguetes…) y PRE-02 de "categorías". Propuesta: que sean lo mismo, con una marca para las que admiten artículo genérico.
 - **Clientes (DAT-01):** se importan clientes, pero ninguna historia los gestiona. FAC-02 y FAC-06 piden datos fiscales: propuesta de guardar los clientes de esas facturas y reutilizarlos.
 - **Búsqueda en 30.000 productos:** un `LIKE '%texto%'` no usa índices. Propuesta: índice FTS5 de SQLite para nombre y búsqueda exacta indexada para el código.
-- **Impresora de etiquetas (BAZ-01):** las de etiquetas suelen usar ZPL o TSPL, no ESC/POS. Hay que conocer el modelo concreto.
 - **Bluetooth (HW-01):** el stack solo cubre USB, serie COM y red. En Windows muchas impresoras Bluetooth se exponen como puerto COM virtual; hay que confirmarlo con el modelo real.
 - **Escáner por cámara (HW-04):** implementado el lector USB en modo teclado; la lectura con cámara queda para la versión 2 (exige una librería de visión). Confirmar que basta con el lector.
 - **IVA del artículo genérico y del alta rápida (BAZ-02, BAZ-03):** se usa el 21 %. Si alguna sección vende con otro tipo (por ejemplo libros al 4 %), habría que añadir un IVA por sección.
 - **Stock negativo:** se permite vender aunque el stock sea 0, para no parar la venta por un recuento mal hecho; se muestra en rojo.
+- **QR del ticket (FAC-06):** de momento contiene el número de factura, para encontrarla escaneándolo. En la sección 5 se sustituye por el QR de cotejo de Verifactu (la búsqueda ya entiende un QR con más datos). El lector debe leer QR (2D); los lectores solo 1D no lo leen.
+- **Series:** `T` (simplificadas) y `F` (completas) más el año, numeración que vuelve a 1 cada año. Confirmar con la gestoría.
+- **Precio sin IVA en la factura completa:** se redondea a 2 decimales por línea; el desglose por tipo (base y cuota) es el que vale fiscalmente.
+- **PDF:** QuestPDF con licencia Community (gratuita para empresas con menos de 1 M$ de ingresos anuales).
+- **Clientes extranjeros:** la factura completa solo acepta NIF español (DNI, NIE, CIF). Para clientes de otros países haría falta un NIF-IVA europeo u otro identificador.
+- **Impresora de etiquetas (BAZ-01):** las etiquetas salen en ESC/POS (nombre, precio, código de barras y corte), que funciona en impresoras térmicas de tickets y en muchas de etiquetas en modo ESC/POS. Las impresoras de etiquetas que solo hablan ZPL o TSPL necesitarían otro formato: confirmar el modelo.
+- **Importación:** las columnas se leen por posición (el orden de la plantilla), no por nombre.
+- **Copias:** sin la contraseña de la copia no hay forma de recuperarla. Conviene apuntarla en un lugar seguro.
 - **Backend:** ASP.NET Core o Node.js. ASP.NET Core permite compartir modelos con la app en C#.
 
 ## Contribuir

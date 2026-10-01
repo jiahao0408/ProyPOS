@@ -201,7 +201,7 @@ No hace falta hardware para compilar ni para pasar los tests. Para probar los pe
 | Periférico | Cómo probar | Sin el aparato |
 |---|---|---|
 | **Lector de códigos** (HW-04) | Lector USB configurado en **modo teclado** (HID) y con sufijo **Enter** | Escribir el código en el campo de búsqueda y pulsar Enter: es exactamente lo que hace el lector |
-| **Impresora térmica** (HW-01) | ESC/POS por USB, puerto COM o red (puerto 9100), papel de 58 u 80 mm | Pendiente: un modo "impresora simulada" que guarde el ticket en un fichero |
+| **Impresora térmica** (HW-01) | ESC/POS por USB (instalada en Windows, también con el driver «Generic / Text Only»), puerto COM o red (puerto 9100), papel de 58 u 80 mm. Ajustes > Impresora > Imprimir prueba | Conexión «Sin impresora»: cada ticket se guarda como `.bin` en `%LOCALAPPDATA%StarSeaPOS	ickets`. Se puede mandar a una impresora real con `copy /b ticket.bin \PCImpresora` |
 | **Impresora de etiquetas** (BAZ-01) | Depende del modelo (ESC/POS, ZPL o TSPL): **modelo pendiente de decidir** | — |
 | **Cajón portamonedas** (HW-03) | Conectado a la impresora; se abre con un pulso ESC/POS | — |
 | **Pantalla de cliente** (HW-02) | Segundo monitor, o visor por puerto COM | Ventana normal en el mismo monitor |

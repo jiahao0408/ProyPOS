@@ -4,10 +4,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Core;
 using Pos.Core.Domain;
+using Pos.Core.Invoicing;
 using Pos.Core.Localization;
+using Pos.Core.Printing;
 using Pos.Core.Security;
+using Pos.Data;
 using Pos.Localization;
 using Pos.Modules.CashRegister;
+using Pos.Modules.Invoicing;
+using Pos.Modules.Printing;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
 
@@ -33,8 +38,14 @@ public partial class SalePageViewModel(
     CashRegisterService cash,
     CatalogService catalog,
     SalesService sales,
+    InvoiceService invoices,
+    PrintService printing,
+    ProfileStore profiles,
     RegionFormatter formatter) : PageViewModel(localizer)
 {
+    /// <summary>Última impresión lanzada (para esperar a que termine en los tests).</summary>
+    public Task LastPrint { get; private set; } = Task.CompletedTask;
+
     private const int SearchLimit = 40;
     private const int MinBarcodeLength = 4;
 
@@ -231,7 +242,60 @@ public partial class SalePageViewModel(
         }
 
         ClearMessage();
-        Dialog = new PaymentViewModel(L, formatter, _ticket.Total, confirm: Pay, cancel: CloseDialog);
+        Dialog = new PaymentViewModel(L, formatter, _ticket.Total, confirm: Pay, cancel: CloseDialog,
+            findCustomer: invoices.FindCustomer);
+    }
+
+    // --- Cierre de caja (CAJ-02) ---
+
+    [RelayCommand]
+    private void StartCloseCash()
+    {
+        if (!IsCashOpen || IsDialogOpen || cash.GetOpenSession() is not { } open || cash.GetSummary(open.Id) is not { } summary)
+            return;
+        if (!_ticket.IsEmpty)
+        {
+            ShowError("ErrorTicketNotEmpty");
+            return;
+        }
+
+        Dialog = new CloseCashViewModel(L, formatter, summary,
+            close: counted =>
+            {
+                var result = cash.Close(session.CurrentUser!.Id, counted);
+                if (!result.Success)
+                    return result;
+
+                var closed = result.Value!;
+                Dialog = null;
+                var z = ToZReport(closed);
+                LastPrint = PrintZAsync(z);
+                Load(); // la pantalla vuelve a "caja cerrada"
+                Message = string.Format(L["CashClosedSummary"], z.ZNumber, formatter.FormatMoney(z.Difference));
+                MessageIsError = z.Difference != 0;
+                return OperationResult.Ok();
+            },
+            cancel: CloseDialog);
+    }
+
+    private ZReportDocument ToZReport(CashSummary closed)
+    {
+        var s = closed.Session;
+        return new ZReportDocument(s.ZNumber!.Value, s.OpenedAtUtc, s.ClosedAtUtc!.Value, session.CurrentUser?.Name ?? "",
+            closed.SalesCount, closed.SalesTotal, closed.CashTotal, closed.CardTotal, s.OpeningFloat,
+            closed.ExpectedCash, s.CountedCash!.Value,
+            closed.VatLines.Select(v => new ZReportVatLine(v.Rate, v.Base, v.VatAmount, v.Total)).ToList());
+    }
+
+    /// <summary>CAJ-02: "imprime el cierre Z". Si falla, se avisa; el cierre ya está guardado.</summary>
+    private async Task PrintZAsync(ZReportDocument z)
+    {
+        var outcome = await printing.PrintZReportAsync(z);
+        if (!outcome.Success)
+        {
+            Message = string.Format(L["ErrorPrintFailed"], outcome.Error);
+            MessageIsError = true;
+        }
     }
 
     [RelayCommand]
@@ -241,9 +305,9 @@ public partial class SalePageViewModel(
         FocusSearchRequested?.Invoke();
     }
 
-    private OperationResult Pay(PaymentRequest payment)
+    private OperationResult Pay(PaymentRequest payment, InvoiceCustomer? customer)
     {
-        var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id);
+        var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id, customer);
         if (!result.Success)
             return result;
 
@@ -252,9 +316,48 @@ public partial class SalePageViewModel(
         CloseDialog();
         RefreshTicket();
         RefreshProducts(); // el stock ha cambiado
-        Message = string.Format(L["SaleCompleted"], sale.Id, formatter.FormatMoney(change));
+
+        var invoice = invoices.GetCurrentForSale(sale.Id);
+        var completed = string.Format(L["SaleCompleted"], invoice?.Code ?? sale.Id.ToString(L.Culture), formatter.FormatMoney(change));
+        Message = completed;
         MessageIsError = false;
+
+        // IMP-01: impresión automática configurable (sí / no / preguntar).
+        if (invoice is not null)
+        {
+            switch (profiles.GetPrinter().AutoPrint)
+            {
+                case AutoPrintMode.Yes:
+                    Print(invoice.InvoiceId);
+                    break;
+                case AutoPrintMode.Ask:
+                    Dialog = new PrintPromptViewModel(L, completed,
+                        print: () =>
+                        {
+                            CloseDialog();
+                            Print(invoice.InvoiceId);
+                        },
+                        skip: CloseDialog);
+                    break;
+            }
+        }
         return OperationResult.Ok();
+    }
+
+    /// <summary>Imprime sin bloquear la caja; si falla, la venta ya está guardada y solo se avisa.</summary>
+    private void Print(int invoiceId)
+    {
+        LastPrint = PrintAndReportAsync(invoiceId);
+    }
+
+    private async Task PrintAndReportAsync(int invoiceId)
+    {
+        var outcome = await printing.PrintInvoiceAsync(invoiceId, copy: false);
+        if (!outcome.Success)
+        {
+            Message = string.Format(L["ErrorPrintFailed"], outcome.Error);
+            MessageIsError = true;
+        }
     }
 
     // --- Alta rápida (BAZ-03) ---

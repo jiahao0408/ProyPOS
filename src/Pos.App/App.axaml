@@ -19,6 +19,15 @@
     <DataTemplate DataType="vm:PaymentViewModel"><v:PaymentView /></DataTemplate>
     <DataTemplate DataType="vm:QuickCreateViewModel"><v:QuickCreateView /></DataTemplate>
     <DataTemplate DataType="vm:GenericItemViewModel"><v:GenericItemView /></DataTemplate>
+    <DataTemplate DataType="vm:PrintPromptViewModel"><v:PrintPromptView /></DataTemplate>
+    <DataTemplate DataType="vm:InvoiceTicketViewModel"><v:InvoiceTicketView /></DataTemplate>
+    <DataTemplate DataType="vm:TicketsPageViewModel"><v:TicketsPageView /></DataTemplate>
+    <DataTemplate DataType="vm:BusinessPageViewModel"><v:BusinessPageView /></DataTemplate>
+    <DataTemplate DataType="vm:PrinterPageViewModel"><v:PrinterPageView /></DataTemplate>
+    <DataTemplate DataType="vm:CloseCashViewModel"><v:CloseCashView /></DataTemplate>
+    <DataTemplate DataType="vm:ReceiptsPageViewModel"><v:ReceiptsPageView /></DataTemplate>
+    <DataTemplate DataType="vm:LabelsPageViewModel"><v:LabelsPageView /></DataTemplate>
+    <DataTemplate DataType="vm:DataPageViewModel"><v:DataPageView /></DataTemplate>
   </Application.DataTemplates>
 
   <Application.Resources>
@@ -122,6 +131,11 @@
     <Style Selector="Button.mode.selected">
       <Setter Property="Background" Value="{StaticResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- Descuadre de caja: falta dinero -->
+    <Style Selector="TextBlock.short">
+      <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
     </Style>
 
     <!-- Producto sin stock -->
