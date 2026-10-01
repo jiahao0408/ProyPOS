@@ -54,7 +54,9 @@ public sealed class JsonLocalizer : ILocalizer
         _current = code == DefaultLanguage ? _fallback : Load(code);
         CurrentLanguage = code;
 
+        // "Item[]" es la convención de WPF; "Item" es la que escuchan los bindings compilados de Avalonia.
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentLanguage)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Culture)));
         LanguageChanged?.Invoke(this, EventArgs.Empty);

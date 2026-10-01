@@ -11,5 +11,6 @@ public sealed class UsersModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<UserService>();
     }
 }

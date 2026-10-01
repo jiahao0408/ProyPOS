@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:v="using:Pos.App.Views"
+             xmlns:domain="using:Pos.Core.Domain"
+             x:Class="Pos.App.Views.LoginView"
+             x:DataType="vm:LoginViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <Button Grid.Row="0" HorizontalAlignment="Right" Margin="16"
+            Content="{Binding L[Exit]}" Command="{Binding ExitCommand}" />
+
+    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="900">
+      <TextBlock Classes="title" HorizontalAlignment="Center" Text="{Binding L[WelcomeMessage]}" />
+
+      <!-- 1. Elegir usuario -->
+      <StackPanel IsVisible="{Binding IsChoosingUser}">
+        <TextBlock FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,16" Text="{Binding L[LoginTitle]}" />
+        <ItemsControl ItemsSource="{Binding Users}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel HorizontalAlignment="Center" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="domain:User">
+              <Button Classes="tile" Content="{Binding Name}"
+                      Command="{Binding $parent[ItemsControl].((vm:LoginViewModel)DataContext).SelectUserCommand}"
+                      CommandParameter="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- 2. Teclear el PIN -->
+      <StackPanel IsVisible="{Binding !IsChoosingUser}" HorizontalAlignment="Center" Width="340">
+        <TextBlock FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" Text="{Binding SelectedUser.Name}" />
+        <TextBlock FontSize="16" HorizontalAlignment="Center" Margin="0,4,0,12" Text="{Binding L[EnterPin]}" />
+        <v:PinPadView DataContext="{Binding PinEntry}" />
+        <Button Margin="0,12,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Content="{Binding L[BackToUsers]}" Command="{Binding BackToUsersCommand}" />
+        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+          <TextBlock Text="{Binding Message}" />
+        </Border>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

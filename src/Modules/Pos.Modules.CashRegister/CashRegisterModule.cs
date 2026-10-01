@@ -11,5 +11,6 @@ public sealed class CashRegisterModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<CashRegisterService>();
     }
 }

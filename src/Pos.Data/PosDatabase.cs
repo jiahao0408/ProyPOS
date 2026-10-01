@@ -6,6 +6,10 @@ namespace Pos.Data;
 
 public static class PosDatabase
 {
+    /// <summary>Carpeta de datos de la app: %LOCALAPPDATA%\ProyPOS en Windows.</summary>
+    public static string DefaultDataDirectory { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProyPOS");
+
     /// <summary>Opciones para abrir la BD local cifrada con SQLCipher.</summary>
     public static DbContextOptions<PosDbContext> CreateOptions(string databasePath, string encryptionKey)
     {
@@ -26,9 +30,24 @@ public static class PosDatabase
             .Options;
     }
 
-    /// <summary>Crea la BD si no existe y aplica las migraciones pendientes.</summary>
-    public static async Task MigrateAsync(PosDbContext db, CancellationToken ct = default) =>
-        await db.Database.MigrateAsync(ct);
+    /// <summary>Abre (o crea) la BD de la carpeta indicada y aplica las migraciones pendientes.</summary>
+    public static IDbContextFactory<PosDbContext> Open(string dataDirectory)
+    {
+        Directory.CreateDirectory(dataDirectory);
+        var key = DatabaseKeyStore.GetOrCreateKey(Path.Combine(dataDirectory, "pos.key"));
+        var options = CreateOptions(Path.Combine(dataDirectory, "pos.db"), key);
+        var factory = new PosDbContextFactory(options);
+
+        using var db = factory.CreateDbContext();
+        db.Database.Migrate();
+
+        return factory;
+    }
+}
+
+public sealed class PosDbContextFactory(DbContextOptions<PosDbContext> options) : IDbContextFactory<PosDbContext>
+{
+    public PosDbContext CreateDbContext() => new(options);
 }
 
 /// <summary>Solo para "dotnet ef migrations add": las migraciones no necesitan la clave real.</summary>

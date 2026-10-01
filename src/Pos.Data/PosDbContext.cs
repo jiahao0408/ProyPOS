@@ -9,6 +9,7 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<CashSession> CashSessions => Set<CashSession>();
+    public DbSet<Setting> Settings => Set<Setting>();
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -16,12 +17,15 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
         {
             e.Property(u => u.Name).HasMaxLength(100);
             e.Property(u => u.LanguageCode).HasMaxLength(10);
+            e.HasIndex(u => u.Name).IsUnique();
+            e.Ignore(u => u.IsAdmin);
         });
 
         model.Entity<Category>(e =>
         {
             e.Property(c => c.Name).HasMaxLength(100);
             e.Property(c => c.Color).HasMaxLength(7);
+            e.HasIndex(c => c.Name).IsUnique();
         });
 
         model.Entity<Product>(e =>
@@ -31,6 +35,7 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Property(p => p.VatRate).HasPrecision(5, 2);
             e.Property(p => p.Barcode).HasMaxLength(64);
             e.HasIndex(p => p.Barcode).IsUnique(); // PRE-01; SQLite admite varios NULL en un índice único
+            e.HasIndex(p => p.Name);
             e.HasIndex(p => p.PendingReview);
             e.ToTable(t => t.HasCheckConstraint("CK_Product_UnitsPerBox", "UnitsPerBox >= 1"));
             e.HasOne(p => p.Category)
@@ -44,6 +49,13 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Property(s => s.OpeningFloat).HasPrecision(10, 2);
             e.Property(s => s.CountedCash).HasPrecision(10, 2);
             e.Ignore(s => s.IsOpen);
+            e.HasIndex(s => s.ClosedAtUtc);
+        });
+
+        model.Entity<Setting>(e =>
+        {
+            e.HasKey(s => s.Key);
+            e.Property(s => s.Key).HasMaxLength(100);
         });
     }
 }

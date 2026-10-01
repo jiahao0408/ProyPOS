@@ -1,5 +1,5 @@
-using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Pos.Localization;
 
 namespace Pos.Core.Tests;
@@ -36,6 +36,37 @@ public class LocalizationTests
     public void EveryLanguage_HasNoEmptyTexts(string fileName)
     {
         Assert.DoesNotContain(Read(fileName), entry => string.IsNullOrWhiteSpace(entry.Value));
+    }
+
+    /// <summary>
+    /// CFG-01: ningún texto queda sin traducir. Busca en el código fuente las claves que se usan
+    /// (L[Clave] en XAML, L["Clave"] y claves de error en C#) y comprueba que existen.
+    /// </summary>
+    [Fact]
+    public void EveryKeyUsedInSourceCode_ExistsInSpanish()
+    {
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (root is not null && !File.Exists(Path.Combine(root.FullName, "ProyPOS.sln")))
+            root = root.Parent;
+        Assert.NotNull(root);
+
+        Regex[] xamlPatterns = [new(@"\{Binding [^}]*L\[([A-Za-z]+)\]")];
+        Regex[] csharpPatterns =
+        [
+            new(@"L\[""([A-Za-z]+)""\]"),
+            new(@"""((?:Error|Confirm|Nav|Role|Module)[A-Z][A-Za-z]+)"""),
+            new(@"Show(?:Error|Info)\(""([A-Za-z]+)""\)"),
+        ];
+        var used = Directory.EnumerateFiles(Path.Combine(root.FullName, "src"), "*.*", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
+            .SelectMany(f => (f.EndsWith(".axaml") ? xamlPatterns : f.EndsWith(".cs") ? csharpPatterns : [])
+                .SelectMany(p => p.Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)))
+            .ToHashSet();
+
+        var missing = used.Except(Read("es.json").Keys).Order().ToList();
+
+        Assert.True(used.Count > 50, "No se encontraron claves: ¿ha cambiado la forma de usarlas?");
+        Assert.Empty(missing);
     }
 
     [Fact]

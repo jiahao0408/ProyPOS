@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.FirstRunView"
+             x:DataType="vm:FirstRunViewModel">
+  <Grid>
+  <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="16"
+          Content="{Binding L[Exit]}" Command="{Binding ExitCommand}" />
+  <StackPanel Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <TextBlock Classes="title" Text="{Binding L[FirstRunTitle]}" />
+    <TextBlock Text="{Binding L[FirstRunIntro]}" TextWrapping="Wrap" FontSize="16" />
+
+    <TextBlock Classes="label" Text="{Binding L[AdminName]}" />
+    <TextBox Name="NameBox" Text="{Binding Name}" />
+
+    <TextBlock Classes="label" Text="{Binding L[Pin]}" />
+    <TextBox Name="PinBox" Text="{Binding Pin}" PasswordChar="●" MaxLength="4" />
+
+    <TextBlock Classes="label" Text="{Binding L[PinConfirm]}" />
+    <TextBox Name="PinConfirmBox" Text="{Binding PinConfirm}" PasswordChar="●" MaxLength="4" />
+
+    <Button Classes="primary" Margin="0,20,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+            Content="{Binding L[CreateAdmin]}" Command="{Binding CreateAdminCommand}" IsDefault="True" />
+
+    <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+      <TextBlock Text="{Binding Message}" />
+    </Border>
+  </StackPanel>
+  </Grid>
+</UserControl>

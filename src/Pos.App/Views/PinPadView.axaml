@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PinPadView"
+             x:DataType="vm:PinEntryViewModel"
+             Focusable="True">
+  <StackPanel HorizontalAlignment="Center" Spacing="12">
+    <TextBlock Text="{Binding Masked}" FontSize="40" LetterSpacing="12" HorizontalAlignment="Center" />
+    <UniformGrid Columns="3">
+      <Button Classes="key" Content="1" Command="{Binding DigitCommand}" CommandParameter="1" />
+      <Button Classes="key" Content="2" Command="{Binding DigitCommand}" CommandParameter="2" />
+      <Button Classes="key" Content="3" Command="{Binding DigitCommand}" CommandParameter="3" />
+      <Button Classes="key" Content="4" Command="{Binding DigitCommand}" CommandParameter="4" />
+      <Button Classes="key" Content="5" Command="{Binding DigitCommand}" CommandParameter="5" />
+      <Button Classes="key" Content="6" Command="{Binding DigitCommand}" CommandParameter="6" />
+      <Button Classes="key" Content="7" Command="{Binding DigitCommand}" CommandParameter="7" />
+      <Button Classes="key" Content="8" Command="{Binding DigitCommand}" CommandParameter="8" />
+      <Button Classes="key" Content="9" Command="{Binding DigitCommand}" CommandParameter="9" />
+      <Button Classes="key" Content="C" Command="{Binding ClearCommand}" />
+      <Button Classes="key" Content="0" Command="{Binding DigitCommand}" CommandParameter="0" />
+      <Button Classes="key" Content="⌫" Command="{Binding BackspaceCommand}" />
+    </UniformGrid>
+  </StackPanel>
+</UserControl>

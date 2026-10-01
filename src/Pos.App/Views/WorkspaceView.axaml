@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.WorkspaceView"
+             x:DataType="vm:WorkspaceViewModel">
+  <Grid>
+    <DockPanel>
+      <!-- Barra superior -->
+      <Border DockPanel.Dock="Top" Padding="16,8"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+            <TextBlock Text="{Binding L[AppTitle]}" FontSize="24" FontWeight="SemiBold" />
+            <TextBlock VerticalAlignment="Center" FontSize="16" Opacity="0.8">
+              <Run Text="{Binding UserName}" FontWeight="SemiBold" />
+              <Run Text=" · " />
+              <Run Text="{Binding RoleTitle}" />
+            </TextBlock>
+          </StackPanel>
+          <Button Grid.Column="1" Margin="0,0,8,0" Content="{Binding L[ToggleTheme]}" Command="{Binding ToggleThemeCommand}" />
+          <Button Grid.Column="2" Margin="0,0,8,0" Content="{Binding L[Logout]}" Command="{Binding LogoutCommand}" />
+          <Button Grid.Column="3" Content="{Binding L[Exit]}" Command="{Binding ExitCommand}" />
+        </Grid>
+      </Border>
+
+      <!-- Menú lateral -->
+      <Border DockPanel.Dock="Left" Width="220" Padding="12"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <ItemsControl ItemsSource="{Binding NavItems}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavItemViewModel">
+              <Button Classes="nav" Classes.selected="{Binding IsSelected}" Content="{Binding Title}"
+                      Command="{Binding $parent[ItemsControl].((vm:WorkspaceViewModel)DataContext).NavigateCommand}"
+                      CommandParameter="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+
+      <!-- Página actual -->
+      <ContentControl Margin="24" Content="{Binding CurrentPage}" />
+    </DockPanel>
+
+    <!-- USR-02: PIN de administrador, encima de todo -->
+    <Border IsVisible="{Binding IsAdminPromptOpen}" Background="#80000000">
+      <ContentControl Content="{Binding AdminPrompt}" />
+    </Border>
+  </Grid>
+</UserControl>

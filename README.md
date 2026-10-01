@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, inventario, tickets, facturas, caja y Verifactu**. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** esqueleto de la solución creado (núcleo, datos, idiomas, 11 módulos vacíos, app Avalonia y tests). Siguiente paso: Sprint 1. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **Sección 1 (Sprint 1) terminada**: primer arranque, login con PIN y bloqueo, roles con PIN de administrador, catálogo de productos y categorías, apertura de caja, 6 idiomas con cambio en vivo y formatos regionales. 110 tests. Siguiente: sección 2 (vender y cobrar). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -135,13 +135,29 @@ ProyPOS/
 │       └── Pos.Modules.Bazaar/       # BAZ
 ├── locales/                     # es.json, ca.json, en.json, zh.json, de.json, fr.json
 ├── tests/
-│   └── Pos.Core.Tests/          # PIN, IVA y completitud de las traducciones
+│   ├── Pos.Core.Tests/          # PIN, IVA, traducciones completas (incluidas las claves usadas en el código)
+│   ├── Pos.Modules.Tests/       # Servicios de negocio sobre SQLite real (en memoria y cifrada en disco)
+│   └── Pos.App.Tests/           # Recorridos de interfaz headless (Avalonia) y capturas de pantalla
 ├── docs/
 │   └── user-stories.md
 └── README.md
 ```
 
-Regla de dependencias: los módulos dependen de `Pos.Core`, nunca entre sí ni de `Pos.App`. Así se añaden módulos nuevos sin tocar el núcleo. CFG no es un módulo aparte: vive en `Pos.Localization` y en los ajustes de la app.
+Regla de dependencias: los módulos dependen de `Pos.Core` y `Pos.Data`, nunca entre sí ni de `Pos.App`. Cada módulo registra sus servicios en `ConfigureServices`; las vistas y ViewModels viven en `Pos.App`. CFG no es un módulo aparte: vive en `Pos.Localization` y en la página de Ajustes.
+
+### Cómo está hecha la sección 1
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| USR-01 PIN de 4 dígitos | `UserService.SignIn`, `LoginView`, `PinPadView` | Tocar el nombre y teclear el PIN (táctil o teclado). Tras 5 fallos, bloqueo de 5 minutos; un admin puede desbloquear antes. Cierre de sesión por inactividad configurable (5 min por defecto) |
+| USR-02 Roles | `WorkspaceViewModel.Navigate`, `AdminPinPromptView` | Productos, Categorías, Usuarios y Ajustes son de admin: a un cajero se le pide el PIN de un admin para esa visita. No se puede quitar el último admin |
+| PRE-01 Productos | `CatalogService`, `ProductsPageView` | Nombre, precio con IVA incluido, IVA (21/10/4/0 %), código único, categoría, foto, unidades por caja. Los productos no se borran: se desactivan |
+| PRE-02 Categorías | `CatalogService`, `CategoriesPageView`, `SalePageView` | Botones de color en la venta. Una categoría puede marcarse como sección de artículo genérico (BAZ-02) |
+| CAJ-01 Abrir caja | `CashRegisterService`, `SalePageView` | Con la caja cerrada, la pantalla de venta solo deja abrirla |
+| CFG-01 Idioma | `JsonLocalizer`, `SettingsPageView` | Cambia todos los textos sin reiniciar. Un test falla si el código usa una clave que no existe |
+| CFG-04 Región | `RegionFormatter` | Euro por defecto; separadores según el idioma; formato de fecha elegible. `12.50` y `12,50` se leen igual al teclear importes |
+
+Primer arranque: con la BD vacía, la app pide crear el administrador.
 
 ## Primeros pasos
 
@@ -157,32 +173,36 @@ Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, 
 
 ### Compilar y ejecutar
 
-De momento la app abre una ventana a pantalla completa con selector de idioma (cambia en vivo), tema claro/oscuro y la lista de módulos cargados.
-
 ```bash
 git clone <url-del-repo> ProyPOS
 cd ProyPOS
-dotnet restore
+dotnet tool restore          # dotnet-ef, versión fijada en .config/dotnet-tools.json
 dotnet build
-dotnet run --project src/Pos.App
+dotnet run --project src/Pos.App -- --windowed
 ```
+
+- `--windowed`: ventana maximizada en lugar de pantalla completa (cómodo para desarrollar).
+- `PROYPOS_DATA_DIR=<carpeta>`: usa otra carpeta de datos en vez de `%LOCALAPPDATA%\ProyPOS` (útil para empezar con una BD vacía).
 
 ### Tests
 
 ```bash
 dotnet test
+
+# Además, capturas PNG de las pantallas para revisarlas a ojo:
+PROYPOS_SCREENSHOTS=<carpeta> dotnet test tests/Pos.App.Tests --filter ScreenshotTests
 ```
 
 ### Base de datos
 
-```bash
-dotnet tool install --global dotnet-ef --version 8.*
+- Fichero: `%LOCALAPPDATA%\ProyPOS\pos.db`, cifrado con SQLCipher.
+- Clave: aleatoria, guardada en `pos.key` junto a la BD y protegida con DPAPI (solo esa cuenta de Windows en ese PC puede usarla). Copiar `pos.db` a otro PC no sirve sin la clave: las copias de seguridad (DAT-03) tendrán su propia contraseña.
+- Las migraciones se aplican solas al arrancar.
 
+```bash
 # Crear una migración nueva (usa DesignTimeDbContextFactory, no necesita la clave real)
 dotnet ef migrations add <Nombre> --project src/Pos.Data
 ```
-
-La BD se abre siempre cifrada (`PosDatabase.CreateOptions`). Pendiente para el Sprint 1: de dónde sale la clave (por ejemplo, DPAPI en Windows) y aplicar las migraciones al arrancar.
 
 ## Idiomas
 

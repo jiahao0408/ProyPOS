@@ -96,12 +96,12 @@ dotnet --list-sdks   # debe aparecer 8.0.xxx
 
 ### 3.2 Herramienta de migraciones (EF Core)
 
-```bash
-dotnet tool install --global dotnet-ef --version 8.*
-dotnet ef --version
-```
+Es una herramienta **local** del repositorio: su versión está fijada en [.config/dotnet-tools.json](.config/dotnet-tools.json). Desde la raíz del proyecto:
 
-Si ya la tienes en otra versión: `dotnet tool update --global dotnet-ef --version 8.*`.
+```bash
+dotnet tool restore
+dotnet ef --version   # 8.0.x
+```
 
 ### 3.3 Opcionales
 
@@ -140,14 +140,16 @@ Abrir siempre la carpeta raíz (o `ProyPOS.sln`), no un proyecto suelto, para qu
 ```bash
 git clone <url-del-repo> ProyPOS
 cd ProyPOS
-dotnet restore
+dotnet tool restore
 dotnet build
 ```
 
 | Acción | Comando |
 |---|---|
-| Ejecutar la app | `dotnet run --project src/Pos.App` |
+| Ejecutar la app (pantalla completa, como en la tienda) | `dotnet run --project src/Pos.App` |
+| Ejecutar la app en ventana (para desarrollar) | `dotnet run --project src/Pos.App -- --windowed` |
 | Pasar los tests | `dotnet test` |
+| Sacar capturas de las pantallas | `PROYPOS_SCREENSHOTS=<carpeta> dotnet test tests/Pos.App.Tests --filter ScreenshotTests` |
 | Compilar en Release | `dotnet build -c Release` |
 | Publicar para Windows (un ejecutable) | `dotnet publish src/Pos.App -c Release -r win-x64 --self-contained` |
 
@@ -156,8 +158,24 @@ El ejecutable se llama `ProyPOS.exe`. Al compilar se copian los idiomas a `bin/.
 ## 6. Base de datos local
 
 - Motor: **SQLite cifrado con SQLCipher**, a través de EF Core 8.
+- Ubicación: `%LOCALAPPDATA%\ProyPOS\` (`pos.db` + `pos.key`). En Linux y macOS, la carpeta equivalente del usuario.
+- Clave: aleatoria, creada en el primer arranque y guardada en `pos.key`, protegida con **DPAPI** (solo la misma cuenta de Windows en el mismo PC la puede leer).
+- Las migraciones pendientes se aplican **solas al arrancar** la app.
 - La base de datos **siempre** se abre con clave (`PosDatabase.CreateOptions`); sin clave lanza un error.
 - Los ficheros `*.db` están en `.gitignore`: nunca se suben, porque contendrán ventas y facturas.
+
+### BD de desarrollo aparte
+
+Para no mezclar pruebas con la BD normal, se puede usar otra carpeta con la variable `PROYPOS_DATA_DIR`:
+
+```powershell
+$env:PROYPOS_DATA_DIR = "C:\temp\proypos-dev"
+dotnet run --project src/Pos.App -- --windowed
+```
+
+Con la carpeta vacía, la app arranca en **primer arranque** y pide crear el administrador. Para empezar de cero, borrar la carpeta.
+
+> **Ojo:** si se borra `pos.key`, `pos.db` ya no se puede abrir. Si se cambia de cuenta de Windows, tampoco.
 
 ### Migraciones
 
@@ -171,16 +189,6 @@ dotnet ef migrations list --project src/Pos.Data
 
 Las migraciones usan `DesignTimeDbContextFactory`, que crea un `pos-design.db` temporal con una clave de prueba. Ese fichero se puede borrar sin problema.
 
-### Pendiente (Sprint 1)
-
-Todavía no está decidido ni implementado:
-
-- **Dónde se guarda la BD** en el PC de la tienda. Propuesta: `%LOCALAPPDATA%\ProyPOS\pos.db` en Windows.
-- **De dónde sale la clave.** Propuesta: clave aleatoria protegida con DPAPI en Windows.
-- **Aplicar las migraciones al arrancar** la app.
-
-Cuando se implemente, esta sección explicará cómo crear una BD de desarrollo con datos de prueba.
-
 ## 7. Idiomas
 
 Los textos están en [locales/](locales/), un JSON por idioma (`es`, `ca`, `en`, `zh`, `de`, `fr`).
@@ -190,7 +198,7 @@ Los textos están en [locales/](locales/), un JSON por idioma (`es`, `ca`, `en`,
 1. Añadir la clave a `es.json`.
 2. Añadir la misma clave a **todos** los demás ficheros.
 3. Usarla en XAML con `{Binding L[MiClave]}`.
-4. Ejecutar `dotnet test`: un test falla si algún idioma tiene claves de más o de menos, o textos vacíos.
+4. Ejecutar `dotnet test`: un test falla si algún idioma tiene claves de más o de menos, si hay textos vacíos o si el código usa una clave que no existe en `es.json`.
 
 **Añadir un idioma:** copiar `es.json` como `<código>.json` (por ejemplo `it.json`), traducir los valores y poner su nombre en `LanguageName`. No hace falta recompilar: basta con dejar el fichero en la carpeta `locales/` junto al ejecutable.
 

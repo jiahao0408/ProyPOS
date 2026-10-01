@@ -3,7 +3,13 @@
     <OutputType>WinExe</OutputType>
     <AssemblyName>ProyPOS</AssemblyName>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- Bindings compilados: un error en un binding de XAML falla al compilar, no en la tienda. -->
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pos.App.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />

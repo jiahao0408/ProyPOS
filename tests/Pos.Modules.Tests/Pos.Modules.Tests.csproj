@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pos.Data\Pos.Data.csproj" />
+    <ProjectReference Include="..\..\src\Pos.Localization\Pos.Localization.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Users\Pos.Modules.Users.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Products\Pos.Modules.Products.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\locales\*.json" Link="locales\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,15 +1,111 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:v="using:Pos.App.Views"
              x:Class="Pos.App.App"
              RequestedThemeVariant="Default">
+
+  <!-- Cada ViewModel se muestra con su vista -->
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:FirstRunViewModel"><v:FirstRunView /></DataTemplate>
+    <DataTemplate DataType="vm:LoginViewModel"><v:LoginView /></DataTemplate>
+    <DataTemplate DataType="vm:WorkspaceViewModel"><v:WorkspaceView /></DataTemplate>
+    <DataTemplate DataType="vm:AdminPinPromptViewModel"><v:AdminPinPromptView /></DataTemplate>
+    <DataTemplate DataType="vm:SalePageViewModel"><v:SalePageView /></DataTemplate>
+    <DataTemplate DataType="vm:ProductsPageViewModel"><v:ProductsPageView /></DataTemplate>
+    <DataTemplate DataType="vm:CategoriesPageViewModel"><v:CategoriesPageView /></DataTemplate>
+    <DataTemplate DataType="vm:UsersPageViewModel"><v:UsersPageView /></DataTemplate>
+    <DataTemplate DataType="vm:SettingsPageViewModel"><v:SettingsPageView /></DataTemplate>
+  </Application.DataTemplates>
+
+  <Application.Resources>
+    <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#DC2626" />
+    <SolidColorBrush x:Key="OkBrush" Color="#16A34A" />
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
+
     <!-- Botones grandes para uso táctil -->
     <Style Selector="Button">
       <Setter Property="MinHeight" Value="48" />
       <Setter Property="MinWidth" Value="48" />
       <Setter Property="FontSize" Value="18" />
       <Setter Property="Padding" Value="16,8" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="{StaticResource ErrorBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="TextBox, ComboBox">
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="28" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Opacity" Value="0.75" />
+      <Setter Property="Margin" Value="0,8,0,4" />
+    </Style>
+
+    <!-- Mensajes de error / confirmación -->
+    <Style Selector="Border.message">
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Margin" Value="0,12,0,0" />
+      <Setter Property="Background" Value="{StaticResource OkBrush}" />
+    </Style>
+    <Style Selector="Border.message.error">
+      <Setter Property="Background" Value="{StaticResource ErrorBrush}" />
+    </Style>
+    <Style Selector="Border.message TextBlock">
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Menú lateral -->
+    <Style Selector="Button.nav">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Margin" Value="0,0,0,6" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.nav.selected">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- Teclado de PIN -->
+    <Style Selector="Button.key">
+      <Setter Property="Width" Value="96" />
+      <Setter Property="Height" Value="72" />
+      <Setter Property="Margin" Value="4" />
+      <Setter Property="FontSize" Value="28" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Botones de categoría y producto en la venta -->
+    <Style Selector="Button.tile">
+      <Setter Property="Width" Value="160" />
+      <Setter Property="Height" Value="88" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
   </Application.Styles>
 </Application>

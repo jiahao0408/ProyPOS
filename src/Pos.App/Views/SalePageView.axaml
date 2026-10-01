@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.SalePageView"
+             x:DataType="vm:SalePageViewModel">
+  <Grid>
+    <!-- CAJ-01: caja cerrada -->
+    <StackPanel IsVisible="{Binding IsCashClosed}" Width="420" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <TextBlock Classes="title" Text="{Binding L[CashClosedTitle]}" />
+      <TextBlock Text="{Binding L[CashClosedHint]}" TextWrapping="Wrap" FontSize="16" />
+      <TextBlock Classes="label" Text="{Binding L[OpeningFloat]}" />
+      <TextBox Text="{Binding OpeningFloatText}" />
+      <Button Classes="primary" Margin="0,16,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              Content="{Binding L[OpenCash]}" Command="{Binding OpenCashCommand}" IsDefault="True" />
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+
+    <!-- Caja abierta: categorías y productos (PRE-02) -->
+    <DockPanel IsVisible="{Binding IsCashOpen}">
+      <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+        <TextBlock Classes="title" Margin="0" Text="{Binding L[NavSale]}" />
+        <TextBlock Text="{Binding CashInfo}" FontSize="15" Opacity="0.75" />
+        <TextBlock Text="{Binding L[SaleTicketComingSoon]}" FontSize="15" Opacity="0.75" />
+      </StackPanel>
+
+      <ScrollViewer DockPanel.Dock="Top" MaxHeight="220" Margin="0,0,0,12">
+        <ItemsControl ItemsSource="{Binding Categories}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CategoryButton">
+              <Button Classes="tile" Background="{Binding Background, TargetNullValue={StaticResource ButtonBackground}}"
+                      Command="{Binding $parent[ItemsControl].((vm:SalePageViewModel)DataContext).SelectCategoryCommand}"
+                      CommandParameter="{Binding}">
+                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="SemiBold" />
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Products}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ProductButton">
+              <Button Classes="tile">
+                <StackPanel>
+                  <TextBlock Text="{Binding Name}" TextWrapping="Wrap" TextAlignment="Center" FontSize="15" />
+                  <TextBlock Text="{Binding Price}" TextAlignment="Center" FontWeight="SemiBold" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+  </Grid>
+</UserControl>

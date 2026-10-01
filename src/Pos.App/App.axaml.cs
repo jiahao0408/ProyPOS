@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,19 +10,18 @@ namespace Pos.App;
 
 public partial class App : Application
 {
-    public IServiceProvider Services { get; private set; } = null!;
-
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
-        Services = Composition.BuildServices();
-
+        // En los tests de interfaz (headless) no hay escritorio: cada test monta sus propias pantallas.
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var services = Composition.BuildServices(AppEnvironment.Default());
             desktop.MainWindow = new MainWindow
             {
-                DataContext = Services.GetRequiredService<MainWindowViewModel>(),
+                DataContext = services.GetRequiredService<ShellViewModel>(),
+                WindowState = Program.Windowed ? WindowState.Maximized : WindowState.FullScreen,
             };
         }
 
