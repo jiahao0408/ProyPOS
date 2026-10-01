@@ -38,6 +38,8 @@ backups/
 *.pfx
 *.p12
 appsettings.*.local.json
+# Datos reales del productor (NIF y dirección personales): la plantilla es producer.example.json
+src/Pos.App/producer.json
 *.env
 .env*
 

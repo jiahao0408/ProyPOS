@@ -155,7 +155,7 @@ El ejecutable se llama `StarSeaPOS.exe`. Al compilar se copian los idiomas a `bi
 
 Pasa los tests, publica la app *self-contained* para `win-x64` (el PC de la tienda no necesita .NET) y genera `artifacts\installer\StarSeaPOS-1.0.0.msi` con WiX Toolset 5 (se descarga solo como paquete NuGet). El MSI instala en `C:\Program Files\StarSeaPOS`, crea accesos directos en el menú Inicio y el escritorio, solo se instala en Windows 11 y, al instalar una versión nueva, sustituye a la anterior. Desinstalar **no** borra los datos de `%LOCALAPPDATA%\StarSeaPOS`.
 
-Antes de entregar una versión: completar `src\Pos.App\producer.json` (datos del productor para Verifactu).
+Antes de entregar una versión: copiar `src\Pos.App\producer.example.json` como `src\Pos.App\producer.json` y completarlo (datos del productor para Verifactu). `producer.json` está en `.gitignore`: los datos personales no se suben al repositorio.
 
 ## 6. Base de datos local
 

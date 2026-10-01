@@ -39,7 +39,12 @@
 
   <!-- Las traducciones se copian junto al ejecutable como ficheros sueltos: se pueden añadir sin recompilar. -->
   <ItemGroup>
-    <None Include="producer.json" CopyToOutputDirectory="PreserveNewest" />
+    <!--
+      Datos del productor (VFA-06). producer.json tiene los datos reales y NO se sube a git (NIF y dirección
+      personales); si no existe, se copia la plantilla producer.example.json y la app avisa de que faltan datos.
+    -->
+    <None Include="producer.json" Condition="Exists('producer.json')" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="producer.example.json" Condition="!Exists('producer.json')" Link="producer.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\locales\*.json" Link="locales\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

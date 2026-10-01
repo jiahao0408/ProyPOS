@@ -1,5 +1,5 @@
 {
-  "_comentario": "Datos del productor del software (VFA-06 y bloque SistemaInformatico de Verifactu). Completar antes de usar Verifactu en producción. Los valores entre corchetes son pendientes.",
+  "_comentario": "Datos del productor del software (VFA-06 y bloque SistemaInformatico de Verifactu). Copiar como producer.json (no se sube a git) y completar antes de usar Verifactu en producción. Los valores entre corchetes son pendientes.",
   "name": "[COMPLETAR: razón social del productor del software]",
   "nif": "[COMPLETAR: NIF del productor]",
   "address": "[COMPLETAR: dirección postal de contacto]",

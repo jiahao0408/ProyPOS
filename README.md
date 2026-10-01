@@ -218,7 +218,7 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 | Instalador | `installer/` | MSI (WiX 5) por máquina, solo Windows 11, con la app *self-contained* (no hace falta instalar .NET), accesos directos en el menú Inicio y el escritorio. Desinstalar no borra los datos. `.\installer\build-installer.ps1 -Version 1.0.0` |
 
 **Antes de usar Verifactu en producción:**
-1. Completar `producer.json` con los datos reales del productor del software (la página Acerca de avisa mientras falten).
+1. Completar `src\Pos.App\producer.json` con los datos reales del productor del software (la página Acerca de avisa mientras falten). Ese fichero **no se sube a git** (lleva NIF y dirección personales): en el repositorio solo está la plantilla `producer.example.json`, que se copia como `producer.json` en cada PC donde se compile el instalador.
 2. Cargar el certificado y probar en el **entorno de pruebas** de la AEAT: enviar facturas de prueba y revisar que se aceptan. El XML sigue los esquemas `SuministroLR.xsd` / `SuministroInformacion.xsd`, pero no se ha podido validar contra el servidor real sin certificado.
 3. Activar el envío y pasar a producción.
 
