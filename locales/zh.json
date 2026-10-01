@@ -1,0 +1,17 @@
+{
+  "LanguageName": "中文",
+  "AppTitle": "ProyPOS",
+  "WelcomeMessage": "欢迎使用 ProyPOS",
+  "ModulesLoaded": "已加载的模块",
+  "Language": "语言",
+  "ToggleTheme": "浅色/深色主题",
+  "Exit": "退出",
+  "ModuleSales": "销售与收款",
+  "ModuleProducts": "商品与价格",
+  "ModuleInventory": "库存",
+  "ModulePrinting": "小票打印",
+  "ModuleInvoicing": "开票",
+  "ModuleCashRegister": "收银",
+  "ModuleHardware": "硬件",
+  "ModuleUsers": "用户与安全"
+}

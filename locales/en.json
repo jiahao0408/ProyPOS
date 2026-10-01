@@ -1,0 +1,17 @@
+{
+  "LanguageName": "English",
+  "AppTitle": "ProyPOS",
+  "WelcomeMessage": "Welcome to ProyPOS",
+  "ModulesLoaded": "Loaded modules",
+  "Language": "Language",
+  "ToggleTheme": "Light/dark theme",
+  "Exit": "Exit",
+  "ModuleSales": "Sales and payment",
+  "ModuleProducts": "Products and prices",
+  "ModuleInventory": "Inventory",
+  "ModulePrinting": "Receipt printing",
+  "ModuleInvoicing": "Invoicing",
+  "ModuleCashRegister": "Cash register",
+  "ModuleHardware": "Hardware",
+  "ModuleUsers": "Users and security"
+}

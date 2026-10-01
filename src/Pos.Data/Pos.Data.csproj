@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Pos.Core\Pos.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Sqlite.Core + bundle_e_sqlcipher en lugar de Sqlite: usa el motor SQLCipher (BD cifrada). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

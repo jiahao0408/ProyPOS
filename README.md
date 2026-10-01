@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para negocios pequeños de hostelería o comercio. Gestiona **ventas, cobro, inventario, tickets, facturas y caja**, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** fase de especificación. Todavía no hay código; este repositorio parte de la especificación funcional (41 user stories en 9 módulos). Ver [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** esqueleto de la solución creado (núcleo, datos, idiomas, 8 módulos vacíos, app Avalonia y tests). Siguiente paso: Sprint 1. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -104,15 +104,17 @@ Tres capas (UI → lógica → datos) y cuatro periféricos.
 
 ## Estructura del proyecto
 
-Estructura propuesta (aún no creada):
-
 ```text
 ProyPOS/
+├── ProyPOS.sln
+├── Directory.Build.props        # net8.0, nullable, usings implícitos para todos los proyectos
+├── Directory.Packages.props     # Versiones de NuGet centralizadas
+├── global.json                  # Fija el SDK .NET 8
 ├── src/
-│   ├── Pos.App/                 # Shell Avalonia: ventanas, navegación, DI, temas
-│   ├── Pos.Core/                # Dominio, interfaces comunes (IModule, IPrinter…), reglas de IVA
-│   ├── Pos.Data/                # EF Core, DbContext, migraciones, SQLCipher
-│   ├── Pos.Localization/        # Carga de traducciones y formatos regionales
+│   ├── Pos.App/                 # Shell Avalonia: ventanas, MVVM, DI (Composition.cs), temas
+│   ├── Pos.Core/                # Dominio, IModule, ILocalizer, PinHasher, cálculo de IVA
+│   ├── Pos.Data/                # EF Core, PosDbContext, migraciones, SQLCipher
+│   ├── Pos.Localization/        # JsonLocalizer: carga locales/*.json en tiempo de ejecución
 │   └── Modules/
 │       ├── Pos.Modules.Sales/       # VEN
 │       ├── Pos.Modules.Products/    # PRE
@@ -124,8 +126,7 @@ ProyPOS/
 │       └── Pos.Modules.Users/       # USR
 ├── locales/                     # es.json, ca.json, en.json, zh.json, de.json, fr.json…
 ├── tests/
-│   ├── Pos.Core.Tests/
-│   └── Pos.Modules.*.Tests/
+│   └── Pos.Core.Tests/          # PIN, IVA y completitud de las traducciones
 ├── docs/
 │   └── user-stories.md
 └── README.md
@@ -144,7 +145,7 @@ Regla de dependencias: los módulos dependen de `Pos.Core`, nunca entre sí ni d
 
 ### Compilar y ejecutar
 
-> Estos comandos funcionarán cuando exista la solución (Sprint 1).
+De momento la app abre una ventana a pantalla completa con selector de idioma (cambia en vivo), tema claro/oscuro y la lista de módulos cargados.
 
 ```bash
 git clone <url-del-repo> ProyPOS
@@ -163,15 +164,19 @@ dotnet test
 ### Base de datos
 
 ```bash
-# Crear una migración nueva
-dotnet ef migrations add <Nombre> --project src/Pos.Data --startup-project src/Pos.App
+dotnet tool install --global dotnet-ef --version 8.*
 
-# La app aplica las migraciones pendientes al arrancar
+# Crear una migración nueva (usa DesignTimeDbContextFactory, no necesita la clave real)
+dotnet ef migrations add <Nombre> --project src/Pos.Data
 ```
+
+La BD se abre siempre cifrada (`PosDatabase.CreateOptions`). Pendiente para el Sprint 1: de dónde sale la clave (por ejemplo, DPAPI en Windows) y aplicar las migraciones al arrancar.
 
 ## Idiomas
 
-- Todos los textos de la interfaz viven en `locales/<código>.json`, **nunca en el código**.
+- Todos los textos de la interfaz viven en `locales/<código>.json`, **nunca en el código**. En XAML: `{Binding L[Clave]}`.
+- Cada fichero lleva la clave `LanguageName` con el nombre del idioma en su propia lengua (sale en el selector).
+- Un test comprueba que todos los idiomas tienen exactamente las mismas claves que `es.json`.
 - Añadir un idioma = añadir un fichero; **no hace falta recompilar** (CFG-05).
 - El cambio de idioma se aplica **sin reiniciar** (CFG-01).
 - Codificación UTF-8 obligatoria (alfabetos como el chino).

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>ProyPOS</AssemblyName>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pos.Core\Pos.Core.csproj" />
+    <ProjectReference Include="..\Pos.Data\Pos.Data.csproj" />
+    <ProjectReference Include="..\Pos.Localization\Pos.Localization.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Sales\Pos.Modules.Sales.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Products\Pos.Modules.Products.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Inventory\Pos.Modules.Inventory.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Printing\Pos.Modules.Printing.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Invoicing\Pos.Modules.Invoicing.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Hardware\Pos.Modules.Hardware.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Users\Pos.Modules.Users.csproj" />
+  </ItemGroup>
+
+  <!-- Las traducciones se copian junto al ejecutable como ficheros sueltos: se pueden añadir sin recompilar. -->
+  <ItemGroup>
+    <None Include="..\..\locales\*.json" Link="locales\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

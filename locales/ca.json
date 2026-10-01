@@ -1,0 +1,17 @@
+{
+  "LanguageName": "Català",
+  "AppTitle": "ProyPOS",
+  "WelcomeMessage": "Benvingut a ProyPOS",
+  "ModulesLoaded": "Mòduls carregats",
+  "Language": "Idioma",
+  "ToggleTheme": "Tema clar/fosc",
+  "Exit": "Sortir",
+  "ModuleSales": "Vendes i cobrament",
+  "ModuleProducts": "Productes i preus",
+  "ModuleInventory": "Inventari",
+  "ModulePrinting": "Impressió de tiquets",
+  "ModuleInvoicing": "Facturació",
+  "ModuleCashRegister": "Caixa",
+  "ModuleHardware": "Maquinari",
+  "ModuleUsers": "Usuaris i seguretat"
+}

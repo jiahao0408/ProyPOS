@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Pos.App.Views.MainWindow"
+        Title="{Binding L[AppTitle]}"
+        WindowState="FullScreen">
+
+  <DockPanel>
+    <!-- Barra superior -->
+    <Border DockPanel.Dock="Top" Padding="16,8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+        <TextBlock Grid.Column="0" Text="{Binding L[AppTitle]}"
+                   FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+        <ComboBox Grid.Column="1" MinWidth="180" MinHeight="48" FontSize="18"
+                  VerticalAlignment="Center" Margin="0,0,12,0"
+                  ToolTip.Tip="{Binding L[Language]}"
+                  ItemsSource="{Binding Languages}"
+                  SelectedItem="{Binding SelectedLanguage}"
+                  DisplayMemberBinding="{Binding Name}" />
+
+        <Button Grid.Column="2" Content="{Binding L[ToggleTheme]}" Margin="0,0,12,0"
+                Command="{Binding ToggleThemeCommand}" />
+
+        <Button Grid.Column="3" Content="{Binding L[Exit]}"
+                Command="{Binding ExitCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- Contenido provisional: se sustituye por login y pantalla de venta en el Sprint 1 -->
+    <StackPanel Margin="32" Spacing="16">
+      <TextBlock Text="{Binding L[WelcomeMessage]}" FontSize="28" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding L[ModulesLoaded]}" FontSize="18" Opacity="0.7" />
+      <ItemsControl ItemsSource="{Binding ModuleNames}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Margin="0,0,12,12" Padding="20,16" CornerRadius="8" MinWidth="220"
+                    Background="{DynamicResource SystemControlBackgroundBaseLowBrush}">
+              <TextBlock Text="{Binding}" FontSize="18" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </DockPanel>
+</Window>
