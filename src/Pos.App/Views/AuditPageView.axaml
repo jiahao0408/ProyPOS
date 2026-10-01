@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.AuditPageView"
+             x:DataType="vm:AuditPageViewModel">
+  <!-- USR-03: registro de acciones sensibles (solo lectura) -->
+  <DockPanel>
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+      <TextBlock Classes="title" Text="{Binding L[NavAudit]}" />
+      <CalendarDatePicker Grid.Column="1" SelectedDate="{Binding Day}" MinHeight="44" FontSize="18" VerticalAlignment="Top" />
+    </Grid>
+    <ListBox ItemsSource="{Binding Entries}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:AuditRow">
+          <StackPanel>
+            <TextBlock>
+              <Run Text="{Binding When}" />
+              <Run Text="  " />
+              <Run Text="{Binding Action}" FontWeight="SemiBold" />
+              <Run Text="  " />
+              <Run Text="{Binding User}" />
+            </TextBlock>
+            <TextBlock Text="{Binding Details}" TextWrapping="Wrap" FontSize="14" Opacity="0.85" />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

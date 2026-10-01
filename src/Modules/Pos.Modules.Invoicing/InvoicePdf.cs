@@ -50,7 +50,12 @@ public sealed class InvoicePdf(ILocalizer localizer, RegionFormatter formatter)
                 });
                 row.RelativeItem().AlignRight().Column(col =>
                 {
-                    col.Item().AlignRight().Text(L[doc.Type == InvoiceType.Complete ? "InvoiceComplete" : "InvoiceSimplified"])
+                    col.Item().AlignRight().Text(L[doc.Type switch
+                        {
+                            InvoiceType.Complete => "InvoiceComplete",
+                            InvoiceType.Rectificative => "InvoiceRectificative",
+                            _ => "InvoiceSimplified",
+                        }])
                         .FontSize(16).Bold();
                     col.Item().AlignRight().Text($"{L["InvoiceNumber"]} {doc.Code}");
                     col.Item().AlignRight().Text($"{L["InvoiceDate"]} {formatter.FormatDateTime(doc.IssuedAtUtc.ToLocalTime())}");
@@ -72,6 +77,10 @@ public sealed class InvoicePdf(ILocalizer localizer, RegionFormatter formatter)
 
                 if (doc.ReplacesCode is not null)
                     col.Item().PaddingTop(8).Text(string.Format(L["InvoiceReplaces"], doc.ReplacesCode)).Italic();
+                if (doc.RectifiesCode is not null)
+                    col.Item().PaddingTop(8).Text(string.Format(L["InvoiceRectifies"], doc.RectifiesCode)).Bold();
+                if (doc.ReturnReason is { Length: > 0 } reason)
+                    col.Item().Text($"{L["ReturnReason"]}: {reason}");
 
                 col.Item().PaddingTop(12).Table(table =>
                 {

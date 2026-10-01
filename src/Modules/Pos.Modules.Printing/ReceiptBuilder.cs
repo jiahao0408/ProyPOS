@@ -35,7 +35,7 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
         // --- Datos de la factura (FAC-01) ---
         if (copy)
             r.Add(new ReceiptText(L["CopyMark"], ReceiptAlign.Center, Bold: true, Large: true)); // IMP-02
-        r.Add(new ReceiptText(L[doc.Type == InvoiceType.Complete ? "InvoiceComplete" : "InvoiceSimplified"], ReceiptAlign.Center, Bold: true));
+        r.Add(new ReceiptText(L[TitleKey(doc.Type)], ReceiptAlign.Center, Bold: true));
         r.Add(new ReceiptText(Columns(L["InvoiceNumber"], doc.Code, width)));
         r.Add(new ReceiptText(Columns(L["InvoiceDate"], formatter.FormatDateTime(doc.IssuedAtUtc.ToLocalTime()), width)));
         if (doc.CashierName.Length > 0)
@@ -55,6 +55,15 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
         if (doc.ReplacesCode is not null)
             foreach (var line in Wrap(string.Format(L["InvoiceReplaces"], doc.ReplacesCode), width))
                 r.Add(new ReceiptText(line));
+        if (doc.RectifiesCode is not null)
+        {
+            // FAC-03: referencia a la factura original y motivo de la devolución.
+            foreach (var line in Wrap(string.Format(L["InvoiceRectifies"], doc.RectifiesCode), width))
+                r.Add(new ReceiptText(line, Bold: true));
+            if (doc.ReturnReason is { Length: > 0 } reason)
+                foreach (var line in Wrap($"{L["ReturnReason"]}: {reason}", width))
+                    r.Add(new ReceiptText(line));
+        }
         r.Add(new ReceiptSeparator());
 
         // --- Líneas ---
@@ -64,8 +73,12 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
             var qty = line.Quantity == 1 ? "" : $"{line.Quantity} x ";
             var rate = showRates ? $" ({line.VatRate:0.##}%)" : "";
             r.Add(new ReceiptText(Columns(qty + line.Description, Amount(line.Total), width)));
+            // Precio por unidad: el de tarifa (el descuento va en su propia línea); en una devolución, lo que se devuelve de verdad.
+            var unit = line.Quantity < 0 ? line.EffectiveUnitPrice : line.UnitPrice;
             if (line.Quantity != 1 || rate.Length > 0)
-                r.Add(new ReceiptText($"   {Amount(line.UnitPrice)}{rate}"));
+                r.Add(new ReceiptText($"   {Amount(unit)}{rate}"));
+            if (line.Discount > 0)
+                r.Add(new ReceiptText($"   {L["DiscountShort"]} -{Amount(line.Discount)}"));
             if (doc.Type == InvoiceType.Complete)
                 r.Add(new ReceiptText($"   {L["InvoiceUnitPriceNoVat"]}: {Amount(NetUnitPrice(line))}"));
         }
@@ -82,7 +95,7 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
 
         // --- Pagos ---
         foreach (var payment in doc.Payments)
-            r.Add(new ReceiptText(Columns(L[payment.Method == PaymentMethod.Cash ? "PayCash" : "PayCard"], Amount(payment.Amount), width)));
+            r.Add(new ReceiptText(Columns(L[PaymentKey(payment.Method)], Amount(payment.Amount), width)));
         if (doc.CashTendered > 0)
         {
             r.Add(new ReceiptText(Columns(L["CashTendered"], Amount(doc.CashTendered), width)));
@@ -106,6 +119,55 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
         r.Add(new ReceiptCut());
         return r;
     }
+
+    /// <summary>
+    /// BAZ-07: ticket regalo, sin precios. Lleva el número de la factura (también en el QR) para poder
+    /// buscar la venta y hacer un cambio. No lleva el QR de la AEAT porque incluye el importe.
+    /// </summary>
+    public IReadOnlyList<ReceiptElement> BuildGift(InvoiceDocument doc, BusinessProfile business, PrinterProfile printer)
+    {
+        var L = localizer;
+        var width = printer.CharsPerLine;
+        var r = new List<ReceiptElement>();
+        if (business.LogoPath is { } logo && File.Exists(logo))
+            r.Add(new ReceiptLogo(logo));
+        r.Add(new ReceiptText(doc.IssuerName, ReceiptAlign.Center, Bold: true, Large: doc.IssuerName.Length <= width / 2));
+        foreach (var line in Wrap(doc.IssuerAddress, width))
+            r.Add(new ReceiptText(line, ReceiptAlign.Center));
+        r.Add(new ReceiptSeparator());
+        r.Add(new ReceiptText(L["GiftTicket"], ReceiptAlign.Center, Bold: true, Large: true));
+        r.Add(new ReceiptText(Columns(L["InvoiceNumber"], doc.Code, width)));
+        r.Add(new ReceiptText(Columns(L["InvoiceDate"], formatter.FormatDate(doc.IssuedAtUtc.ToLocalTime()), width)));
+        r.Add(new ReceiptSeparator());
+        foreach (var line in doc.Lines)
+            foreach (var wrapped in Wrap($"{line.Quantity} x {line.Description}", width))
+                r.Add(new ReceiptText(wrapped));
+        r.Add(new ReceiptSeparator());
+        foreach (var line in Wrap(L["GiftTicketHint"], width))
+            r.Add(new ReceiptText(line, ReceiptAlign.Center));
+        if (business.FooterMessage.Length > 0)
+            foreach (var line in business.FooterMessage.Split('\n'))
+                foreach (var wrapped in Wrap(line.Trim(), width))
+                    r.Add(new ReceiptText(wrapped, ReceiptAlign.Center));
+        r.Add(new ReceiptBlankLine());
+        r.Add(new ReceiptQr(doc.Code));
+        r.Add(new ReceiptCut());
+        return r;
+    }
+
+    public static string TitleKey(InvoiceType type) => type switch
+    {
+        InvoiceType.Complete => "InvoiceComplete",
+        InvoiceType.Rectificative => "InvoiceRectificative",
+        _ => "InvoiceSimplified",
+    };
+
+    public static string PaymentKey(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => "PayCash",
+        PaymentMethod.Card => "PayCard",
+        _ => "PayStoreCredit",
+    };
 
     /// <summary>Ticket de prueba para el botón "Probar impresora" (HW-01).</summary>
     public IReadOnlyList<ReceiptElement> BuildTest(BusinessProfile business, PrinterProfile printer)

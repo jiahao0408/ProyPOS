@@ -168,7 +168,7 @@ public sealed class VerifactuSender(
         if (certificate is null)
             return new VerifactuSendResult(0, 0, 0, "ErrorVerifactuNoCertificate", null);
 
-        var replacedIds = pending.Select(r => r.Invoice!.ReplacesInvoiceId).OfType<int>().ToList();
+        var replacedIds = pending.SelectMany(r => new[] { r.Invoice!.ReplacesInvoiceId, r.Invoice!.RectifiedInvoiceId }).OfType<int>().ToList();
         var replaced = db.Invoices.AsNoTracking().Where(i => replacedIds.Contains(i.Id)).ToDictionary(i => i.Id);
 
         // Un mensaje por obligado a emitir (normalmente uno: el NIF del negocio).
@@ -177,7 +177,8 @@ public sealed class VerifactuSender(
         var issuerGroup = pending.GroupBy(r => (r.IssuerNif, r.IssuerName)).First();
         var batch = issuerGroup.ToList();
         var outgoing = batch.Select(r => new OutgoingRecord(r, r.Invoice!, r.PreviousRecord,
-            r.Invoice!.ReplacesInvoiceId is { } id ? replaced.GetValueOrDefault(id) : null));
+            r.Invoice!.ReplacesInvoiceId is { } id ? replaced.GetValueOrDefault(id) : null,
+            r.Invoice!.RectifiedInvoiceId is { } rid ? replaced.GetValueOrDefault(rid) : null));
         var xml = VerifactuXml.Build(issuerGroup.Key.IssuerName, issuerGroup.Key.IssuerNif, outgoing, producer, InstallationNumber);
 
         foreach (var r in batch)

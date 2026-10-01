@@ -30,6 +30,10 @@
     <DataTemplate DataType="vm:DataPageViewModel"><v:DataPageView /></DataTemplate>
     <DataTemplate DataType="vm:VerifactuPageViewModel"><v:VerifactuPageView /></DataTemplate>
     <DataTemplate DataType="vm:AboutPageViewModel"><v:AboutPageView /></DataTemplate>
+    <DataTemplate DataType="vm:DiscountViewModel"><v:DiscountView /></DataTemplate>
+    <DataTemplate DataType="vm:ReturnDialogViewModel"><v:ReturnDialogView /></DataTemplate>
+    <DataTemplate DataType="vm:ExchangeDialogViewModel"><v:ExchangeDialogView /></DataTemplate>
+    <DataTemplate DataType="vm:AuditPageViewModel"><v:AuditPageView /></DataTemplate>
   </Application.DataTemplates>
 
   <Application.Resources>

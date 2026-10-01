@@ -15,6 +15,7 @@ using Pos.Modules.Invoicing;
 using Pos.Modules.Printing;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
+using Pos.Modules.Users;
 
 namespace Pos.App.ViewModels;
 
@@ -24,7 +25,7 @@ public sealed record GenericButton(Category Section, IBrush? Background);
 
 public sealed record ProductButton(Product Product, string Name, string Price, string Stock, bool OutOfStock);
 
-public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total);
+public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total, string? DiscountText);
 
 /// <summary>
 /// Pantalla de venta (sección 2).
@@ -41,8 +42,12 @@ public partial class SalePageViewModel(
     InvoiceService invoices,
     PrintService printing,
     ProfileStore profiles,
+    UserService users,
     RegionFormatter formatter) : PageViewModel(localizer)
 {
+    /// <summary>VEN-05: admin que autorizó con su PIN un descuento por encima del límite del cajero.</summary>
+    private string? _discountAuthorizedBy;
+
     /// <summary>Última impresión lanzada (para esperar a que termine en los tests).</summary>
     public Task LastPrint { get; private set; } = Task.CompletedTask;
 
@@ -71,6 +76,9 @@ public partial class SalePageViewModel(
 
     [ObservableProperty]
     private string _vatSummary = "";
+
+    [ObservableProperty]
+    private string _ticketDiscountText = "";
 
     [ObservableProperty]
     private string _itemCountText = "";
@@ -224,6 +232,7 @@ public partial class SalePageViewModel(
     private void ClearTicket()
     {
         _ticket.Clear();
+        _discountAuthorizedBy = null;
         RefreshTicket();
         FocusSearchRequested?.Invoke();
     }
@@ -244,6 +253,65 @@ public partial class SalePageViewModel(
         ClearMessage();
         Dialog = new PaymentViewModel(L, formatter, _ticket.Total, confirm: Pay, cancel: CloseDialog,
             findCustomer: invoices.FindCustomer);
+    }
+
+    // --- Descuentos (VEN-05) ---
+
+    [RelayCommand]
+    private void EditLineDiscount(TicketLineRow row)
+    {
+        var line = row.Line;
+        var before = (line.DiscountPercent, line.DiscountAmount);
+        Dialog = new DiscountViewModel(L, formatter, string.Format(L["LineDiscountTitle"], line.Item.Description), allowAmount: true,
+            apply: (percent, amount) =>
+            {
+                if (amount > line.Gross)
+                    return OperationResult.Fail("ErrorDiscountTooBig");
+                _ticket.SetLineDiscount(line, percent, amount);
+                return AfterDiscount(() => _ticket.SetLineDiscount(line, before.DiscountPercent, before.DiscountAmount));
+            },
+            cancel: CloseDialog);
+    }
+
+    [RelayCommand]
+    private void EditTicketDiscount()
+    {
+        if (_ticket.IsEmpty)
+            return;
+        var before = _ticket.DiscountPercent;
+        Dialog = new DiscountViewModel(L, formatter, L["TicketDiscountTitle"], allowAmount: false,
+            apply: (percent, _) =>
+            {
+                _ticket.SetDiscountPercent(percent ?? 0);
+                return AfterDiscount(() => _ticket.SetDiscountPercent(before));
+            },
+            cancel: CloseDialog);
+    }
+
+    /// <summary>Si un cajero se pasa del límite, pide el PIN de un admin; si cancela, se deshace el descuento.</summary>
+    private OperationResult AfterDiscount(Action undo)
+    {
+        RefreshTicket();
+        var isAdmin = session.CurrentUser?.IsAdmin == true;
+        if (isAdmin || _discountAuthorizedBy is not null || _ticket.MaxEffectiveDiscountPercent <= sales.MaxCashierDiscount)
+        {
+            CloseDialog();
+            return OperationResult.Ok();
+        }
+
+        Dialog = new AdminPinPromptViewModel(L, users,
+            onAuthorized: admin =>
+            {
+                _discountAuthorizedBy = admin.Name;
+                CloseDialog();
+            },
+            onCancel: () =>
+            {
+                undo();
+                RefreshTicket();
+                CloseDialog();
+            });
+        return OperationResult.Ok();
     }
 
     // --- Cierre de caja (CAJ-02) ---
@@ -307,12 +375,13 @@ public partial class SalePageViewModel(
 
     private OperationResult Pay(PaymentRequest payment, InvoiceCustomer? customer)
     {
-        var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id, customer);
+        var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id, customer, _discountAuthorizedBy);
         if (!result.Success)
             return result;
 
         var (sale, change) = result.Value!;
         _ticket.Clear();
+        _discountAuthorizedBy = null;
         CloseDialog();
         RefreshTicket();
         RefreshProducts(); // el stock ha cambiado
@@ -401,10 +470,14 @@ public partial class SalePageViewModel(
         foreach (var line in _ticket.Lines)
         {
             TicketLines.Add(new TicketLineRow(line, line.Item.Description, line.Quantity,
-                formatter.FormatMoney(line.Item.UnitPrice), formatter.FormatMoney(line.Total)));
+                formatter.FormatMoney(line.Item.UnitPrice), formatter.FormatMoney(line.Total),
+                line.Discount > 0 ? string.Format(L["DiscountApplied"], formatter.FormatMoney(line.Discount)) : null));
         }
 
         TotalText = formatter.FormatMoney(_ticket.Total);
+        TicketDiscountText = _ticket.DiscountPercent > 0
+            ? string.Format(L["TicketDiscount"], _ticket.DiscountPercent.ToString("0.##", L.Culture))
+            : "";
         ItemCountText = string.Format(L["TicketItemCount"], _ticket.ItemCount);
         VatSummary = string.Join("   ", _ticket.VatBreakdown().Select(v =>
             string.Format(L["VatLine"], v.Rate.ToString("0.##", L.Culture), formatter.FormatMoney(v.Base), formatter.FormatMoney(v.VatAmount))));

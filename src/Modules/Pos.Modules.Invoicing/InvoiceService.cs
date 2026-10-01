@@ -152,13 +152,17 @@ public sealed class InvoiceService(
             invoice.IssuerName, invoice.IssuerNif, invoice.IssuerAddress,
             invoice.CustomerNif, invoice.CustomerName, invoice.CustomerAddress, replacesCode, cashier,
             sale.Lines.OrderBy(l => l.Id)
-                .Select(l => new InvoiceDocumentLine(l.Description, l.Quantity, l.UnitPrice, l.VatRate, l.LineTotal)).ToList(),
+                .Select(l => new InvoiceDocumentLine(l.Description, l.Quantity, l.UnitPrice, l.VatRate, l.LineTotal, l.Discount)).ToList(),
             invoice.VatLines.OrderByDescending(v => v.Rate).ToList(),
             sale.Payments.OrderBy(p => p.Id).Select(p => new InvoiceDocumentPayment(p.Method, p.Amount)).ToList(),
             invoice.Total, sale.CashTendered, sale.Change,
             // FAC-04: QR de cotejo de la AEAT con el NIF, el número, la fecha y el importe.
             VerifactuQr.Build(invoice.IssuerNif, invoice.Code, invoice.IssuedAtUtc.ToLocalTime(), invoice.Total,
                 testEnvironment: settings?.Get(VerifactuSettingKeys.Environment) != VerifactuSettingKeys.Production),
-            VerifactuMode: settings?.Get(VerifactuSettingKeys.Enabled) == "true");
+            VerifactuMode: settings?.Get(VerifactuSettingKeys.Enabled) == "true",
+            RectifiesCode: invoice.RectifiedInvoiceId is { } rectifiedId
+                ? db.Invoices.AsNoTracking().Where(i => i.Id == rectifiedId).Select(i => i.Code).FirstOrDefault()
+                : null,
+            ReturnReason: sale.Reason);
     }
 }

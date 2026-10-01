@@ -8,7 +8,12 @@ public sealed record InvoiceCustomer(string Nif, string Name, string Address, st
     public string FullAddress => string.Join(", ", new[] { Address, $"{PostalCode} {City}".Trim() }.Where(s => s.Length > 0));
 }
 
-public sealed record InvoiceDocumentLine(string Description, int Quantity, decimal UnitPrice, decimal VatRate, decimal Total);
+/// <param name="Discount">Descuento aplicado a la línea (VEN-05), ya restado de <paramref name="Total"/>.</param>
+public sealed record InvoiceDocumentLine(string Description, int Quantity, decimal UnitPrice, decimal VatRate, decimal Total, decimal Discount = 0)
+{
+    /// <summary>Lo que se ha cobrado (o devuelto) por unidad, con descuentos.</summary>
+    public decimal EffectiveUnitPrice => Quantity == 0 ? UnitPrice : Math.Round(Total / Quantity, 2, MidpointRounding.AwayFromZero);
+}
 
 public sealed record InvoiceDocumentPayment(PaymentMethod Method, decimal Amount);
 
@@ -37,7 +42,9 @@ public sealed record InvoiceDocument(
     decimal CashTendered,
     decimal Change,
     string? QrUrl = null,
-    bool VerifactuMode = false);
+    bool VerifactuMode = false,
+    string? RectifiesCode = null,
+    string? ReturnReason = null);
 
 /// <summary>Acceso a los documentos de factura para imprimirlos; lo implementa el módulo de facturación.</summary>
 public interface IInvoiceDocuments

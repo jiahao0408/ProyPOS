@@ -29,7 +29,7 @@ public sealed class VerifactuRecorder(TimeProvider clock) : IInvoiceHook
             IssuerName = invoice.IssuerName,
             InvoiceNumber = invoice.Code,
             IssueDate = VerifactuHash.Date(invoice.IssuedAtUtc.ToLocalTime()),
-            InvoiceType = TypeOf(invoice),
+            InvoiceType = TypeOf(invoice, invoice.RectifiedInvoiceId is { } id ? db.Invoices.Find(id) : null),
             TotalVat = invoice.VatLines.Sum(v => v.VatAmount),
             Total = invoice.Total,
             PreviousHash = previous?.Hash,
@@ -42,9 +42,15 @@ public sealed class VerifactuRecorder(TimeProvider clock) : IInvoiceHook
         db.VerifactuRecords.Add(record);
     }
 
-    /// <summary>F1 completa, F2 simplificada, F3 completa que sustituye a una simplificada (FAC-06).</summary>
-    public static string TypeOf(Invoice invoice) =>
-        invoice.Type == InvoiceType.Simplified ? "F2"
-        : invoice.ReplacesInvoiceId is not null ? "F3"
-        : "F1";
+    /// <summary>
+    /// F1 completa, F2 simplificada, F3 completa que sustituye a una simplificada (FAC-06).
+    /// Rectificativas (FAC-03): R5 si rectifica una simplificada; R1 (art. 80.1 y 80.2 LIVA, que incluye las
+    /// devoluciones) si rectifica una completa.
+    /// </summary>
+    public static string TypeOf(Invoice invoice, Invoice? rectified = null) => invoice.Type switch
+    {
+        InvoiceType.Simplified => "F2",
+        InvoiceType.Rectificative => rectified?.Type == InvoiceType.Simplified ? "R5" : "R1",
+        _ => invoice.ReplacesInvoiceId is not null ? "F3" : "F1",
+    };
 }

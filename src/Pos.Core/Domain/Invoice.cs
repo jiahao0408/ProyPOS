@@ -7,6 +7,9 @@ public enum InvoiceType
 
     /// <summary>Factura completa con datos del cliente. Serie F.</summary>
     Complete = 1,
+
+    /// <summary>Factura rectificativa de una devolución (FAC-03). Serie R; importes en negativo.</summary>
+    Rectificative = 2,
 }
 
 /// <summary>
@@ -50,6 +53,9 @@ public class Invoice
 
     /// <summary>FAC-06: factura simplificada a la que sustituye esta factura completa.</summary>
     public int? ReplacesInvoiceId { get; set; }
+
+    /// <summary>FAC-03: en una rectificativa, la factura original que rectifica. La original nunca se borra.</summary>
+    public int? RectifiedInvoiceId { get; set; }
 
     public List<InvoiceVatLine> VatLines { get; set; } = [];
 

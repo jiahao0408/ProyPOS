@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.DiscountView"
+             x:DataType="vm:DiscountViewModel">
+  <!-- VEN-05: descuento de línea o del total -->
+  <Border Classes="dialog" Width="420">
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" Spacing="16" IsVisible="{Binding AllowAmount}">
+        <RadioButton Content="%" IsChecked="{Binding IsPercent}" FontSize="18" />
+        <RadioButton Content="{Binding L[Amount]}" IsChecked="{Binding !IsPercent}" FontSize="18" />
+      </StackPanel>
+      <TextBox Name="ValueBox" Text="{Binding ValueText}" FontSize="26" Watermark="{Binding L[DiscountHint]}">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Grid ColumnDefinitions="Auto,8,Auto,8,*" Margin="0,8,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Content="{Binding L[RemoveDiscount]}" Command="{Binding RemoveCommand}" />
+        <Button Grid.Column="4" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Content="{Binding L[Apply]}" Command="{Binding ApplyCommand}" />
+      </Grid>
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

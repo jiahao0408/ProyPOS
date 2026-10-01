@@ -9,7 +9,20 @@ namespace Pos.Modules.Invoicing;
 internal static class InvoiceIssuer
 {
     public static string SeriesFor(InvoiceType type, DateTime issuedAtUtc) =>
-        (type == InvoiceType.Simplified ? "T" : "F") + issuedAtUtc.ToLocalTime().Year.ToString("D4");
+        type switch
+        {
+            InvoiceType.Simplified => "T",
+            InvoiceType.Complete => "F",
+            _ => "R", // FAC-03: serie propia para las rectificativas
+        } + issuedAtUtc.ToLocalTime().Year.ToString("D4");
+
+    /// <summary>La factura vigente de una venta: la completa si sustituyó al ticket (FAC-06).</summary>
+    public static Invoice? CurrentInvoiceOf(PosDbContext db, int saleId)
+    {
+        var invoices = db.Invoices.Where(i => i.SaleId == saleId).ToList();
+        var replaced = invoices.Select(i => i.ReplacesInvoiceId).OfType<int>().ToHashSet();
+        return invoices.Where(i => !replaced.Contains(i.Id)).OrderByDescending(i => i.Id).FirstOrDefault();
+    }
 
     /// <summary>
     /// Siguiente número de la serie. Mira también lo que hay pendiente de guardar en este contexto,
@@ -115,9 +128,25 @@ public sealed class InvoiceSaleHook(ProfileStore profiles, IEnumerable<IInvoiceH
 
     public void OnSaleCreated(PosDbContext db, CheckoutContext context)
     {
-        var type = context.Customer is null ? InvoiceType.Simplified : InvoiceType.Complete;
-        var invoice = InvoiceIssuer.Create(db, type, context.Sale, context.Sale.Lines,
-            profiles.GetBusiness(), context.Customer, context.NowUtc);
+        var sale = context.Sale;
+        Invoice invoice;
+        if (sale.Kind == SaleKind.Return)
+        {
+            // FAC-03: la devolución se documenta con una rectificativa que referencia la factura original
+            // (y, si era una factura completa, al mismo cliente). La original no se toca.
+            var original = InvoiceIssuer.CurrentInvoiceOf(db, sale.OriginalSaleId!.Value)
+                ?? throw new InvalidOperationException($"La venta {sale.OriginalSaleId} no tiene factura.");
+            var originalCustomer = original.CustomerNif is null ? null
+                : new InvoiceCustomer(original.CustomerNif, original.CustomerName ?? "", original.CustomerAddress ?? "", "", "");
+            invoice = InvoiceIssuer.Create(db, InvoiceType.Rectificative, sale, sale.Lines, profiles.GetBusiness(), originalCustomer, context.NowUtc);
+            invoice.RectifiedInvoiceId = original.Id;
+            invoice.CustomerAddress = original.CustomerAddress; // tal cual estaba en la original
+        }
+        else
+        {
+            var type = context.Customer is null ? InvoiceType.Simplified : InvoiceType.Complete;
+            invoice = InvoiceIssuer.Create(db, type, sale, sale.Lines, profiles.GetBusiness(), context.Customer, context.NowUtc);
+        }
         db.Invoices.Add(invoice);
         foreach (var hook in invoiceHooks)
             hook.OnInvoiceIssued(db, invoice);

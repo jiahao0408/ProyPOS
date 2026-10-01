@@ -10,7 +10,8 @@ public sealed record OutgoingRecord(
     VerifactuRecord Record,
     Invoice Invoice,
     VerifactuRecord? Previous,
-    Invoice? Replaced);
+    Invoice? Replaced,
+    Invoice? Rectified = null);
 
 /// <summary>
 /// Mensaje SOAP RegFactuSistemaFacturacion del servicio web de Verifactu (VFA-02), según los esquemas
@@ -52,12 +53,18 @@ public static class VerifactuXml
             InvoiceId("IDFactura", r.IssuerNif, r.InvoiceNumber, r.IssueDate),
             E("NombreRazonEmisor", r.IssuerName),
             E("TipoFactura", r.InvoiceType),
+            // FAC-03: rectificativa por diferencias (importes en negativo) con la factura que rectifica.
+            o.Rectified is { } rectified ? E("TipoRectificativa", "I") : null,
+            o.Rectified is { } original
+                ? new XElement(Sum1 + "FacturasRectificadas",
+                    InvoiceId("IDFacturaRectificada", original.IssuerNif, original.Code, VerifactuHash.Date(original.IssuedAtUtc.ToLocalTime())))
+                : null,
             o.Replaced is { } replaced
                 ? new XElement(Sum1 + "FacturasSustituidas",
                     InvoiceId("IDFacturaSustituida", replaced.IssuerNif, replaced.Code, VerifactuHash.Date(replaced.IssuedAtUtc.ToLocalTime())))
                 : null,
             E("DescripcionOperacion", "Venta de mercaderías"),
-            invoice.CustomerNif is { } customerNif && r.InvoiceType != "F2"
+            invoice.CustomerNif is { } customerNif && r.InvoiceType is not ("F2" or "R5")
                 ? new XElement(Sum1 + "Destinatarios",
                     new XElement(Sum1 + "IDDestinatario",
                         E("NombreRazon", invoice.CustomerName ?? ""),

@@ -324,3 +324,49 @@ public sealed partial class GenericItemViewModel(
     [RelayCommand]
     private void Cancel() => cancel();
 }
+
+/// <summary>VEN-05: descuento de una línea (en % o por importe) o del total del ticket (solo %).</summary>
+public sealed partial class DiscountViewModel : ViewModelBase
+{
+    private readonly RegionFormatter _formatter;
+    private readonly Func<decimal?, decimal?, OperationResult> _apply;
+    private readonly Action _cancel;
+
+    [ObservableProperty]
+    private bool _isPercent = true;
+
+    [ObservableProperty]
+    private string _valueText = "";
+
+    public DiscountViewModel(ILocalizer localizer, RegionFormatter formatter, string title, bool allowAmount,
+        Func<decimal?, decimal?, OperationResult> apply, Action cancel)
+        : base(localizer)
+    {
+        _formatter = formatter;
+        _apply = apply;
+        _cancel = cancel;
+        Title = title;
+        AllowAmount = allowAmount;
+    }
+
+    public string Title { get; }
+
+    public bool AllowAmount { get; }
+
+    [RelayCommand]
+    private void Apply()
+    {
+        if (!_formatter.TryParseAmount(ValueText.Replace("%", ""), out var value) || value < 0 || (IsPercent && value > 100))
+        {
+            ShowError("ErrorAmountFormat");
+            return;
+        }
+        Check(IsPercent ? _apply(value, null) : _apply(null, value));
+    }
+
+    [RelayCommand]
+    private void Remove() => Check(_apply(null, null));
+
+    [RelayCommand]
+    private void Cancel() => _cancel();
+}

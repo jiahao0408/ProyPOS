@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:v="using:Pos.App.Views"
+             x:Class="Pos.App.Views.ExchangeDialogView"
+             x:DataType="vm:ExchangeDialogViewModel">
+  <!-- BAZ-07: cambio de producto en una sola operación -->
+  <Border Classes="dialog">
+    <Grid ColumnDefinitions="440,24,420" RowDefinitions="Auto,*,Auto">
+      <TextBlock Grid.ColumnSpan="3" Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,8" />
+
+      <!-- Lo que devuelve -->
+      <StackPanel Grid.Row="1">
+        <TextBlock Text="{Binding L[ExchangeReturns]}" FontSize="18" FontWeight="SemiBold" />
+        <ItemsControl ItemsSource="{Binding ReturnLines}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ReturnLineViewModel">
+              <Grid ColumnDefinitions="*,90,Auto" Margin="0,2">
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding UnitRefund}" FontSize="12" Opacity="0.7" />
+                </StackPanel>
+                <TextBox Grid.Column="1" Text="{Binding QuantityText}" Margin="8,0" />
+                <Button Grid.Column="2" Content="{Binding $parent[ItemsControl].((vm:ExchangeDialogViewModel)DataContext).L[All]}"
+                        Command="{Binding AllCommand}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+          <TextBlock Text="{Binding L[ExchangeCredit]}" />
+          <TextBlock Grid.Column="1" Text="{Binding CreditText}" FontWeight="SemiBold" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Lo que se lleva -->
+      <StackPanel Grid.Row="1" Grid.Column="2">
+        <TextBlock Text="{Binding L[ExchangeTakes]}" FontSize="18" FontWeight="SemiBold" />
+        <TextBox Text="{Binding SearchText}" Watermark="{Binding L[SaleSearchHint]}">
+          <TextBox.KeyBindings>
+            <KeyBinding Gesture="Enter" Command="{Binding AddItemCommand}" />
+          </TextBox.KeyBindings>
+        </TextBox>
+        <ItemsControl ItemsSource="{Binding NewItems}" Margin="0,4,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ExchangeItemRow">
+              <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2">
+                <TextBlock Text="{Binding Description}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Text="{Binding Total}" VerticalAlignment="Center" Margin="8,0" />
+                <Button Grid.Column="2" Content="✕"
+                        Command="{Binding $parent[ItemsControl].((vm:ExchangeDialogViewModel)DataContext).RemoveItemCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+          <TextBlock Text="{Binding L[Total]}" />
+          <TextBlock Grid.Column="1" Text="{Binding NewTotalText}" FontWeight="SemiBold" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Diferencia y confirmación -->
+      <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Spacing="8" Margin="0,12,0,0">
+        <TextBlock Text="{Binding DifferenceText}" FontSize="22" FontWeight="Bold" />
+        <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding ShowPayment}">
+          <CheckBox Content="{Binding L[PayCard]}" IsChecked="{Binding PayByCard}" />
+          <TextBox Width="200" Text="{Binding CashTenderedText}" Watermark="{Binding L[CashTenderedHint]}" IsVisible="{Binding !PayByCard}" />
+        </StackPanel>
+        <v:PinPadView DataContext="{Binding PinEntry}" IsVisible="{Binding $parent[UserControl].((vm:ExchangeDialogViewModel)DataContext).NeedsAdminPin}" />
+        <Grid ColumnDefinitions="Auto,8,*">
+          <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+          <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  Content="{Binding L[ConfirmExchange]}" Command="{Binding ConfirmCommand}" />
+        </Grid>
+        <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+          <TextBlock Text="{Binding Message}" />
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

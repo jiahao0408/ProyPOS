@@ -116,6 +116,11 @@
           </Grid>
 
           <StackPanel DockPanel.Dock="Bottom" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding TicketDiscountText}" FontSize="14" Foreground="{StaticResource OkBrush}" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+                      Content="{Binding L[TicketDiscountButton]}" Command="{Binding EditTicketDiscountCommand}" IsEnabled="{Binding HasTicketLines}" />
+            </Grid>
             <TextBlock Text="{Binding VatSummary}" FontSize="13" Opacity="0.7" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="{Binding L[Total]}" FontSize="28" FontWeight="SemiBold" />
@@ -133,9 +138,13 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:TicketLineRow">
                   <Border Padding="0,6" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
-                      <TextBlock Grid.ColumnSpan="6" Text="{Binding Description}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Row="1" Text="{Binding UnitPrice}" FontSize="13" Opacity="0.7" VerticalAlignment="Center" />
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto">
+                      <TextBlock Grid.ColumnSpan="7" Text="{Binding Description}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UnitPrice}" FontSize="13" Opacity="0.7" />
+                        <TextBlock Text="{Binding DiscountText}" FontSize="12" Foreground="{StaticResource OkBrush}"
+                                   IsVisible="{Binding DiscountText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                      </StackPanel>
                       <Button Grid.Row="1" Grid.Column="1" Focusable="False" Content="−" MinWidth="44" MinHeight="40" Padding="0"
                               HorizontalContentAlignment="Center"
                               Command="{Binding $parent[ItemsControl].((vm:SalePageViewModel)DataContext).DecreaseLineCommand}"
@@ -148,7 +157,11 @@
                               CommandParameter="{Binding}" />
                       <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding Total}" FontSize="18" MinWidth="90"
                                  TextAlignment="Right" VerticalAlignment="Center" Margin="8,0" />
-                      <Button Grid.Row="1" Grid.Column="5" Focusable="False" Content="✕" MinWidth="44" MinHeight="40" Padding="0"
+                      <Button Grid.Row="1" Grid.Column="5" Focusable="False" Content="%" MinWidth="44" MinHeight="40" Padding="0" Margin="0,0,4,0"
+                              HorizontalContentAlignment="Center"
+                              Command="{Binding $parent[ItemsControl].((vm:SalePageViewModel)DataContext).EditLineDiscountCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Grid.Row="1" Grid.Column="6" Focusable="False" Content="✕" MinWidth="44" MinHeight="40" Padding="0"
                               HorizontalContentAlignment="Center"
                               Command="{Binding $parent[ItemsControl].((vm:SalePageViewModel)DataContext).RemoveLineCommand}"
                               CommandParameter="{Binding}" />

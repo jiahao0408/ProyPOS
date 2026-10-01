@@ -225,6 +225,18 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 2. Cargar el certificado y probar en el **entorno de pruebas** de la AEAT: enviar facturas de prueba y revisar que se aceptan. El XML sigue los esquemas `SuministroLR.xsd` / `SuministroInformacion.xsd`, pero no se ha podido validar contra el servidor real sin certificado.
 3. Activar el envío y pasar a producción.
 
+### Cómo está hecha la sección 6 (devoluciones, descuentos y cambios)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| VEN-05 Descuentos | Botón **%** en cada línea y **Descuento** en Venta | Por línea (porcentaje o importe) y sobre el total del ticket. El cajero puede llegar al límite configurado en Ajustes (10 % por defecto); por encima hace falta el PIN de un administrador, y si se cancela se deshace el descuento. El ticket impreso muestra el precio de tarifa y una línea "Dto." |
+| VEN-06 Devoluciones | Botón **Devolver** en Tickets, `SalesService.Return` | Devolución total o parcial con motivo obligatorio. Reembolso en efectivo o con tarjeta. El cajero necesita el PIN de un administrador. Suma el stock de nuevo. No deja devolver más unidades de las vendidas, aunque se haga en varias veces. Con descuentos, la última unidad devuelve exactamente lo que quedaba por devolver (sin céntimos de más ni de menos) |
+| FAC-03 Rectificativas | `InvoiceSaleHook`, serie **R** | Cada devolución emite una factura rectificativa por diferencias con número correlativo propio (R2026-000001…), que indica la factura original y el motivo. Lleva el mismo cliente que la original. En Verifactu va como **R5** si rectifica un ticket y como **R1** si rectifica una factura completa, con `TipoRectificativa` "I" y la referencia a la factura rectificada |
+| BAZ-07 Cambios y ticket regalo | Botones **Cambio** y **Ticket regalo** en Tickets | Un cambio es una devolución más una venta nueva. Lo devuelto se paga como **vale** en la venta nueva. Si el cliente debe dinero, lo paga; si la tienda debe dinero, hace falta el PIN de un administrador si es un cajero. El ticket regalo no lleva precios ni el QR de la AEAT (que lleva el importe), pero sí el número de factura en un QR para encontrar la venta |
+| USR-03 Auditoría | Página **Auditoría** (solo administrador), `AuditLog` | Registra los descuentos, las devoluciones y los cambios con el usuario y quién autorizó. Las entradas no se pueden modificar ni borrar (triggers) |
+
+**Cuidado con las migraciones:** cuando EF Core tiene que reconstruir una tabla en SQLite (por ejemplo, para añadir una clave ajena), la borra y la vuelve a crear, y **los triggers de inmutabilidad se pierden sin aviso**. EF hace esas reconstrucciones al final de la migración, así que recrear los triggers en la misma migración no basta. Hay que hacerlo en una migración posterior con `BillingTriggers.Recreate`. El test `MigrationSafetyTests` aplica todas las migraciones y comprueba que cada tabla de facturación sigue protegida.
+
 ## Primeros pasos
 
 Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, problemas frecuentes): [entornoDeConfiguracion.md](entornoDeConfiguracion.md).
@@ -316,6 +328,7 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 | **Sprint 3 — Imprimir y facturar** | Impresora térmica, tickets, facturas y facturar un ticket ya emitido | HW-01, IMP-01 … IMP-03, FAC-01, FAC-02, FAC-06 |
 | **Sprint 4 — Cierre, stock y datos** | Entradas de mercancía por cajas, etiquetas de precio, cierre Z, importación de catálogo, copias de seguridad | INV-03, CAJ-02, DAT-01, DAT-03, BAZ-01, BAZ-04 |
 | **Sprint 5 — Verifactu** | Huella y QR, certificado, envío a la AEAT, cola sin conexión, pruebas e instalador para Windows | FAC-04, VFA-01, VFA-02, VFA-03, VFA-06 |
+| **Sección 6 — Devoluciones y descuentos** ✅ | Descuentos con límite de cajero, devoluciones con rectificativa, cambios, ticket regalo, auditoría | VEN-05, VEN-06, FAC-03, BAZ-07, USR-03 |
 | **Versión 2** | Pantalla de cliente, cajón, variantes por talla y color, verificador de precios, ticket regalo y cambios, descuentos, devoluciones, rectificativas, modalidad y panel Verifactu, alertas y ajustes de stock, cambio masivo de precios, informe de ventas, exportaciones, auditoría, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
 | **Versión 3** | Historial de precios, recuento físico, ticket digital, migración desde otro TPV, módulos ampliables (fidelización, venta online, multi-tienda) | Historias **C** |
 

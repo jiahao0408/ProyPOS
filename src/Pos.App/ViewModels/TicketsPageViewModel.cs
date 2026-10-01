@@ -7,6 +7,11 @@ using Pos.Core.Invoicing;
 using Pos.Core.Localization;
 using Pos.Localization;
 using Pos.Modules.Invoicing;
+using Pos.Modules.Users;
+using Pos.Modules.Products;
+using Pos.Modules.Sales;
+using Pos.Data;
+using Pos.Core.Security;
 using Pos.Modules.Printing;
 
 namespace Pos.App.ViewModels;
@@ -50,8 +55,16 @@ public partial class TicketsPageViewModel(
     PrintService printing,
     InvoicePdf pdf,
     RegionFormatter formatter,
-    TimeProvider clock) : PageViewModel(localizer)
+    TimeProvider clock,
+    SalesService sales,
+    CatalogService catalog,
+    UserService users,
+    ISession session,
+    ProfileStore profiles) : PageViewModel(localizer)
 {
+    [ObservableProperty]
+    private bool _canReturn;
+
     [ObservableProperty]
     private string _searchText = "";
 
@@ -92,7 +105,98 @@ public partial class TicketsPageViewModel(
     partial void OnSelectedChanged(InvoiceRow? value)
     {
         Preview = value is null ? "" : invoices.Get(value.Summary.Id) is { } doc ? printing.Preview(doc, copy: false) : "";
+        // VEN-06 / BAZ-07: se puede devolver o cambiar si es una venta (no una rectificativa) con unidades pendientes.
+        CanReturn = value is { Summary.Type: not InvoiceType.Rectificative }
+                    && sales.GetReturnable(value.Summary.SaleId).Any(l => l.Returnable > 0);
         ClearMessage();
+    }
+
+    // --- Devoluciones (VEN-06, FAC-03) ---
+
+    /// <summary>Exige PIN de admin (si quien está es un cajero) y motivo.</summary>
+    [RelayCommand]
+    private void Return()
+    {
+        if (Selected is not { } row || !CanReturn)
+            return;
+
+        void Open(string? authorizedBy) =>
+            Dialog = new ReturnDialogViewModel(L, formatter, row.Code, sales.GetReturnable(row.Summary.SaleId),
+                confirm: (requests, reason, method) =>
+                {
+                    var result = sales.Return(row.Summary.SaleId, requests, reason, method, session.CurrentUser!.Id, authorizedBy);
+                    if (!result.Success)
+                        return result;
+                    Dialog = null;
+                    AfterReturn(result.Value!, string.Format(L["ReturnDone"], "{0}", formatter.FormatMoney(-result.Value!.Total)));
+                    return Core.OperationResult.Ok();
+                },
+                cancel: () => Dialog = null);
+
+        if (session.CurrentUser?.IsAdmin == true)
+            Open(null);
+        else
+            Dialog = new AdminPinPromptViewModel(L, users, admin => Open(admin.Name), () => Dialog = null);
+    }
+
+    // --- Cambios y ticket regalo (BAZ-07) ---
+
+    [RelayCommand]
+    private void Exchange()
+    {
+        if (Selected is not { } row || !CanReturn)
+            return;
+
+        Dialog = new ExchangeDialogViewModel(L, formatter, catalog, users, session.CurrentUser?.IsAdmin == true, row.Code,
+            sales.GetReturnable(row.Summary.SaleId),
+            confirm: (requests, newTicket, payment, authorizedBy) =>
+            {
+                var result = sales.Exchange(row.Summary.SaleId, requests, newTicket, payment, PaymentMethod.Cash,
+                    session.CurrentUser!.Id, L["ExchangeReason"], authorizedBy);
+                if (!result.Success)
+                    return result;
+                Dialog = null;
+                var (returned, newSale, difference, change) = result.Value!;
+                AfterReturn(returned, string.Format(L["ExchangeDone"], "{0}", formatter.FormatMoney(difference), formatter.FormatMoney(change)), newSale);
+                return Core.OperationResult.Ok();
+            },
+            cancel: () => Dialog = null);
+    }
+
+    [RelayCommand]
+    private void GiftTicket()
+    {
+        if (Selected is not { } row)
+            return;
+        LastPrint = PrintGiftAsync(row.Summary.Id);
+    }
+
+    private async Task PrintGiftAsync(int invoiceId)
+    {
+        var outcome = await printing.PrintGiftAsync(invoiceId);
+        Message = outcome.Success ? L["GiftTicketPrinted"] : string.Format(L["ErrorPrintFailed"], outcome.Error);
+        MessageIsError = !outcome.Success;
+    }
+
+    /// <summary>Muestra la rectificativa (y la venta nueva de un cambio) y la imprime si la impresión automática está activada.</summary>
+    private void AfterReturn(Sale returned, string messageTemplate, Sale? newSale = null)
+    {
+        var rectificative = invoices.GetCurrentForSale(returned.Id)!;
+        var newInvoice = newSale is null ? null : invoices.GetCurrentForSale(newSale.Id);
+        OnDayChanged(Day);
+        Selected = Invoices.FirstOrDefault(i => i.Summary.Id == rectificative.InvoiceId);
+        Message = string.Format(messageTemplate, rectificative.Code);
+        MessageIsError = false;
+
+        if (profiles.GetPrinter().AutoPrint != AutoPrintMode.No)
+            LastPrint = PrintSequenceAsync(rectificative.InvoiceId, newInvoice?.InvoiceId);
+    }
+
+    private async Task PrintSequenceAsync(int first, int? second)
+    {
+        await PrintAsync(first, copy: false);
+        if (second is { } id)
+            await PrintAsync(id, copy: false);
     }
 
     /// <summary>Enter en el buscador; acepta el número, el código completo o lo que lea el lector del QR.</summary>
@@ -174,7 +278,12 @@ public partial class TicketsPageViewModel(
             Invoices.Add(new InvoiceRow(s, s.Code,
                 formatter.FormatDateTime(s.IssuedAtUtc.ToLocalTime()),
                 formatter.FormatMoney(s.Total),
-                L[s.Type == InvoiceType.Simplified ? "InvoiceSimplifiedShort" : "InvoiceCompleteShort"],
+                L[s.Type switch
+                {
+                    InvoiceType.Simplified => "InvoiceSimplifiedShort",
+                    InvoiceType.Complete => "InvoiceCompleteShort",
+                    _ => "InvoiceRectificativeShort",
+                }],
                 status));
         }
         Selected = null;

@@ -19,6 +19,7 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
     public DbSet<GoodsReceiptLine> GoodsReceiptLines => Set<GoodsReceiptLine>();
 
@@ -93,6 +94,16 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.HasOne(r => r.PreviousRecord).WithMany().HasForeignKey(r => r.PreviousRecordId).OnDelete(DeleteBehavior.Restrict);
         });
 
+        model.Entity<AuditEntry>(e =>
+        {
+            e.Property(a => a.UserName).HasMaxLength(100);
+            e.Property(a => a.AuthorizedBy).HasMaxLength(100);
+            e.Property(a => a.Action).HasMaxLength(40);
+            e.Property(a => a.Details).HasMaxLength(2000);
+            e.HasIndex(a => a.AtUtc);
+            e.HasIndex(a => a.Action);
+        });
+
         model.Entity<Supplier>(e =>
         {
             e.Property(s => s.Name).HasMaxLength(200);
@@ -134,6 +145,10 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.HasOne<User>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(s => s.Lines).WithOne().HasForeignKey(l => l.SaleId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(s => s.Payments).WithOne().HasForeignKey(p => p.SaleId).OnDelete(DeleteBehavior.Restrict);
+            e.Property(s => s.Reason).HasMaxLength(300);
+            e.Property(s => s.DiscountPercent).HasPrecision(5, 2);
+            e.HasIndex(s => s.OriginalSaleId);
+            e.HasOne<Sale>().WithMany().HasForeignKey(s => s.OriginalSaleId).OnDelete(DeleteBehavior.Restrict);
         });
 
         model.Entity<SaleLine>(e =>
@@ -142,6 +157,9 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Property(l => l.UnitPrice).HasPrecision(10, 2);
             e.Property(l => l.VatRate).HasPrecision(5, 2);
             e.Property(l => l.LineTotal).HasPrecision(10, 2);
+            e.Property(l => l.Discount).HasPrecision(10, 2);
+            e.HasIndex(l => l.OriginalLineId);
+            e.HasOne<SaleLine>().WithMany().HasForeignKey(l => l.OriginalLineId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(l => l.ProductId);
             e.HasIndex(l => l.CategoryId);
             e.HasOne<Product>().WithMany().HasForeignKey(l => l.ProductId).OnDelete(DeleteBehavior.Restrict);
@@ -169,6 +187,8 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.HasIndex(i => i.IssuedAtUtc);
             e.HasIndex(i => i.SaleId);
             e.HasIndex(i => i.ReplacesInvoiceId).IsUnique(); // FAC-06: un ticket solo se factura una vez
+            e.HasIndex(i => i.RectifiedInvoiceId);
+            e.HasOne<Invoice>().WithMany().HasForeignKey(i => i.RectifiedInvoiceId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(i => i.Sale).WithMany().HasForeignKey(i => i.SaleId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Invoice>().WithMany().HasForeignKey(i => i.ReplacesInvoiceId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(i => i.VatLines).WithOne().HasForeignKey(l => l.InvoiceId).OnDelete(DeleteBehavior.Restrict);

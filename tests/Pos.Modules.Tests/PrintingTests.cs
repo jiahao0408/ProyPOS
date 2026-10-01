@@ -92,6 +92,21 @@ public sealed class PrintingTests : IDisposable
         Assert.Contains("2,89", text); // 3,50 sin IVA
     }
 
+    [Fact]
+    public void Discounts_AreShownAndReturnsShowWhatWasRefunded()
+    {
+        var discounted = Doc with { Lines = [new InvoiceDocumentLine("Taza de cerámica", 2, 3.50m, 21m, 6.30m, Discount: 0.70m)] };
+        var returned = Doc with { Lines = [new InvoiceDocumentLine("Taza de cerámica", -1, 3.50m, 21m, -3.15m)] };
+
+        var sold = Preview(discounted);
+        Assert.Contains("Dto. -0,70", sold);
+        Assert.Contains("   3,50", sold); // precio de tarifa
+
+        var refund = Preview(returned);
+        Assert.Contains("   -3,15", refund); // lo que realmente se devuelve por unidad
+        Assert.DoesNotContain("   3,50", refund);
+    }
+
     [Theory]
     [InlineData(58, 32)]
     [InlineData(80, 48)]

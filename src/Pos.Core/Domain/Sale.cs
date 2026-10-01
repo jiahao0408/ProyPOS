@@ -4,6 +4,17 @@ public enum PaymentMethod
 {
     Cash = 0,
     Card = 1,
+
+    /// <summary>Vale interno de un cambio (BAZ-07): lo devuelto paga lo nuevo. No mueve dinero.</summary>
+    StoreCredit = 2,
+}
+
+public enum SaleKind
+{
+    Sale = 0,
+
+    /// <summary>Devolución de una venta cerrada (VEN-06): cantidades e importes en negativo.</summary>
+    Return = 1,
 }
 
 /// <summary>
@@ -28,6 +39,17 @@ public class Sale
 
     /// <summary>Cambio devuelto al cliente.</summary>
     public decimal Change { get; set; }
+
+    public SaleKind Kind { get; set; }
+
+    /// <summary>En una devolución: la venta original.</summary>
+    public int? OriginalSaleId { get; set; }
+
+    /// <summary>Motivo de la devolución (obligatorio, VEN-06).</summary>
+    public string? Reason { get; set; }
+
+    /// <summary>Descuento sobre el total, en % (VEN-05). Ya está aplicado en las líneas.</summary>
+    public decimal DiscountPercent { get; set; }
 
     public List<SaleLine> Lines { get; set; } = [];
 
@@ -57,6 +79,12 @@ public class SaleLine
     public decimal VatRate { get; set; }
 
     public decimal LineTotal { get; set; }
+
+    /// <summary>Descuento aplicado a la línea (VEN-05), ya restado de <see cref="LineTotal"/>.</summary>
+    public decimal Discount { get; set; }
+
+    /// <summary>En una devolución: la línea de la venta original que se devuelve.</summary>
+    public int? OriginalLineId { get; set; }
 }
 
 /// <summary>Importe cobrado con cada método. La suma de los pagos es el total de la venta (VEN-04).</summary>

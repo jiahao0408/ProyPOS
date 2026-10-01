@@ -3,6 +3,7 @@ using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Pos.Core.Domain;
 using Pos.Core.Localization;
 using Pos.Core.Security;
 using Pos.Modules.Users;
@@ -38,10 +39,11 @@ public sealed partial class NavItemViewModel : ObservableObject
 public sealed partial class AdminPinPromptViewModel : ViewModelBase
 {
     private readonly UserService _users;
-    private readonly Action _onAuthorized;
+    private readonly Action<User> _onAuthorized;
     private readonly Action _onCancel;
 
-    public AdminPinPromptViewModel(ILocalizer localizer, UserService users, Action onAuthorized, Action onCancel)
+    /// <param name="onAuthorized">Recibe el administrador que ha puesto su PIN (para la auditoría, USR-03).</param>
+    public AdminPinPromptViewModel(ILocalizer localizer, UserService users, Action<User> onAuthorized, Action onCancel)
         : base(localizer)
     {
         _users = users;
@@ -57,12 +59,12 @@ public sealed partial class AdminPinPromptViewModel : ViewModelBase
 
     private void Submit(string pin)
     {
-        if (_users.VerifyAdminPin(pin) is null)
+        if (_users.VerifyAdminPin(pin) is not { } admin)
         {
             ShowError("AdminPinWrong");
             return;
         }
-        _onAuthorized();
+        _onAuthorized(admin);
     }
 }
 
@@ -100,6 +102,7 @@ public partial class WorkspaceViewModel : ViewModelBase
             new NavItemViewModel(localizer, "NavPrinter", typeof(PrinterPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavData", typeof(DataPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavVerifactu", typeof(VerifactuPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavAudit", typeof(AuditPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavSettings", typeof(SettingsPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavAbout", typeof(AboutPageViewModel), requiresAdmin: false),
         ];
@@ -122,7 +125,7 @@ public partial class WorkspaceViewModel : ViewModelBase
         {
             // USR-02: el cajero necesita el PIN de un admin; la autorización vale solo para esta visita.
             AdminPrompt = new AdminPinPromptViewModel(L, _users,
-                onAuthorized: () =>
+                onAuthorized: _ =>
                 {
                     AdminPrompt = null;
                     Show(item);

@@ -29,6 +29,10 @@ public partial class SettingsPageViewModel(
     [ObservableProperty]
     private string _inactivityMinutesText = "";
 
+    /// <summary>VEN-05: descuento máximo (%) que puede aplicar un cajero sin PIN de admin.</summary>
+    [ObservableProperty]
+    private string _maxCashierDiscountText = "";
+
     [ObservableProperty]
     private string _preview = "";
 
@@ -45,6 +49,8 @@ public partial class SettingsPageViewModel(
         SelectedLanguage = Languages.FirstOrDefault(l => l.Code == L.CurrentLanguage);
         CurrencySymbol = formatter.CurrencySymbol;
         InactivityMinutesText = settings.GetInt(SettingKeys.InactivityMinutes, ShellViewModel.DefaultInactivityMinutes).ToString(L.Culture);
+        MaxCashierDiscountText = (decimal.TryParse(settings.Get(Pos.Modules.Sales.SalesSettingKeys.MaxCashierDiscount), System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture, out var max) ? max : Pos.Modules.Sales.SalesSettingKeys.DefaultMaxCashierDiscount).ToString("0.##", L.Culture);
         RefreshTexts(formatter.DateFormat);
     }
 
@@ -52,6 +58,11 @@ public partial class SettingsPageViewModel(
     private void Save()
     {
         if (!int.TryParse(InactivityMinutesText, out var minutes) || minutes < 0)
+        {
+            ShowError("ErrorNumberFormat");
+            return;
+        }
+        if (!formatter.TryParseAmount(MaxCashierDiscountText.Replace("%", ""), out var maxDiscount) || maxDiscount is < 0 or > 100)
         {
             ShowError("ErrorNumberFormat");
             return;
@@ -67,6 +78,7 @@ public partial class SettingsPageViewModel(
         settings.Set(SettingKeys.CurrencySymbol, symbol);
         settings.Set(SettingKeys.DateFormat, dateFormat);
         settings.Set(SettingKeys.InactivityMinutes, minutes.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        settings.Set(Pos.Modules.Sales.SalesSettingKeys.MaxCashierDiscount, maxDiscount.ToString(System.Globalization.CultureInfo.InvariantCulture));
         formatter.CurrencySymbol = symbol;
         formatter.DateFormat = dateFormat;
 

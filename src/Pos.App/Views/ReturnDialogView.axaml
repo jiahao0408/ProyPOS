@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.ReturnDialogView"
+             x:DataType="vm:ReturnDialogViewModel">
+  <!-- VEN-06: devolución con motivo; genera factura rectificativa (FAC-03) -->
+  <Border Classes="dialog" Width="640">
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" />
+      <Grid ColumnDefinitions="*,70,90,110,Auto" Margin="0,8,0,0">
+        <TextBlock Text="{Binding L[InvoiceDescription]}" Opacity="0.7" />
+        <TextBlock Grid.Column="1" Text="{Binding L[Returnable]}" Opacity="0.7" TextAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding L[UnitRefund]}" Opacity="0.7" TextAlignment="Right" />
+        <TextBlock Grid.Column="3" Text="{Binding L[ReturnQuantity]}" Opacity="0.7" TextAlignment="Center" />
+      </Grid>
+      <ItemsControl ItemsSource="{Binding Lines}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ReturnLineViewModel">
+            <Grid ColumnDefinitions="*,70,90,110,Auto" Margin="0,2">
+              <TextBlock Text="{Binding Description}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <TextBlock Grid.Column="1" Text="{Binding Returnable}" VerticalAlignment="Center" TextAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding UnitRefund}" VerticalAlignment="Center" TextAlignment="Right" />
+              <TextBox Grid.Column="3" Text="{Binding QuantityText}" Margin="8,0" />
+              <Button Grid.Column="4" Content="{Binding $parent[ItemsControl].((vm:ReturnDialogViewModel)DataContext).L[All]}"
+                      Command="{Binding AllCommand}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Classes="label" Text="{Binding L[ReturnReason]}" />
+      <TextBox Text="{Binding Reason}" />
+      <CheckBox Content="{Binding L[RefundByCard]}" IsChecked="{Binding RefundByCard}" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding L[Refund]}" FontSize="22" />
+        <TextBlock Grid.Column="1" Text="{Binding RefundText}" FontSize="26" FontWeight="Bold" />
+      </Grid>
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,8,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Content="{Binding L[ConfirmReturn]}" Command="{Binding ConfirmCommand}" />
+      </Grid>
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -52,6 +52,12 @@
                     Content="{Binding L[InvoiceTicket]}" Command="{Binding InvoiceTicketCommand}" IsEnabled="{Binding CanInvoice}" />
             <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     Content="{Binding L[SavePdf]}" Click="OnSavePdf" IsEnabled="{Binding HasSelection}" />
+            <Button Margin="0,6,6,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[ReturnAction]}" Command="{Binding ReturnCommand}" IsEnabled="{Binding CanReturn}" />
+            <Button Margin="0,6,6,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[ExchangeAction]}" Command="{Binding ExchangeCommand}" IsEnabled="{Binding CanReturn}" />
+            <Button Margin="0,6,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Content="{Binding L[GiftTicket]}" Command="{Binding GiftTicketCommand}" IsEnabled="{Binding HasSelection}" />
           </UniformGrid>
         </StackPanel>
         <Border Background="White" CornerRadius="4" Padding="12" BoxShadow="0 2 8 0 #30000000">

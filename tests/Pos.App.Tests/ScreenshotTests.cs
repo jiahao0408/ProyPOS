@@ -187,6 +187,47 @@ public class ScreenshotTests
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(AboutPageViewModel)));
         Capture(window, "41-acerca-de");
 
+        // Sección 6: descuentos, devoluciones, cambios y auditoría
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(SalePageViewModel)));
+        var sale6 = (SalePageViewModel)workspace.CurrentPage!;
+        foreach (var code in new[] { "8410000000011", "8410000000011", "8410000000028" })
+        {
+            sale6.SearchText = code;
+            sale6.SubmitSearchCommand.Execute(null);
+        }
+        sale6.EditLineDiscountCommand.Execute(sale6.TicketLines[0]);
+        ((DiscountViewModel)sale6.Dialog!).ValueText = "10";
+        Capture(window, "50-descuento");
+        ((DiscountViewModel)sale6.Dialog!).ApplyCommand.Execute(null);
+        Capture(window, "51-ticket-con-descuento");
+        sale6.ChargeCommand.Execute(null);
+        ((PaymentViewModel)sale6.Dialog!).ConfirmCommand.Execute(null);
+
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(TicketsPageViewModel)));
+        var tickets6 = (TicketsPageViewModel)workspace.CurrentPage!;
+        tickets6.Selected = tickets6.Invoices.First();
+        tickets6.ReturnCommand.Execute(null);
+        foreach (var d in "1111")
+            ((AdminPinPromptViewModel)tickets6.Dialog!).PinEntry.Digit(d.ToString());
+        var returnDialog = (ReturnDialogViewModel)tickets6.Dialog!;
+        returnDialog.Lines[0].QuantityText = "1";
+        returnDialog.Reason = "Taza rota";
+        Capture(window, "52-devolucion");
+        returnDialog.ConfirmCommand.Execute(null);
+        Capture(window, "53-rectificativa");
+
+        tickets6.Selected = tickets6.Invoices.First(i => i.Code == tickets6.Invoices.Where(x => x.Code.StartsWith('T')).Max(x => x.Code));
+        tickets6.ExchangeCommand.Execute(null);
+        var exchange = (ExchangeDialogViewModel)tickets6.Dialog!;
+        exchange.ReturnLines[^1].AllCommand.Execute(null);
+        exchange.SearchText = "8410000000035";
+        exchange.AddItemCommand.Execute(null);
+        Capture(window, "54-cambio");
+        exchange.CancelCommand.Execute(null);
+
+        OpenAdmin(typeof(AuditPageViewModel));
+        Capture(window, "55-auditoria");
+
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");
 

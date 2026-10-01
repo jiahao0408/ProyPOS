@@ -50,6 +50,19 @@ public sealed class PrintService(
         return SendAsync(builder.Build(doc, profiles.GetBusiness(), profile, copy), profile, cancellationToken);
     }
 
+    /// <summary>BAZ-07: ticket regalo (sin precios).</summary>
+    public Task<PrintOutcome> PrintGiftAsync(int invoiceId, CancellationToken cancellationToken = default)
+    {
+        var doc = invoices.Get(invoiceId);
+        if (doc is null)
+            return Task.FromResult(new PrintOutcome("Invoice not found"));
+        var profile = profiles.GetPrinter();
+        return SendAsync(builder.BuildGift(doc, profiles.GetBusiness(), profile), profile, cancellationToken);
+    }
+
+    public string PreviewGift(InvoiceDocument doc) =>
+        TextPreview.Render(builder.BuildGift(doc, profiles.GetBusiness(), profiles.GetPrinter()), profiles.GetPrinter());
+
     public Task<PrintOutcome> PrintTestAsync(CancellationToken cancellationToken = default)
     {
         var profile = profiles.GetPrinter();
