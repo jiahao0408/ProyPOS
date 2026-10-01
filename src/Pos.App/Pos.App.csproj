@@ -25,6 +25,9 @@
     <ProjectReference Include="..\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Hardware\Pos.Modules.Hardware.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Users\Pos.Modules.Users.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Verifactu\Pos.Modules.Verifactu.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.DataTransfer\Pos.Modules.DataTransfer.csproj" />
+    <ProjectReference Include="..\Modules\Pos.Modules.Bazaar\Pos.Modules.Bazaar.csproj" />
   </ItemGroup>
 
   <!-- Las traducciones se copian junto al ejecutable como ficheros sueltos: se pueden añadir sin recompilar. -->

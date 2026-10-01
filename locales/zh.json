@@ -13,5 +13,8 @@
   "ModuleInvoicing": "开票",
   "ModuleCashRegister": "收银",
   "ModuleHardware": "硬件",
-  "ModuleUsers": "用户与安全"
+  "ModuleUsers": "用户与安全",
+  "ModuleVerifactu": "Verifactu 连接",
+  "ModuleDataTransfer": "数据导入与导出",
+  "ModuleBazaar": "百货店功能"
 }

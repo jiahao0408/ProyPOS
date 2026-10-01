@@ -13,5 +13,8 @@
   "ModuleInvoicing": "Facturación",
   "ModuleCashRegister": "Caja",
   "ModuleHardware": "Hardware",
-  "ModuleUsers": "Usuarios y seguridad"
+  "ModuleUsers": "Usuarios y seguridad",
+  "ModuleVerifactu": "Conexión con Verifactu",
+  "ModuleDataTransfer": "Importar y exportar datos",
+  "ModuleBazaar": "Funciones de bazar"
 }

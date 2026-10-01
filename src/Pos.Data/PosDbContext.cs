@@ -31,6 +31,8 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Property(p => p.VatRate).HasPrecision(5, 2);
             e.Property(p => p.Barcode).HasMaxLength(64);
             e.HasIndex(p => p.Barcode).IsUnique(); // PRE-01; SQLite admite varios NULL en un índice único
+            e.HasIndex(p => p.PendingReview);
+            e.ToTable(t => t.HasCheckConstraint("CK_Product_UnitsPerBox", "UnitsPerBox >= 1"));
             e.HasOne(p => p.Category)
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId)

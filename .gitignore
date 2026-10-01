@@ -34,7 +34,9 @@ coverage*/
 *.sqlite
 backups/
 
-# Secretos
+# Secretos (certificado Verifactu incluido)
+*.pfx
+*.p12
 appsettings.*.local.json
 *.env
 .env*

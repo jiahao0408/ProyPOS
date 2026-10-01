@@ -3,7 +3,9 @@ using Pos.App.ViewModels;
 using Pos.Core.Localization;
 using Pos.Core.Modules;
 using Pos.Localization;
+using Pos.Modules.Bazaar;
 using Pos.Modules.CashRegister;
+using Pos.Modules.DataTransfer;
 using Pos.Modules.Hardware;
 using Pos.Modules.Inventory;
 using Pos.Modules.Invoicing;
@@ -11,6 +13,7 @@ using Pos.Modules.Printing;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
 using Pos.Modules.Users;
+using Pos.Modules.Verifactu;
 
 namespace Pos.App;
 
@@ -34,6 +37,9 @@ internal static class Composition
             new PrintingModule(),
             new InvoicingModule(),
             new HardwareModule(),
+            new BazaarModule(),
+            new DataTransferModule(),
+            new VerifactuModule(),
         ];
         foreach (var module in modules)
         {

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Los módulos solo dependen del núcleo, nunca entre sí ni de la app. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Pos.Core\Pos.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,264 @@
+# Entorno de configuración
+
+Guía para dejar un PC listo para desarrollar ProyPOS: herramientas, compilación, base de datos, hardware y Verifactu.
+
+Para saber qué es el proyecto y cómo está organizado, ver el [README](README.md).
+
+---
+
+## Índice
+
+1. [Resumen rápido](#1-resumen-rápido)
+2. [Requisitos del equipo](#2-requisitos-del-equipo)
+3. [Instalar las herramientas](#3-instalar-las-herramientas)
+4. [Editor o IDE](#4-editor-o-ide)
+5. [Clonar, compilar y ejecutar](#5-clonar-compilar-y-ejecutar)
+6. [Base de datos local](#6-base-de-datos-local)
+7. [Idiomas](#7-idiomas)
+8. [Hardware para desarrollo](#8-hardware-para-desarrollo)
+9. [Verifactu y certificado digital](#9-verifactu-y-certificado-digital)
+10. [Secretos y ficheros que no se suben](#10-secretos-y-ficheros-que-no-se-suben)
+11. [Problemas frecuentes](#11-problemas-frecuentes)
+12. [Lista de comprobación](#12-lista-de-comprobación)
+
+---
+
+## 1. Resumen rápido
+
+En Windows, con todo por instalar:
+
+```powershell
+winget install Git.Git
+winget install Microsoft.DotNet.SDK.8
+winget install Microsoft.VisualStudioCode   # o Visual Studio 2022 / Rider
+
+# Cerrar y volver a abrir la terminal para que se cargue el PATH
+git clone <url-del-repo> ProyPOS
+cd ProyPOS
+dotnet --list-sdks          # debe salir una versión 8.0.x
+dotnet restore
+dotnet build
+dotnet test
+dotnet run --project src/Pos.App
+```
+
+Si todo va bien se abre la app a pantalla completa con el selector de idioma. Para salir, botón **Salir** de la barra superior.
+
+## 2. Requisitos del equipo
+
+| | Mínimo | Recomendado |
+|---|---|---|
+| Sistema | Windows 10/11 de 64 bits | Windows 11 de 64 bits |
+| Otros sistemas | Linux y macOS (la app está preparada, pero el objetivo es Windows) | — |
+| Pantalla | 1366×768 | 1920×1080 + un segundo monitor para la pantalla de cliente |
+| Memoria | 8 GB | 16 GB |
+| Disco | 5 GB libres (SDK, paquetes NuGet, IDE) | SSD |
+
+## 3. Instalar las herramientas
+
+### 3.1 Obligatorias
+
+| Herramienta | Versión | Para qué |
+|---|---|---|
+| [Git](https://git-scm.com/) | 2.40 o superior | Control de versiones |
+| [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) | 8.0.100 o superior (8.0.x) | Compilar, ejecutar y probar |
+
+> **Ojo:** hace falta el **SDK**, no solo el *runtime*. Con solo el runtime, `dotnet build` falla con *"No .NET SDKs were found"*.
+
+El fichero [global.json](global.json) fija el SDK 8.0 y acepta cualquier 8.0.x más reciente (`rollForward: latestFeature`). Si tienes instalado solo el SDK 9 o 10, también falla: instala además el 8.
+
+#### Windows
+
+```powershell
+winget install Git.Git
+winget install Microsoft.DotNet.SDK.8
+```
+
+#### Linux (Ubuntu / Debian)
+
+```bash
+sudo apt update
+sudo apt install -y git dotnet-sdk-8.0
+# Fuentes para chino y otros alfabetos (si no, salen cuadrados)
+sudo apt install -y fonts-noto-cjk
+```
+
+#### macOS
+
+Instalar Git con Xcode Command Line Tools (`xcode-select --install`) y el SDK con el instalador oficial de la [página de descargas de .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+#### Comprobar
+
+```bash
+git --version
+dotnet --list-sdks   # debe aparecer 8.0.xxx
+```
+
+### 3.2 Herramienta de migraciones (EF Core)
+
+```bash
+dotnet tool install --global dotnet-ef --version 8.*
+dotnet ef --version
+```
+
+Si ya la tienes en otra versión: `dotnet tool update --global dotnet-ef --version 8.*`.
+
+### 3.3 Opcionales
+
+```bash
+# Plantillas de Avalonia (para crear ventanas y controles nuevos)
+dotnet new install Avalonia.Templates
+```
+
+## 4. Editor o IDE
+
+Cualquiera de estos sirve:
+
+| IDE | Versión mínima | Notas |
+|---|---|---|
+| **Visual Studio 2022** | 17.8 | Carga de trabajo *Desarrollo de escritorio de .NET*. Añadir la extensión *Avalonia for Visual Studio* para la vista previa de XAML |
+| **JetBrains Rider** | 2023.3 | Instalar el plugin *AvaloniaRider* |
+| **VS Code** | Reciente | Extensiones `ms-dotnettools.csdevkit` y `AvaloniaTeam.vscode-avalonia` |
+
+En VS Code:
+
+```bash
+code --install-extension ms-dotnettools.csdevkit
+code --install-extension AvaloniaTeam.vscode-avalonia
+```
+
+Abrir siempre la carpeta raíz (o `ProyPOS.sln`), no un proyecto suelto, para que se apliquen [Directory.Build.props](Directory.Build.props) y [Directory.Packages.props](Directory.Packages.props).
+
+### Convenciones que el IDE debe respetar
+
+- **Codificación UTF-8** en todos los ficheros, sobre todo en `locales/*.json`.
+- **Finales de línea:** los gestiona [.gitattributes](.gitattributes); no hace falta tocar `core.autocrlf`.
+- **Versiones de NuGet:** se añaden solo en `Directory.Packages.props`. En los `.csproj` va `<PackageReference Include="Paquete" />` sin versión.
+
+## 5. Clonar, compilar y ejecutar
+
+```bash
+git clone <url-del-repo> ProyPOS
+cd ProyPOS
+dotnet restore
+dotnet build
+```
+
+| Acción | Comando |
+|---|---|
+| Ejecutar la app | `dotnet run --project src/Pos.App` |
+| Pasar los tests | `dotnet test` |
+| Compilar en Release | `dotnet build -c Release` |
+| Publicar para Windows (un ejecutable) | `dotnet publish src/Pos.App -c Release -r win-x64 --self-contained` |
+
+El ejecutable se llama `ProyPOS.exe`. Al compilar se copian los idiomas a `bin/.../locales/`.
+
+## 6. Base de datos local
+
+- Motor: **SQLite cifrado con SQLCipher**, a través de EF Core 8.
+- La base de datos **siempre** se abre con clave (`PosDatabase.CreateOptions`); sin clave lanza un error.
+- Los ficheros `*.db` están en `.gitignore`: nunca se suben, porque contendrán ventas y facturas.
+
+### Migraciones
+
+```bash
+# Crear una migración
+dotnet ef migrations add <NombreDescriptivo> --project src/Pos.Data
+
+# Ver las migraciones existentes
+dotnet ef migrations list --project src/Pos.Data
+```
+
+Las migraciones usan `DesignTimeDbContextFactory`, que crea un `pos-design.db` temporal con una clave de prueba. Ese fichero se puede borrar sin problema.
+
+### Pendiente (Sprint 1)
+
+Todavía no está decidido ni implementado:
+
+- **Dónde se guarda la BD** en el PC de la tienda. Propuesta: `%LOCALAPPDATA%\ProyPOS\pos.db` en Windows.
+- **De dónde sale la clave.** Propuesta: clave aleatoria protegida con DPAPI en Windows.
+- **Aplicar las migraciones al arrancar** la app.
+
+Cuando se implemente, esta sección explicará cómo crear una BD de desarrollo con datos de prueba.
+
+## 7. Idiomas
+
+Los textos están en [locales/](locales/), un JSON por idioma (`es`, `ca`, `en`, `zh`, `de`, `fr`).
+
+**Añadir un texto nuevo:**
+
+1. Añadir la clave a `es.json`.
+2. Añadir la misma clave a **todos** los demás ficheros.
+3. Usarla en XAML con `{Binding L[MiClave]}`.
+4. Ejecutar `dotnet test`: un test falla si algún idioma tiene claves de más o de menos, o textos vacíos.
+
+**Añadir un idioma:** copiar `es.json` como `<código>.json` (por ejemplo `it.json`), traducir los valores y poner su nombre en `LanguageName`. No hace falta recompilar: basta con dejar el fichero en la carpeta `locales/` junto al ejecutable.
+
+## 8. Hardware para desarrollo
+
+No hace falta hardware para compilar ni para pasar los tests. Para probar los periféricos:
+
+| Periférico | Cómo probar | Sin el aparato |
+|---|---|---|
+| **Lector de códigos** (HW-04) | Lector USB configurado en **modo teclado** (HID) y con sufijo **Enter** | Escribir el código en el campo de búsqueda y pulsar Enter: es exactamente lo que hace el lector |
+| **Impresora térmica** (HW-01) | ESC/POS por USB, puerto COM o red (puerto 9100), papel de 58 u 80 mm | Pendiente: un modo "impresora simulada" que guarde el ticket en un fichero |
+| **Impresora de etiquetas** (BAZ-01) | Depende del modelo (ESC/POS, ZPL o TSPL): **modelo pendiente de decidir** | — |
+| **Cajón portamonedas** (HW-03) | Conectado a la impresora; se abre con un pulso ESC/POS | — |
+| **Pantalla de cliente** (HW-02) | Segundo monitor, o visor por puerto COM | Ventana normal en el mismo monitor |
+
+### Puertos serie (COM)
+
+- **Windows:** ver el número de puerto en *Administrador de dispositivos → Puertos (COM y LPT)*. Muchas impresoras Bluetooth también aparecen ahí como puerto COM virtual.
+- **Linux:** los puertos son `/dev/ttyUSB0`, `/dev/ttyACM0`… El usuario necesita permiso: `sudo usermod -aG dialout $USER` y volver a iniciar sesión.
+
+## 9. Verifactu y certificado digital
+
+Solo hace falta a partir del **Sprint 5**.
+
+- Se necesita el **certificado digital del negocio** en formato `.pfx` (o `.p12`) con su contraseña.
+- Toda prueba de desarrollo se hace contra el **entorno de pruebas de la AEAT**, nunca contra producción. La app tendrá un selector pruebas / producción (VFA-01).
+- El certificado **nunca** se sube al repositorio ni se copia en carpetas compartidas. Dentro de la app se guardará cifrado (VFA-01).
+- Las direcciones de los servicios web se toman de la documentación técnica oficial de Verifactu en la sede electrónica de la AEAT, y se guardarán en la configuración, no en el código.
+
+## 10. Secretos y ficheros que no se suben
+
+El [.gitignore](.gitignore) ya excluye:
+
+| Qué | Patrón |
+|---|---|
+| Compilación | `bin/`, `obj/`, `publish/`, `*.msi` |
+| Bases de datos y copias de seguridad | `*.db`, `*.db-shm`, `*.db-wal`, `*.sqlite`, `backups/` |
+| Certificados | `*.pfx`, `*.p12` |
+| Configuración local y secretos | `appsettings.*.local.json`, `.env*` |
+| IDE | `.vs/`, `.idea/`, `*.user` |
+
+Reglas:
+
+- Nada de contraseñas, claves de la BD ni certificados en el código ni en commits.
+- Para datos de prueba, usar siempre datos inventados, nunca ventas o NIF reales de la tienda.
+
+## 11. Problemas frecuentes
+
+| Síntoma | Causa | Solución |
+|---|---|---|
+| `No .NET SDKs were found` | Solo está el runtime | `winget install Microsoft.DotNet.SDK.8` y abrir una terminal nueva |
+| `A compatible .NET SDK was not found` / error de `global.json` | Solo hay SDK 9 o 10 | Instalar también el SDK 8 |
+| `dotnet` no se reconoce | PATH sin recargar | Cerrar y abrir la terminal (o el IDE) |
+| Error NU1008 al restaurar | Un `.csproj` lleva versión en `PackageReference` | Quitar la versión y ponerla en `Directory.Packages.props` |
+| Error NU1010 al restaurar | El paquete no está en `Directory.Packages.props` | Añadir allí su `PackageVersion` |
+| La app abre pero sin textos (salen las claves) | No se copió `locales/` al compilar | `dotnet build` de nuevo; comprobar que existe `bin/.../locales/es.json` |
+| Caracteres chinos como cuadrados (Linux) | Faltan fuentes CJK | `sudo apt install fonts-noto-cjk` |
+| `file is not a database` al abrir la BD | Clave incorrecta, o BD creada sin cifrar | Borrar la BD de desarrollo y volver a crearla |
+| `Access denied` en `/dev/ttyUSB0` (Linux) | Usuario fuera del grupo `dialout` | `sudo usermod -aG dialout $USER` y reiniciar sesión |
+| La app tapa toda la pantalla y no sé salir | Arranca a pantalla completa | Botón **Salir**, o Alt+F4 |
+
+## 12. Lista de comprobación
+
+- [ ] `git --version` funciona
+- [ ] `dotnet --list-sdks` muestra un 8.0.x
+- [ ] `dotnet ef --version` muestra un 8.x
+- [ ] IDE instalado con la extensión de Avalonia
+- [ ] `dotnet build` termina sin errores
+- [ ] `dotnet test` pasa todos los tests
+- [ ] `dotnet run --project src/Pos.App` abre la app y el selector cambia el idioma
+- [ ] (Si se trabaja con hardware) el lector escribe el código y pulsa Enter en un bloc de notas

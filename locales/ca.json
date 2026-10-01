@@ -13,5 +13,8 @@
   "ModuleInvoicing": "Facturació",
   "ModuleCashRegister": "Caixa",
   "ModuleHardware": "Maquinari",
-  "ModuleUsers": "Usuaris i seguretat"
+  "ModuleUsers": "Usuaris i seguretat",
+  "ModuleVerifactu": "Connexió amb Verifactu",
+  "ModuleDataTransfer": "Importar i exportar dades",
+  "ModuleBazaar": "Funcions de basar"
 }

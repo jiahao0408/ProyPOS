@@ -12,6 +12,12 @@ public class Category
     /// <summary>Color del botón en formato #RRGGBB.</summary>
     public string? Color { get; set; }
 
+    /// <summary>
+    /// La categoría funciona como "sección" de bazar: sale como botón de artículo genérico
+    /// con precio libre (BAZ-02). Ver "Decisiones abiertas" en el README.
+    /// </summary>
+    public bool AllowsGenericSale { get; set; }
+
     public List<Product> Products { get; set; } = [];
 }
 
@@ -35,6 +41,12 @@ public class Product
     public int? CategoryId { get; set; }
 
     public Category? Category { get; set; }
+
+    /// <summary>Unidades por caja del mayorista: recibir 3 cajas de 12 suma 36 unidades (BAZ-04).</summary>
+    public int UnitsPerBox { get; set; } = 1;
+
+    /// <summary>Creado por un cajero con el alta rápida al escanear; el admin debe revisarlo (BAZ-03).</summary>
+    public bool PendingReview { get; set; }
 
     public bool IsActive { get; set; } = true;
 }
