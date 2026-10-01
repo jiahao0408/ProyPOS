@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PaymentView"
+             x:DataType="vm:PaymentViewModel">
+  <Border Classes="dialog" Width="520">
+    <StackPanel Spacing="8">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding L[ToPay]}" FontSize="22" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontSize="36" FontWeight="Bold" />
+      </Grid>
+
+      <!-- Método de pago -->
+      <UniformGrid Columns="3" Margin="0,8">
+        <Button Classes="mode" Classes.selected="{Binding IsCash}" Content="{Binding L[PayCash]}"
+                Command="{Binding SetModeCommand}" CommandParameter="{x:Static vm:PaymentMode.Cash}" />
+        <Button Classes="mode" Classes.selected="{Binding IsCard}" Content="{Binding L[PayCard]}"
+                Command="{Binding SetModeCommand}" CommandParameter="{x:Static vm:PaymentMode.Card}" />
+        <Button Classes="mode" Classes.selected="{Binding IsMixed}" Content="{Binding L[PayMixed]}"
+                Command="{Binding SetModeCommand}" CommandParameter="{x:Static vm:PaymentMode.Mixed}" />
+      </UniformGrid>
+
+      <!-- Mixto: parte con tarjeta -->
+      <StackPanel IsVisible="{Binding ShowCardInput}">
+        <TextBlock Classes="label" Text="{Binding L[CardAmount]}" />
+        <TextBox Name="CardBox" Text="{Binding CardAmountText}" FontSize="22" />
+        <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+          <TextBlock Text="{Binding L[CashDue]}" FontSize="18" />
+          <TextBlock Grid.Column="1" Text="{Binding CashDueText}" FontSize="18" FontWeight="SemiBold" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Efectivo entregado -->
+      <StackPanel IsVisible="{Binding ShowCashInput}">
+        <TextBlock Classes="label" Text="{Binding L[CashTendered]}" />
+        <TextBox Name="CashBox" Text="{Binding CashTenderedText}" FontSize="22" Watermark="{Binding L[CashTenderedHint]}">
+          <TextBox.KeyBindings>
+            <KeyBinding Gesture="Enter" Command="{Binding ConfirmCommand}" />
+          </TextBox.KeyBindings>
+        </TextBox>
+        <ItemsControl ItemsSource="{Binding QuickCash}" Margin="0,8,0,0">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:QuickCashOption">
+              <Button Margin="0,0,8,8" Content="{Binding Title}"
+                      Command="{Binding $parent[ItemsControl].((vm:PaymentViewModel)DataContext).UseQuickCashCommand}"
+                      CommandParameter="{Binding}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding L[Change]}" FontSize="24" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding ChangeText}" FontSize="32" FontWeight="Bold" Foreground="{StaticResource OkBrush}" />
+        </Grid>
+      </StackPanel>
+
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,12,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                MinHeight="64" FontSize="24" Content="{Binding L[ConfirmPayment]}" Command="{Binding ConfirmCommand}" />
+      </Grid>
+
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

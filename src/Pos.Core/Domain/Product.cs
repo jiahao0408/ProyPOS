@@ -42,6 +42,12 @@ public class Product
 
     public Category? Category { get; set; }
 
+    /// <summary>
+    /// Unidades disponibles (INV-02). Solo cambia con movimientos de stock (INV-01).
+    /// Puede quedar en negativo: en un bazar no se para una venta por un stock mal contado.
+    /// </summary>
+    public int Stock { get; set; }
+
     /// <summary>Unidades por caja del mayorista: recibir 3 cajas de 12 suma 36 unidades (BAZ-04).</summary>
     public int UnitsPerBox { get; set; } = 1;
 

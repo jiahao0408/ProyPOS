@@ -16,6 +16,9 @@
     <DataTemplate DataType="vm:CategoriesPageViewModel"><v:CategoriesPageView /></DataTemplate>
     <DataTemplate DataType="vm:UsersPageViewModel"><v:UsersPageView /></DataTemplate>
     <DataTemplate DataType="vm:SettingsPageViewModel"><v:SettingsPageView /></DataTemplate>
+    <DataTemplate DataType="vm:PaymentViewModel"><v:PaymentView /></DataTemplate>
+    <DataTemplate DataType="vm:QuickCreateViewModel"><v:QuickCreateView /></DataTemplate>
+    <DataTemplate DataType="vm:GenericItemViewModel"><v:GenericItemView /></DataTemplate>
   </Application.DataTemplates>
 
   <Application.Resources>
@@ -97,6 +100,34 @@
       <Setter Property="FontSize" Value="28" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Ventanas emergentes (cobro, alta rápida…) -->
+    <Style Selector="Border.dialog">
+      <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="28" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="BoxShadow" Value="0 8 32 0 #60000000" />
+    </Style>
+
+    <!-- Selector de método de pago -->
+    <Style Selector="Button.mode">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,6,0" />
+      <Setter Property="MinHeight" Value="56" />
+    </Style>
+    <Style Selector="Button.mode.selected">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- Producto sin stock -->
+    <Style Selector="TextBlock.out">
+      <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+      <Setter Property="Opacity" Value="1" />
     </Style>
 
     <!-- Botones de categoría y producto en la venta -->

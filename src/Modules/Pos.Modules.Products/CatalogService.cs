@@ -16,6 +16,12 @@ public sealed record ProductInput(
     string? PhotoPath,
     int UnitsPerBox = 1);
 
+public static class TicketDefaults
+{
+    /// <summary>IVA de los productos creados con el alta rápida: el tipo general. El admin lo corrige al revisar.</summary>
+    public const decimal VatRate = 21m;
+}
+
 /// <summary>Catálogo: categorías y productos (PRE-01, PRE-02).</summary>
 public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
 {
@@ -115,7 +121,28 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
         return query.OrderBy(p => p.Name).Take(limit).ToList();
     }
 
-    public OperationResult<Product> SaveProduct(int? id, ProductInput input)
+    /// <summary>
+    /// BAZ-03: alta rápida al escanear un código que no existe, sin parar la venta.
+    /// Si la hace un cajero, el producto queda pendiente de revisión por el admin.
+    /// </summary>
+    public OperationResult<Product> QuickCreate(string name, decimal price, int? sectionId, string barcode, bool createdByAdmin)
+    {
+        if (string.IsNullOrWhiteSpace(barcode))
+            return OperationResult<Product>.Fail("ErrorBarcodeRequired");
+
+        var input = new ProductInput(name, price, TicketDefaults.VatRate, barcode, sectionId, PhotoPath: null);
+        return SaveProduct(null, input, pendingReview: !createdByAdmin);
+    }
+
+    public IReadOnlyList<Product> GetPendingReview()
+    {
+        using var db = dbFactory.CreateDbContext();
+        return db.Products.AsNoTracking().Where(p => p.PendingReview && p.IsActive).OrderBy(p => p.Name).ToList();
+    }
+
+    public OperationResult<Product> SaveProduct(int? id, ProductInput input) => SaveProduct(id, input, pendingReview: false);
+
+    private OperationResult<Product> SaveProduct(int? id, ProductInput input, bool pendingReview)
     {
         var name = input.Name.Trim();
         var barcode = string.IsNullOrWhiteSpace(input.Barcode) ? null : input.Barcode.Trim();
@@ -157,7 +184,8 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
         product.CategoryId = input.CategoryId;
         product.PhotoPath = string.IsNullOrWhiteSpace(input.PhotoPath) ? null : input.PhotoPath;
         product.UnitsPerBox = input.UnitsPerBox;
-        product.PendingReview = false; // guardar desde la ficha de admin cuenta como revisado (BAZ-03)
+        // Guardar desde la ficha de admin cuenta como revisado (BAZ-03).
+        product.PendingReview = pendingReview;
         db.SaveChanges();
         return OperationResult<Product>.Ok(product);
     }

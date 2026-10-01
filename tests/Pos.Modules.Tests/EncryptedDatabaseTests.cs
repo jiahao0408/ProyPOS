@@ -8,7 +8,7 @@ namespace Pos.Modules.Tests;
 /// <summary>BD real en disco: SQLCipher + clave protegida (DPAPI en Windows).</summary>
 public sealed class EncryptedDatabaseTests : IDisposable
 {
-    private readonly string _directory = Directory.CreateTempSubdirectory("proypos-db-").FullName;
+    private readonly string _directory = Directory.CreateTempSubdirectory("starseapos-db-").FullName;
 
     public void Dispose()
     {

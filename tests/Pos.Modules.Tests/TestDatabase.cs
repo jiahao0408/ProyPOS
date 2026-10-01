@@ -18,7 +18,7 @@ public sealed class TestDatabase : IDisposable
         _connection = new SqliteConnection("Data Source=:memory:");
         _connection.Open();
 
-        var options = new DbContextOptionsBuilder<PosDbContext>().UseSqlite(_connection).Options;
+        var options = new DbContextOptionsBuilder<PosDbContext>().UseSqlite(_connection).AddInterceptors(new DurableSqliteInterceptor()).Options;
         Factory = new PosDbContextFactory(options);
 
         using var db = Factory.CreateDbContext();

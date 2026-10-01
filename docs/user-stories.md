@@ -1,4 +1,4 @@
-# User stories — ProyPOS (bazar)
+# User stories — StarSeaPOS (bazar)
 
 60 historias en 12 módulos. Formato: *Como [rol], quiero [acción], para [beneficio]*, con criterios de aceptación (CA) verificables.
 

@@ -1,8 +1,8 @@
-# ProyPOS — TPV de escritorio para bazar
+# StarSeaPOS — TPV de escritorio para bazar
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, inventario, tickets, facturas, caja y Verifactu**. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **Sección 1 (Sprint 1) terminada**: primer arranque, login con PIN y bloqueo, roles con PIN de administrador, catálogo de productos y categorías, apertura de caja, 6 idiomas con cambio en vivo y formatos regionales. 110 tests. Siguiente: sección 2 (vender y cobrar). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **Secciones 1 y 2 terminadas** (Sprints 1 y 2): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. 144 tests. Siguiente: sección 3 (imprimir y facturar). Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -111,8 +111,8 @@ Tres capas (UI → lógica → datos) y cuatro periféricos.
 ## Estructura del proyecto
 
 ```text
-ProyPOS/
-├── ProyPOS.sln
+StarSeaPOS/
+├── StarSeaPOS.sln
 ├── Directory.Build.props        # net8.0, nullable, usings implícitos para todos los proyectos
 ├── Directory.Packages.props     # Versiones de NuGet centralizadas
 ├── global.json                  # Fija el SDK .NET 8
@@ -159,13 +159,35 @@ Regla de dependencias: los módulos dependen de `Pos.Core` y `Pos.Data`, nunca e
 
 Primer arranque: con la BD vacía, la app pide crear el administrador.
 
+### Cómo está hecha la sección 2
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| VEN-01 Añadir productos | `SalePageView`, `CatalogService.Search` | Por categoría (botones), búsqueda por nombre o código de barras. `3*código` añade 3 unidades |
+| VEN-02 Cantidades y líneas | `Ticket` (módulo Sales) | El ticket vive en memoria hasta cobrar: quitar una línea no deja rastro. Botones −, + y ✕ |
+| VEN-03 Efectivo | `PaymentView`, `SalesService.Checkout` | Muestra el cambio al teclear; botones de importe justo y billetes; vacío = importe justo. No deja cobrar menos del total |
+| VEN-04 Tarjeta y mixto | `PaymentRequest` | Se guarda el importe de cada método; la suma es siempre el total |
+| INV-01 Descuento de stock | `StockLedger` | Cada venta resta stock y deja un movimiento, en la misma transacción que la venta. El stock puede quedar en negativo |
+| INV-02 Consulta de stock | Botones de producto, página Productos | Visible para el cajero; no hay ningún sitio donde editarlo (eso es INV-03/05) |
+| HW-04 Escáner | `SalePageView.axaml.cs` | Lector USB en modo teclado: todo lo tecleado fuera de un cuadro de texto va al buscador, así no se pierde ningún escaneo. Código desconocido = aviso + alta rápida |
+| BAZ-02 Artículo genérico | Botones de sección | Categorías marcadas como sección: importe libre, IVA general (21 %), cuenta en las ventas por sección |
+| BAZ-03 Alta rápida | `QuickCreateView`, `CatalogService.QuickCreate` | Nombre, precio y sección con el código ya relleno. Si lo crea un cajero queda pendiente de revisión (filtro en Productos) |
+
+Atajos: **F12** cobrar · **Esc** cerrar la ventana de cobro / alta rápida · **Enter** confirmar.
+
+**Seguridad de los datos de venta:**
+- Venta, líneas, pagos y stock se guardan en **una sola transacción**: o se guarda todo o nada.
+- SQLite con `synchronous = FULL`: cuando la app dice "cobrada", la venta ya está en disco aunque se vaya la luz.
+- Triggers en la BD impiden **modificar o borrar** ventas, líneas y pagos (datos de facturación).
+- La línea guarda nombre, precio e IVA del momento: cambiar el producto después no altera ventas pasadas.
+
 ## Primeros pasos
 
 Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, problemas frecuentes): [entornoDeConfiguracion.md](entornoDeConfiguracion.md).
 
 ### Requisitos
 
-- Windows 10/11 de 64 bits (preparado para Linux y macOS)
+- **Windows 11 de 64 bits** (único sistema soportado)
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - Pantalla de al menos 1366×768, táctil o ratón y teclado
 - Opcional: impresora térmica ESC/POS (58 u 80 mm), impresora de etiquetas, lector de códigos USB
@@ -173,33 +195,33 @@ Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, 
 
 ### Compilar y ejecutar
 
-```bash
-git clone <url-del-repo> ProyPOS
-cd ProyPOS
+```powershell
+git clone <url-del-repo> StarSeaPOS
+cd StarSeaPOS
 dotnet tool restore          # dotnet-ef, versión fijada en .config/dotnet-tools.json
 dotnet build
 dotnet run --project src/Pos.App -- --windowed
 ```
 
 - `--windowed`: ventana maximizada en lugar de pantalla completa (cómodo para desarrollar).
-- `PROYPOS_DATA_DIR=<carpeta>`: usa otra carpeta de datos en vez de `%LOCALAPPDATA%\ProyPOS` (útil para empezar con una BD vacía).
+- `$env:STARSEAPOS_DATA_DIR = "<carpeta>"`: usa otra carpeta de datos en vez de `%LOCALAPPDATA%\StarSeaPOS` (útil para empezar con una BD vacía).
 
 ### Tests
 
-```bash
+```powershell
 dotnet test
 
 # Además, capturas PNG de las pantallas para revisarlas a ojo:
-PROYPOS_SCREENSHOTS=<carpeta> dotnet test tests/Pos.App.Tests --filter ScreenshotTests
+$env:STARSEAPOS_SCREENSHOTS = "<carpeta>"; dotnet test tests/Pos.App.Tests --filter ScreenshotTests
 ```
 
 ### Base de datos
 
-- Fichero: `%LOCALAPPDATA%\ProyPOS\pos.db`, cifrado con SQLCipher.
+- Fichero: `%LOCALAPPDATA%\StarSeaPOS\pos.db`, cifrado con SQLCipher.
 - Clave: aleatoria, guardada en `pos.key` junto a la BD y protegida con DPAPI (solo esa cuenta de Windows en ese PC puede usarla). Copiar `pos.db` a otro PC no sirve sin la clave: las copias de seguridad (DAT-03) tendrán su propia contraseña.
 - Las migraciones se aplican solas al arrancar.
 
-```bash
+```powershell
 # Crear una migración nueva (usa DesignTimeDbContextFactory, no necesita la clave real)
 dotnet ef migrations add <Nombre> --project src/Pos.Data
 ```
@@ -231,6 +253,7 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 
 | Área | Requisito |
 |---|---|
+| Plataforma | **Solo Windows 11 de 64 bits.** La especificación pedía dejarla preparada para Linux y macOS; se descartó el 1 oct 2026 |
 | Interfaz | Pantalla completa, botones grandes para uso táctil, tema claro/oscuro, atajos F1–F12 para cobrar e imprimir |
 | Rendimiento | Añadir producto < 200 ms · cobro + impresión < 3 s · **30.000 productos con búsqueda instantánea por nombre o código** |
 | Offline | Ventas, cobro, impresión y facturas funcionan sin red; sincroniza al reconectar |
@@ -262,7 +285,9 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Búsqueda en 30.000 productos:** un `LIKE '%texto%'` no usa índices. Propuesta: índice FTS5 de SQLite para nombre y búsqueda exacta indexada para el código.
 - **Impresora de etiquetas (BAZ-01):** las de etiquetas suelen usar ZPL o TSPL, no ESC/POS. Hay que conocer el modelo concreto.
 - **Bluetooth (HW-01):** el stack solo cubre USB, serie COM y red. En Windows muchas impresoras Bluetooth se exponen como puerto COM virtual; hay que confirmarlo con el modelo real.
-- **Escáner por cámara (HW-04):** ahora es M. El lector USB en modo teclado es sencillo; la cámara exige una librería de lectura de códigos. Propuesta: lector USB en el MVP y cámara en la versión 2.
+- **Escáner por cámara (HW-04):** implementado el lector USB en modo teclado; la lectura con cámara queda para la versión 2 (exige una librería de visión). Confirmar que basta con el lector.
+- **IVA del artículo genérico y del alta rápida (BAZ-02, BAZ-03):** se usa el 21 %. Si alguna sección vende con otro tipo (por ejemplo libros al 4 %), habría que añadir un IVA por sección.
+- **Stock negativo:** se permite vender aunque el stock sea 0, para no parar la venta por un recuento mal hecho; se muestra en rojo.
 - **Backend:** ASP.NET Core o Node.js. ASP.NET Core permite compartir modelos con la app en C#.
 
 ## Contribuir

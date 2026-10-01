@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <AssemblyName>ProyPOS</AssemblyName>
+    <AssemblyName>StarSeaPOS</AssemblyName>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <!-- Bindings compilados: un error en un binding de XAML falla al compilar, no en la tienda. -->
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>

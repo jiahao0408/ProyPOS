@@ -11,11 +11,11 @@ namespace Pos.App.Tests;
 
 /// <summary>
 /// Capturas de las pantallas para revisarlas a ojo. Solo se generan si la variable
-/// PROYPOS_SCREENSHOTS indica una carpeta; si no, el test no hace nada.
+/// STARSEAPOS_SCREENSHOTS indica una carpeta; si no, el test no hace nada.
 /// </summary>
 public class ScreenshotTests
 {
-    private static readonly string? Folder = Environment.GetEnvironmentVariable("PROYPOS_SCREENSHOTS");
+    private static readonly string? Folder = Environment.GetEnvironmentVariable("STARSEAPOS_SCREENSHOTS");
 
     private static void Capture(Window window, string name)
     {
@@ -65,6 +65,35 @@ public class ScreenshotTests
         sale.OpeningFloatText = "150";
         sale.OpenCashCommand.Execute(null);
         Capture(window, "05-venta");
+
+        // Sección 2: ticket, cobro y alta rápida
+        foreach (var code in new[] { "8410000000011", "8410000000011", "8410000000028", "4*8410000000035" })
+        {
+            sale.SearchText = code;
+            sale.SubmitSearchCommand.Execute(null);
+        }
+        sale.AddGenericCommand.Execute(sale.GenericSections[0]);
+        ((GenericItemViewModel)sale.Dialog!).AmountText = "4,95";
+        Capture(window, "10-generico");
+        ((GenericItemViewModel)sale.Dialog!).AddCommand.Execute(null);
+        Capture(window, "11-ticket");
+
+        sale.ChargeCommand.Execute(null);
+        ((PaymentViewModel)sale.Dialog!).CashTenderedText = "50";
+        Capture(window, "12-cobro-efectivo");
+        ((PaymentViewModel)sale.Dialog!).SetModeCommand.Execute(PaymentMode.Mixed);
+        ((PaymentViewModel)sale.Dialog!).CardAmountText = "10";
+        ((PaymentViewModel)sale.Dialog!).CashTenderedText = "20";
+        Capture(window, "13-cobro-mixto");
+        ((PaymentViewModel)sale.Dialog!).ConfirmCommand.Execute(null);
+        Capture(window, "14-venta-cobrada");
+
+        sale.SearchText = "8419999999999";
+        sale.SubmitSearchCommand.Execute(null);
+        ((QuickCreateViewModel)sale.Dialog!).Name = "Pelota de playa";
+        ((QuickCreateViewModel)sale.Dialog!).PriceText = "2,50";
+        Capture(window, "15-alta-rapida");
+        ((QuickCreateViewModel)sale.Dialog!).CancelCommand.Execute(null);
 
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");

@@ -1,9 +1,14 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!--
+      Solo Windows 11 de 64 bits. Se usa net8.0-windows sin versión: no necesitamos las APIs
+      WinRT, y fijar la versión de Windows mete una DLL de proyecciones que rompe "dotnet ef".
+    -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Company>ProyPOS</Company>
+    <Company>StarSeaPOS</Company>
   </PropertyGroup>
 </Project>

@@ -29,10 +29,10 @@ public sealed record AppEnvironment(
 {
     public string PhotosDirectory => Path.Combine(DataDirectory, "photos");
 
-    /// <summary>Carpeta de datos estándar, o la de la variable PROYPOS_DATA_DIR (para desarrollar y probar).</summary>
+    /// <summary>Carpeta de datos estándar, o la de la variable STARSEAPOS_DATA_DIR (para desarrollar y probar).</summary>
     public static AppEnvironment Default()
     {
-        var dataDirectory = Environment.GetEnvironmentVariable("PROYPOS_DATA_DIR") is { Length: > 0 } custom
+        var dataDirectory = Environment.GetEnvironmentVariable("STARSEAPOS_DATA_DIR") is { Length: > 0 } custom
             ? custom
             : PosDatabase.DefaultDataDirectory;
         return new AppEnvironment(

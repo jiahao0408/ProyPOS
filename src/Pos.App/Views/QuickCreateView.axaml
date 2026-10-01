@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.QuickCreateView"
+             x:DataType="vm:QuickCreateViewModel">
+  <Border Classes="dialog" Width="480">
+    <StackPanel>
+      <TextBlock Text="{Binding UnknownBarcodeText}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding L[QuickCreateHint]}" FontSize="15" Opacity="0.75" TextWrapping="Wrap" Margin="0,4,0,0" />
+      <TextBlock Text="{Binding L[QuickCreatePendingNote]}" IsVisible="{Binding CreatedByCashier}"
+                 FontSize="14" Foreground="Orange" TextWrapping="Wrap" Margin="0,4,0,0" />
+
+      <TextBlock Classes="label" Text="{Binding L[Barcode]}" />
+      <TextBox Text="{Binding Barcode, Mode=OneWay}" IsReadOnly="True" />
+
+      <TextBlock Classes="label" Text="{Binding L[Name]}" />
+      <TextBox Name="NameBox" Text="{Binding Name}" />
+
+      <TextBlock Classes="label" Text="{Binding L[Price]}" />
+      <TextBox Text="{Binding PriceText}">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding SaveCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+
+      <TextBlock Classes="label" Text="{Binding L[Section]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Sections}" SelectedItem="{Binding SelectedSection}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:CategoryOption">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,16,0,0">
+        <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Content="{Binding L[CreateAndAdd]}" Command="{Binding SaveCommand}" />
+      </Grid>
+
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" />
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

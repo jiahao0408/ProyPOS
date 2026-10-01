@@ -2,29 +2,45 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Pos.Core;
+using Pos.Core.Domain;
 using Pos.Core.Localization;
 using Pos.Core.Security;
 using Pos.Localization;
 using Pos.Modules.CashRegister;
 using Pos.Modules.Products;
+using Pos.Modules.Sales;
 
 namespace Pos.App.ViewModels;
 
 public sealed record CategoryButton(int? Id, string Name, IBrush? Background);
 
-public sealed record ProductButton(int Id, string Name, string Price);
+public sealed record GenericButton(Category Section, IBrush? Background);
+
+public sealed record ProductButton(Product Product, string Name, string Price, string Stock, bool OutOfStock);
+
+public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total);
 
 /// <summary>
-/// Pantalla de venta. CAJ-01: con la caja cerrada solo deja abrirla.
-/// PRE-02: las categorías salen como botones. El ticket y el cobro llegan en la sección 2.
+/// Pantalla de venta (sección 2).
+/// VEN-01: añadir por categoría, búsqueda o código de barras. VEN-02: cambiar cantidades y quitar líneas.
+/// VEN-03/04: cobro. HW-04: lector en modo teclado. BAZ-02: artículo genérico. BAZ-03: alta rápida.
+/// CAJ-01: con la caja cerrada solo deja abrirla.
 /// </summary>
 public partial class SalePageViewModel(
     ILocalizer localizer,
     ISession session,
     CashRegisterService cash,
     CatalogService catalog,
+    SalesService sales,
     RegionFormatter formatter) : PageViewModel(localizer)
 {
+    private const int SearchLimit = 40;
+    private const int MinBarcodeLength = 4;
+
+    private readonly Ticket _ticket = new();
+    private int? _selectedCategoryId;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCashClosed))]
     private bool _isCashOpen;
@@ -36,13 +52,40 @@ public partial class SalePageViewModel(
     private string _cashInfo = "";
 
     [ObservableProperty]
-    private CategoryButton? _selectedCategory;
+    [NotifyPropertyChangedFor(nameof(IsSearching))]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private string _totalText = "";
+
+    [ObservableProperty]
+    private string _vatSummary = "";
+
+    [ObservableProperty]
+    private string _itemCountText = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDialogOpen))]
+    private ViewModelBase? _dialog;
 
     public bool IsCashClosed => !IsCashOpen;
 
+    public bool IsSearching => SearchText.Trim().Length > 0;
+
+    public bool IsDialogOpen => Dialog is not null;
+
+    public bool HasTicketLines => TicketLines.Count > 0;
+
     public ObservableCollection<CategoryButton> Categories { get; } = [];
 
+    public ObservableCollection<GenericButton> GenericSections { get; } = [];
+
     public ObservableCollection<ProductButton> Products { get; } = [];
+
+    public ObservableCollection<TicketLineRow> TicketLines { get; } = [];
+
+    /// <summary>La vista devuelve el foco al buscador (donde escribe el lector de códigos).</summary>
+    public event Action? FocusSearchRequested;
 
     public override void Load()
     {
@@ -55,12 +98,21 @@ public partial class SalePageViewModel(
             formatter.FormatDateTime(session.OpenedAtUtc.ToLocalTime()),
             formatter.FormatMoney(session.OpeningFloat));
 
+        var categories = catalog.GetCategories();
         Categories.Clear();
         Categories.Add(new CategoryButton(null, L["AllCategories"], null));
-        foreach (var category in catalog.GetCategories())
+        foreach (var category in categories)
             Categories.Add(new CategoryButton(category.Id, category.Name, ParseBrush(category.Color)));
-        SelectCategory(Categories[0]);
+
+        GenericSections.Clear();
+        foreach (var section in categories.Where(c => c.AllowsGenericSale))
+            GenericSections.Add(new GenericButton(section, ParseBrush(section.Color)));
+
+        RefreshProducts();
+        RefreshTicket();
     }
+
+    // --- Caja (CAJ-01) ---
 
     [RelayCommand]
     private void OpenCash()
@@ -70,7 +122,6 @@ public partial class SalePageViewModel(
             ShowError("ErrorAmountFormat");
             return;
         }
-
         if (Check(cash.Open(session.CurrentUser!.Id, amount)))
         {
             ClearMessage();
@@ -78,13 +129,209 @@ public partial class SalePageViewModel(
         }
     }
 
+    // --- Añadir productos (VEN-01, HW-04) ---
+
+    partial void OnSearchTextChanged(string value) => RefreshProducts();
+
     [RelayCommand]
     private void SelectCategory(CategoryButton category)
     {
-        SelectedCategory = category;
+        _selectedCategoryId = category.Id;
+        SearchText = "";
+        RefreshProducts();
+    }
+
+    [RelayCommand]
+    private void AddProduct(ProductButton button)
+    {
+        AddToTicket(TicketItem.FromProduct(button.Product), 1);
+        SearchText = "";
+    }
+
+    /// <summary>
+    /// Enter en el buscador (lo que manda el lector al final de cada código).
+    /// Admite "3*código" para añadir varias unidades de golpe.
+    /// </summary>
+    [RelayCommand]
+    private void SubmitSearch()
+    {
+        var (quantity, text) = ParseQuantityPrefix(SearchText.Trim());
+        if (text.Length == 0)
+            return;
+
+        // HW-04: un escaneo añade 1 unidad.
+        var product = catalog.FindByBarcode(text);
+        if (product is not null)
+        {
+            AddToTicket(TicketItem.FromProduct(product), quantity);
+            SearchText = "";
+            return;
+        }
+
+        if (Products.Count == 1)
+        {
+            AddToTicket(TicketItem.FromProduct(Products[0].Product), quantity);
+            SearchText = "";
+            return;
+        }
+
+        // HW-04: código desconocido muestra aviso; BAZ-03: y permite darlo de alta.
+        if (text.Length >= MinBarcodeLength && text.All(char.IsAsciiDigit))
+        {
+            SearchText = "";
+            OpenQuickCreate(text, quantity);
+        }
+    }
+
+    // --- Artículo genérico (BAZ-02) ---
+
+    [RelayCommand]
+    private void AddGeneric(GenericButton button)
+    {
+        Dialog = new GenericItemViewModel(L, formatter, button.Section,
+            add: amount =>
+            {
+                AddToTicket(TicketItem.Generic(button.Section, amount), 1);
+                CloseDialog();
+                return OperationResult.Ok();
+            },
+            cancel: CloseDialog);
+    }
+
+    // --- Ticket (VEN-02) ---
+
+    [RelayCommand]
+    private void IncreaseLine(TicketLineRow row) => ChangeQuantity(row, row.Line.Quantity + 1);
+
+    [RelayCommand]
+    private void DecreaseLine(TicketLineRow row) => ChangeQuantity(row, row.Line.Quantity - 1);
+
+    [RelayCommand]
+    private void RemoveLine(TicketLineRow row) => ChangeQuantity(row, 0);
+
+    [RelayCommand]
+    private void ClearTicket()
+    {
+        _ticket.Clear();
+        RefreshTicket();
+        FocusSearchRequested?.Invoke();
+    }
+
+    // --- Cobro (VEN-03, VEN-04) ---
+
+    [RelayCommand]
+    private void Charge()
+    {
+        if (!IsCashOpen || IsDialogOpen)
+            return;
+        if (_ticket.IsEmpty)
+        {
+            ShowError("ErrorTicketEmpty");
+            return;
+        }
+
+        ClearMessage();
+        Dialog = new PaymentViewModel(L, formatter, _ticket.Total, confirm: Pay, cancel: CloseDialog);
+    }
+
+    [RelayCommand]
+    private void CloseDialog()
+    {
+        Dialog = null;
+        FocusSearchRequested?.Invoke();
+    }
+
+    private OperationResult Pay(PaymentRequest payment)
+    {
+        var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id);
+        if (!result.Success)
+            return result;
+
+        var (sale, change) = result.Value!;
+        _ticket.Clear();
+        CloseDialog();
+        RefreshTicket();
+        RefreshProducts(); // el stock ha cambiado
+        Message = string.Format(L["SaleCompleted"], sale.Id, formatter.FormatMoney(change));
+        MessageIsError = false;
+        return OperationResult.Ok();
+    }
+
+    // --- Alta rápida (BAZ-03) ---
+
+    private void OpenQuickCreate(string barcode, int quantity)
+    {
+        var isAdmin = session.CurrentUser?.IsAdmin == true;
+        Dialog = new QuickCreateViewModel(L, formatter, barcode, catalog.GetCategories(), createdByCashier: !isAdmin,
+            save: (name, price, sectionId) =>
+            {
+                var created = catalog.QuickCreate(name, price, sectionId, barcode, createdByAdmin: isAdmin);
+                if (!created.Success)
+                    return created;
+                AddToTicket(TicketItem.FromProduct(created.Value!), quantity);
+                CloseDialog();
+                RefreshProducts();
+                return OperationResult.Ok();
+            },
+            cancel: CloseDialog);
+    }
+
+    // --- Ayudantes ---
+
+    private void AddToTicket(TicketItem item, int quantity)
+    {
+        _ticket.Add(item, quantity);
+        ClearMessage();
+        RefreshTicket();
+        FocusSearchRequested?.Invoke();
+    }
+
+    private void ChangeQuantity(TicketLineRow row, int quantity)
+    {
+        _ticket.SetQuantity(row.Line, quantity);
+        RefreshTicket();
+    }
+
+    private void RefreshTicket()
+    {
+        TicketLines.Clear();
+        foreach (var line in _ticket.Lines)
+        {
+            TicketLines.Add(new TicketLineRow(line, line.Item.Description, line.Quantity,
+                formatter.FormatMoney(line.Item.UnitPrice), formatter.FormatMoney(line.Total)));
+        }
+
+        TotalText = formatter.FormatMoney(_ticket.Total);
+        ItemCountText = string.Format(L["TicketItemCount"], _ticket.ItemCount);
+        VatSummary = string.Join("   ", _ticket.VatBreakdown().Select(v =>
+            string.Format(L["VatLine"], v.Rate.ToString("0.##", L.Culture), formatter.FormatMoney(v.Base), formatter.FormatMoney(v.VatAmount))));
+        OnPropertyChanged(nameof(HasTicketLines));
+    }
+
+    private void RefreshProducts()
+    {
+        if (!IsCashOpen)
+            return;
+
+        var products = IsSearching
+            ? catalog.Search(ParseQuantityPrefix(SearchText.Trim()).Text, limit: SearchLimit)
+            : catalog.Search(null, _selectedCategoryId);
+
         Products.Clear();
-        foreach (var product in catalog.Search(null, category.Id))
-            Products.Add(new ProductButton(product.Id, product.Name, formatter.FormatMoney(product.Price)));
+        foreach (var p in products)
+        {
+            // INV-02: el cajero ve las unidades disponibles, pero no puede editarlas.
+            Products.Add(new ProductButton(p, p.Name, formatter.FormatMoney(p.Price),
+                string.Format(L["StockUnits"], p.Stock), p.Stock <= 0));
+        }
+    }
+
+    private static (int Quantity, string Text) ParseQuantityPrefix(string text)
+    {
+        var star = text.IndexOf('*');
+        if (star > 0 && int.TryParse(text[..star], out var quantity) && quantity is > 0 and <= 999)
+            return (quantity, text[(star + 1)..].Trim());
+        return (1, text);
     }
 
     private static IBrush? ParseBrush(string? color) =>

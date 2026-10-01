@@ -44,7 +44,7 @@ public sealed class TestApp : IDisposable
         using (var db = factory.CreateDbContext())
             db.Database.Migrate();
 
-        _dataDirectory = Directory.CreateTempSubdirectory("proypos-test-").FullName;
+        _dataDirectory = Directory.CreateTempSubdirectory("starseapos-test-").FullName;
         Services = Composition.BuildServices(new AppEnvironment(
             factory, _dataDirectory, Path.Combine(AppContext.BaseDirectory, "locales"), Clock));
     }

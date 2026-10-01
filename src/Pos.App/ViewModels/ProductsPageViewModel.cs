@@ -10,7 +10,9 @@ using Pos.Modules.Products;
 
 namespace Pos.App.ViewModels;
 
-public sealed record ProductRow(int Id, string Name, string Price, string Barcode, string Category, bool IsActive, bool PendingReview);
+public sealed record ProductRow(
+    int Id, string Name, string Price, string Barcode, string Category, bool IsActive, bool PendingReview,
+    string Stock, bool OutOfStock);
 
 public sealed record CategoryOption(int? Id, string Name);
 
@@ -30,6 +32,10 @@ public partial class ProductsPageViewModel(
 
     [ObservableProperty]
     private bool _showInactive;
+
+    /// <summary>BAZ-03: productos creados por un cajero con el alta rápida, para que el admin los revise.</summary>
+    [ObservableProperty]
+    private bool _showPendingOnly;
 
     [ObservableProperty]
     private ProductRow? _selectedRow;
@@ -116,6 +122,8 @@ public partial class ProductsPageViewModel(
     partial void OnSearchTextChanged(string value) => RefreshList();
 
     partial void OnShowInactiveChanged(bool value) => RefreshList();
+
+    partial void OnShowPendingOnlyChanged(bool value) => RefreshList();
 
     partial void OnSelectedRowChanged(ProductRow? value)
     {
@@ -208,7 +216,9 @@ public partial class ProductsPageViewModel(
 
     private void RefreshList()
     {
-        var products = catalog.Search(SearchText, includeInactive: ShowInactive);
+        var products = ShowPendingOnly
+            ? catalog.GetPendingReview()
+            : catalog.Search(SearchText, includeInactive: ShowInactive);
         Products.Clear();
         foreach (var p in products)
             Products.Add(ToRow(p));
@@ -219,5 +229,6 @@ public partial class ProductsPageViewModel(
     }
 
     private ProductRow ToRow(Product p) => new(
-        p.Id, p.Name, formatter.FormatMoney(p.Price), p.Barcode ?? "", p.Category?.Name ?? "", p.IsActive, p.PendingReview);
+        p.Id, p.Name, formatter.FormatMoney(p.Price), p.Barcode ?? "", p.Category?.Name ?? "", p.IsActive, p.PendingReview,
+        string.Format(L["StockUnits"], p.Stock), p.Stock <= 0);
 }

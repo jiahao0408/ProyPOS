@@ -6,9 +6,9 @@ namespace Pos.Data;
 
 public static class PosDatabase
 {
-    /// <summary>Carpeta de datos de la app: %LOCALAPPDATA%\ProyPOS en Windows.</summary>
+    /// <summary>Carpeta de datos de la app: %LOCALAPPDATA%\StarSeaPOS en Windows.</summary>
     public static string DefaultDataDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ProyPOS");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StarSeaPOS");
 
     /// <summary>Opciones para abrir la BD local cifrada con SQLCipher.</summary>
     public static DbContextOptions<PosDbContext> CreateOptions(string databasePath, string encryptionKey)
@@ -27,6 +27,7 @@ public static class PosDatabase
 
         return new DbContextOptionsBuilder<PosDbContext>()
             .UseSqlite(connectionString)
+            .AddInterceptors(new DurableSqliteInterceptor())
             .Options;
     }
 

@@ -46,14 +46,14 @@ public class LocalizationTests
     public void EveryKeyUsedInSourceCode_ExistsInSpanish()
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (root is not null && !File.Exists(Path.Combine(root.FullName, "ProyPOS.sln")))
+        while (root is not null && !File.Exists(Path.Combine(root.FullName, "StarSeaPOS.sln")))
             root = root.Parent;
         Assert.NotNull(root);
 
-        Regex[] xamlPatterns = [new(@"\{Binding [^}]*L\[([A-Za-z]+)\]")];
+        Regex[] xamlPatterns = [new(@"\{Binding [^}]*L\[([A-Za-z0-9]+)\]")];
         Regex[] csharpPatterns =
         [
-            new(@"L\[""([A-Za-z]+)""\]"),
+            new(@"L\[""([A-Za-z0-9]+)""\]"),
             new(@"""((?:Error|Confirm|Nav|Role|Module)[A-Z][A-Za-z]+)"""),
             new(@"Show(?:Error|Info)\(""([A-Za-z]+)""\)"),
         ];

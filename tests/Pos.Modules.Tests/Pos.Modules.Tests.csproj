@@ -20,6 +20,8 @@
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Users\Pos.Modules.Users.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Products\Pos.Modules.Products.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Sales\Pos.Modules.Sales.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Inventory\Pos.Modules.Inventory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

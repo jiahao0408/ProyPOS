@@ -1,6 +1,6 @@
 # Entorno de configuración
 
-Guía para dejar un PC listo para desarrollar ProyPOS: herramientas, compilación, base de datos, hardware y Verifactu.
+Guía para dejar un PC listo para desarrollar StarSeaPOS: herramientas, compilación, base de datos, hardware y Verifactu.
 
 Para saber qué es el proyecto y cómo está organizado, ver el [README](README.md).
 
@@ -33,8 +33,8 @@ winget install Microsoft.DotNet.SDK.8
 winget install Microsoft.VisualStudioCode   # o Visual Studio 2022 / Rider
 
 # Cerrar y volver a abrir la terminal para que se cargue el PATH
-git clone <url-del-repo> ProyPOS
-cd ProyPOS
+git clone <url-del-repo> StarSeaPOS
+cd StarSeaPOS
 dotnet --list-sdks          # debe salir una versión 8.0.x
 dotnet restore
 dotnet build
@@ -48,8 +48,7 @@ Si todo va bien se abre la app a pantalla completa con el selector de idioma. Pa
 
 | | Mínimo | Recomendado |
 |---|---|---|
-| Sistema | Windows 10/11 de 64 bits | Windows 11 de 64 bits |
-| Otros sistemas | Linux y macOS (la app está preparada, pero el objetivo es Windows) | — |
+| Sistema | **Windows 11 de 64 bits** (único sistema soportado) | Windows 11 24H2 o superior |
 | Pantalla | 1366×768 | 1920×1080 + un segundo monitor para la pantalla de cliente |
 | Memoria | 8 GB | 16 GB |
 | Disco | 5 GB libres (SDK, paquetes NuGet, IDE) | SSD |
@@ -67,29 +66,22 @@ Si todo va bien se abre la app a pantalla completa con el selector de idioma. Pa
 
 El fichero [global.json](global.json) fija el SDK 8.0 y acepta cualquier 8.0.x más reciente (`rollForward: latestFeature`). Si tienes instalado solo el SDK 9 o 10, también falla: instala además el 8.
 
-#### Windows
-
 ```powershell
 winget install Git.Git
 winget install Microsoft.DotNet.SDK.8
 ```
 
-#### Linux (Ubuntu / Debian)
+Sin permisos de administrador, el SDK se puede instalar solo para el usuario con el script oficial (queda en `%USERPROFILE%\.dotnet`, que hay que añadir al PATH):
 
-```bash
-sudo apt update
-sudo apt install -y git dotnet-sdk-8.0
-# Fuentes para chino y otros alfabetos (si no, salen cuadrados)
-sudo apt install -y fonts-noto-cjk
+```powershell
+Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+.\dotnet-install.ps1 -Channel 8.0 -InstallDir "$env:USERPROFILE\.dotnet"
+$env:PATH = "$env:USERPROFILE\.dotnet;$env:PATH"
 ```
-
-#### macOS
-
-Instalar Git con Xcode Command Line Tools (`xcode-select --install`) y el SDK con el instalador oficial de la [página de descargas de .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 #### Comprobar
 
-```bash
+```powershell
 git --version
 dotnet --list-sdks   # debe aparecer 8.0.xxx
 ```
@@ -98,14 +90,14 @@ dotnet --list-sdks   # debe aparecer 8.0.xxx
 
 Es una herramienta **local** del repositorio: su versión está fijada en [.config/dotnet-tools.json](.config/dotnet-tools.json). Desde la raíz del proyecto:
 
-```bash
+```powershell
 dotnet tool restore
 dotnet ef --version   # 8.0.x
 ```
 
 ### 3.3 Opcionales
 
-```bash
+```powershell
 # Plantillas de Avalonia (para crear ventanas y controles nuevos)
 dotnet new install Avalonia.Templates
 ```
@@ -122,12 +114,12 @@ Cualquiera de estos sirve:
 
 En VS Code:
 
-```bash
+```powershell
 code --install-extension ms-dotnettools.csdevkit
 code --install-extension AvaloniaTeam.vscode-avalonia
 ```
 
-Abrir siempre la carpeta raíz (o `ProyPOS.sln`), no un proyecto suelto, para que se apliquen [Directory.Build.props](Directory.Build.props) y [Directory.Packages.props](Directory.Packages.props).
+Abrir siempre la carpeta raíz (o `StarSeaPOS.sln`), no un proyecto suelto, para que se apliquen [Directory.Build.props](Directory.Build.props) y [Directory.Packages.props](Directory.Packages.props).
 
 ### Convenciones que el IDE debe respetar
 
@@ -137,9 +129,9 @@ Abrir siempre la carpeta raíz (o `ProyPOS.sln`), no un proyecto suelto, para qu
 
 ## 5. Clonar, compilar y ejecutar
 
-```bash
-git clone <url-del-repo> ProyPOS
-cd ProyPOS
+```powershell
+git clone <url-del-repo> StarSeaPOS
+cd StarSeaPOS
 dotnet tool restore
 dotnet build
 ```
@@ -149,16 +141,16 @@ dotnet build
 | Ejecutar la app (pantalla completa, como en la tienda) | `dotnet run --project src/Pos.App` |
 | Ejecutar la app en ventana (para desarrollar) | `dotnet run --project src/Pos.App -- --windowed` |
 | Pasar los tests | `dotnet test` |
-| Sacar capturas de las pantallas | `PROYPOS_SCREENSHOTS=<carpeta> dotnet test tests/Pos.App.Tests --filter ScreenshotTests` |
+| Sacar capturas de las pantallas | `$env:STARSEAPOS_SCREENSHOTS = "<carpeta>"; dotnet test tests/Pos.App.Tests --filter ScreenshotTests` |
 | Compilar en Release | `dotnet build -c Release` |
 | Publicar para Windows (un ejecutable) | `dotnet publish src/Pos.App -c Release -r win-x64 --self-contained` |
 
-El ejecutable se llama `ProyPOS.exe`. Al compilar se copian los idiomas a `bin/.../locales/`.
+El ejecutable se llama `StarSeaPOS.exe`. Al compilar se copian los idiomas a `bin/.../locales/`.
 
 ## 6. Base de datos local
 
 - Motor: **SQLite cifrado con SQLCipher**, a través de EF Core 8.
-- Ubicación: `%LOCALAPPDATA%\ProyPOS\` (`pos.db` + `pos.key`). En Linux y macOS, la carpeta equivalente del usuario.
+- Ubicación: `%LOCALAPPDATA%\StarSeaPOS\` (`pos.db` + `pos.key`).
 - Clave: aleatoria, creada en el primer arranque y guardada en `pos.key`, protegida con **DPAPI** (solo la misma cuenta de Windows en el mismo PC la puede leer).
 - Las migraciones pendientes se aplican **solas al arrancar** la app.
 - La base de datos **siempre** se abre con clave (`PosDatabase.CreateOptions`); sin clave lanza un error.
@@ -166,10 +158,10 @@ El ejecutable se llama `ProyPOS.exe`. Al compilar se copian los idiomas a `bin/.
 
 ### BD de desarrollo aparte
 
-Para no mezclar pruebas con la BD normal, se puede usar otra carpeta con la variable `PROYPOS_DATA_DIR`:
+Para no mezclar pruebas con la BD normal, se puede usar otra carpeta con la variable `STARSEAPOS_DATA_DIR`:
 
 ```powershell
-$env:PROYPOS_DATA_DIR = "C:\temp\proypos-dev"
+$env:STARSEAPOS_DATA_DIR = "C:\temp\starseapos-dev"
 dotnet run --project src/Pos.App -- --windowed
 ```
 
@@ -179,7 +171,7 @@ Con la carpeta vacía, la app arranca en **primer arranque** y pide crear el adm
 
 ### Migraciones
 
-```bash
+```powershell
 # Crear una migración
 dotnet ef migrations add <NombreDescriptivo> --project src/Pos.Data
 
@@ -216,8 +208,7 @@ No hace falta hardware para compilar ni para pasar los tests. Para probar los pe
 
 ### Puertos serie (COM)
 
-- **Windows:** ver el número de puerto en *Administrador de dispositivos → Puertos (COM y LPT)*. Muchas impresoras Bluetooth también aparecen ahí como puerto COM virtual.
-- **Linux:** los puertos son `/dev/ttyUSB0`, `/dev/ttyACM0`… El usuario necesita permiso: `sudo usermod -aG dialout $USER` y volver a iniciar sesión.
+- Ver el número de puerto en *Administrador de dispositivos → Puertos (COM y LPT)*. Muchas impresoras Bluetooth también aparecen ahí como puerto COM virtual.
 
 ## 9. Verifactu y certificado digital
 
@@ -255,9 +246,7 @@ Reglas:
 | Error NU1008 al restaurar | Un `.csproj` lleva versión en `PackageReference` | Quitar la versión y ponerla en `Directory.Packages.props` |
 | Error NU1010 al restaurar | El paquete no está en `Directory.Packages.props` | Añadir allí su `PackageVersion` |
 | La app abre pero sin textos (salen las claves) | No se copió `locales/` al compilar | `dotnet build` de nuevo; comprobar que existe `bin/.../locales/es.json` |
-| Caracteres chinos como cuadrados (Linux) | Faltan fuentes CJK | `sudo apt install fonts-noto-cjk` |
 | `file is not a database` al abrir la BD | Clave incorrecta, o BD creada sin cifrar | Borrar la BD de desarrollo y volver a crearla |
-| `Access denied` en `/dev/ttyUSB0` (Linux) | Usuario fuera del grupo `dialout` | `sudo usermod -aG dialout $USER` y reiniciar sesión |
 | La app tapa toda la pantalla y no sé salir | Arranca a pantalla completa | Botón **Salir**, o Alt+F4 |
 
 ## 12. Lista de comprobación

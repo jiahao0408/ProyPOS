@@ -11,5 +11,6 @@ public sealed class SalesModule : IModule
 
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<SalesService>();
     }
 }
