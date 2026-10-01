@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PriceCheckView"
+             x:DataType="vm:PriceCheckViewModel">
+  <!-- BAZ-06: verificador de precios; no añade nada al ticket -->
+  <Border Classes="dialog" Width="560">
+    <StackPanel>
+      <TextBlock Text="{Binding L[PriceCheckTitle]}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding L[PriceCheckHint]}" FontSize="14" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+      <TextBox Name="SearchBox" Text="{Binding SearchText}" FontSize="22" MinHeight="56" Watermark="{Binding L[SearchProductsHint]}">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding SubmitCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" FontSize="18" />
+      </Border>
+
+      <StackPanel IsVisible="{Binding HasProduct}" Margin="0,16,0,0" Spacing="4">
+        <TextBlock Text="{Binding ProductName}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding PriceText}" FontSize="44" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+        <TextBlock FontSize="17"><Run Text="{Binding L[Location]}" /><Run Text=": " /><Run Text="{Binding LocationText}" FontWeight="SemiBold" /></TextBlock>
+        <TextBlock FontSize="15" Opacity="0.7"><Run Text="{Binding L[Category]}" /><Run Text=": " /><Run Text="{Binding CategoryText}" /></TextBlock>
+
+        <StackPanel IsVisible="{Binding HasVariants}" Margin="0,8,0,0">
+          <TextBlock Classes="label" Text="{Binding L[Variants]}" />
+          <ItemsControl ItemsSource="{Binding Variants}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:VariantOption">
+                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                  <TextBlock Text="{Binding Name}" FontSize="16" />
+                  <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="16" FontWeight="SemiBold" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+
+      <Button Margin="0,16,0,0" Content="{Binding L[Close]}" Command="{Binding CloseCommand}" />
+    </StackPanel>
+  </Border>
+</UserControl>

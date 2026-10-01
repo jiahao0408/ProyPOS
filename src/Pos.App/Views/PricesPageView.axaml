@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.PricesPageView"
+             x:DataType="vm:PricesPageViewModel">
+  <!-- PRE-03: cambio masivo de precios con vista previa -->
+  <Grid ColumnDefinitions="420,24,*">
+    <StackPanel Grid.Column="0">
+      <TextBlock Classes="title" Text="{Binding L[NavPrices]}" />
+      <TextBlock Text="{Binding L[PriceChangeHint]}" TextWrapping="Wrap" FontSize="14" Opacity="0.7" />
+
+      <TextBlock Classes="label" Text="{Binding L[Category]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding SelectedCategory}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:CategoryOption">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
+      <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,12,0,0">
+        <RadioButton GroupName="PriceMode" Content="{Binding L[ByPercent]}" IsChecked="{Binding IsPercent}" />
+        <RadioButton GroupName="PriceMode" Content="{Binding L[ByAmount]}" IsChecked="{Binding IsAmount}" />
+      </StackPanel>
+
+      <TextBlock Classes="label" Text="{Binding L[PriceChangeValue]}" />
+      <TextBox Text="{Binding ValueText}" FontSize="22" Watermark="{Binding L[PriceChangeValueHint]}">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding PreviewCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+        <Button Content="{Binding L[Preview]}" Command="{Binding PreviewCommand}" />
+        <Button Classes="primary" Content="{Binding L[ApplyPrices]}" Command="{Binding ApplyCommand}" IsEnabled="{Binding HasPreview}" />
+      </StackPanel>
+
+      <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+
+    <DockPanel Grid.Column="2" IsVisible="{Binding HasPreview}">
+      <TextBlock DockPanel.Dock="Top" Text="{Binding PreviewInfo}" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,8" />
+      <ListBox ItemsSource="{Binding PreviewRows}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:PriceChangeRow">
+            <Grid ColumnDefinitions="*,110,40,110">
+              <TextBlock Text="{Binding Name}" FontSize="16" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding OldPrice}" FontSize="16" Opacity="0.6" TextAlignment="Right" />
+              <TextBlock Grid.Column="2" Text="→" FontSize="16" TextAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="{Binding NewPrice}" FontSize="16" FontWeight="SemiBold" TextAlignment="Right" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+  </Grid>
+</UserControl>

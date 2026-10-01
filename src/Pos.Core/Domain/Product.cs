@@ -50,6 +50,23 @@ public class Product
 
     public int UnitsPerBox { get; set; } = 1;
 
+    /// <summary>Dónde está en la tienda ("Pasillo 3, estante B"), para el verificador de precios (BAZ-06).</summary>
+    public string? Location { get; set; }
+
+    /// <summary>
+    /// BAZ-05: si es una variante (talla, color, modelo), el producto padre. Cada variante es un producto
+    /// con su código y su precio; el nombre guardado ya incluye la variante ("Camiseta · Rojo M") para
+    /// que tickets y facturas no dependan del padre.
+    /// </summary>
+    public int? ParentProductId { get; set; }
+
+    public Product? ParentProduct { get; set; }
+
+    /// <summary>Solo la parte de la variante: "Rojo M".</summary>
+    public string? VariantName { get; set; }
+
+    public List<Product> Variants { get; set; } = [];
+
     /// <summary>Creado por un cajero con el alta rápida al escanear; el admin debe revisarlo (BAZ-03).</summary>
     public bool PendingReview { get; set; }
 

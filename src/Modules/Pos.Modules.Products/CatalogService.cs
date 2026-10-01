@@ -13,7 +13,8 @@ public sealed record ProductInput(
     decimal VatRate,
     string? Barcode,
     int? CategoryId,
-    string? PhotoPath);
+    string? PhotoPath,
+    string? Location = null);
 
 public static class TicketDefaults
 {
@@ -100,10 +101,15 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
     /// Busca por código exacto o por parte del nombre, con un límite de resultados para que
     /// la lista sea rápida con 30.000 productos.
     /// </summary>
-    public IReadOnlyList<Product> Search(string? text, int? categoryId = null, bool includeInactive = false, int limit = DefaultSearchLimit)
+    /// <param name="includeVariants">BAZ-05: false para listar solo los productos (las variantes se ven dentro de su producto).</param>
+    public IReadOnlyList<Product> Search(string? text, int? categoryId = null, bool includeInactive = false, int limit = DefaultSearchLimit,
+        bool includeVariants = true)
     {
         using var db = dbFactory.CreateDbContext();
         var query = db.Products.AsNoTracking().Include(p => p.Category).AsQueryable();
+
+        if (!includeVariants)
+            query = query.Where(p => p.ParentProductId == null);
 
         if (!includeInactive)
             query = query.Where(p => p.IsActive);
@@ -169,9 +175,12 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
         }
         else
         {
-            product = db.Products.Find(id.Value);
+            product = db.Products.Include(p => p.Variants).FirstOrDefault(p => p.Id == id.Value);
             if (product is null)
                 return OperationResult<Product>.Fail("ErrorProductNotFound");
+            if (product.ParentProductId is not null)
+                return OperationResult<Product>.Fail("ErrorEditVariantFromParent");
+            PropagateToVariants(product, name, input);
         }
 
         product.Name = name;
@@ -180,6 +189,7 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
         product.Barcode = barcode;
         product.CategoryId = input.CategoryId;
         product.PhotoPath = string.IsNullOrWhiteSpace(input.PhotoPath) ? null : input.PhotoPath;
+        product.Location = string.IsNullOrWhiteSpace(input.Location) ? null : input.Location.Trim();
         // Guardar desde la ficha de admin cuenta como revisado (BAZ-03).
         product.PendingReview = pendingReview;
         db.SaveChanges();
@@ -188,16 +198,115 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
 
     /// <summary>
     /// Los productos no se borran (las ventas y facturas los referenciarán): se desactivan
-    /// y dejan de salir en la venta.
+    /// y dejan de salir en la venta. Desactivar un producto desactiva también sus variantes.
     /// </summary>
     public void SetProductActive(int id, bool isActive)
     {
         using var db = dbFactory.CreateDbContext();
-        var product = db.Products.Find(id);
+        var product = db.Products.Include(p => p.Variants).FirstOrDefault(p => p.Id == id);
         if (product is null)
             return;
         product.IsActive = isActive;
+        if (!isActive)
+            foreach (var variant in product.Variants)
+                variant.IsActive = false;
         db.SaveChanges();
+    }
+
+    // --- Variantes (BAZ-05) ---
+
+    public static string VariantFullName(string parentName, string variantName) => $"{parentName} · {variantName}";
+
+    public IReadOnlyList<Product> GetVariants(int parentId, bool includeInactive = false)
+    {
+        using var db = dbFactory.CreateDbContext();
+        return db.Products.AsNoTracking()
+            .Where(p => p.ParentProductId == parentId && (includeInactive || p.IsActive))
+            .OrderBy(p => p.Id)
+            .ToList();
+    }
+
+    /// <summary>De los productos indicados, los que tienen variantes activas (en la venta se elige la variante).</summary>
+    public IReadOnlySet<int> WithVariants(IEnumerable<int> productIds)
+    {
+        var ids = productIds.ToList();
+        using var db = dbFactory.CreateDbContext();
+        return db.Products.AsNoTracking()
+            .Where(p => p.ParentProductId != null && p.IsActive && ids.Contains(p.ParentProductId.Value))
+            .Select(p => p.ParentProductId!.Value)
+            .Distinct()
+            .ToHashSet();
+    }
+
+    /// <summary>
+    /// Crea o modifica una variante. Comparte el IVA, la categoría, la foto y la ubicación del producto;
+    /// tiene su propio código y, si se indica, su propio precio (si no, el del producto).
+    /// </summary>
+    public OperationResult<Product> SaveVariant(int parentId, int? variantId, string variantName, string? barcode, decimal? price)
+    {
+        variantName = variantName.Trim();
+        barcode = string.IsNullOrWhiteSpace(barcode) ? null : barcode.Trim();
+        if (variantName.Length == 0)
+            return OperationResult<Product>.Fail("ErrorVariantNameRequired");
+        if (price < 0)
+            return OperationResult<Product>.Fail("ErrorPriceNegative");
+        if (price is { } p && decimal.Round(p, 2) != p)
+            return OperationResult<Product>.Fail("ErrorPriceDecimals");
+
+        using var db = dbFactory.CreateDbContext();
+        var parent = db.Products.Find(parentId);
+        if (parent is null)
+            return OperationResult<Product>.Fail("ErrorProductNotFound");
+        if (parent.ParentProductId is not null)
+            return OperationResult<Product>.Fail("ErrorVariantOfVariant");
+        if (barcode is not null && db.Products.Any(x => x.Barcode == barcode && x.Id != variantId))
+            return OperationResult<Product>.Fail("ErrorBarcodeTaken");
+        if (db.Products.Any(x => x.ParentProductId == parentId && x.VariantName == variantName && x.Id != variantId))
+            return OperationResult<Product>.Fail("ErrorVariantNameTaken");
+
+        Product? variant;
+        if (variantId is null)
+        {
+            variant = new Product { Name = "", ParentProductId = parentId };
+            db.Products.Add(variant);
+        }
+        else
+        {
+            variant = db.Products.FirstOrDefault(x => x.Id == variantId && x.ParentProductId == parentId);
+            if (variant is null)
+                return OperationResult<Product>.Fail("ErrorProductNotFound");
+        }
+
+        variant.VariantName = variantName;
+        variant.Name = VariantFullName(parent.Name, variantName);
+        variant.Barcode = barcode;
+        variant.Price = price ?? parent.Price;
+        variant.VatRate = parent.VatRate;
+        variant.CategoryId = parent.CategoryId;
+        variant.PhotoPath = parent.PhotoPath;
+        variant.Location = parent.Location;
+        variant.IsActive = true;
+        variant.PendingReview = false;
+        db.SaveChanges();
+        return OperationResult<Product>.Ok(variant);
+    }
+
+    /// <summary>
+    /// Al guardar un producto con variantes, ellas heredan nombre, IVA, categoría, foto y ubicación.
+    /// Las que tenían el mismo precio que el producto siguen con el precio común; las de precio propio lo mantienen.
+    /// </summary>
+    private static void PropagateToVariants(Product parent, string name, ProductInput input)
+    {
+        foreach (var variant in parent.Variants)
+        {
+            if (variant.Price == parent.Price)
+                variant.Price = input.Price;
+            variant.Name = VariantFullName(name, variant.VariantName ?? "");
+            variant.VatRate = input.VatRate;
+            variant.CategoryId = input.CategoryId;
+            variant.PhotoPath = string.IsNullOrWhiteSpace(input.PhotoPath) ? null : input.PhotoPath;
+            variant.Location = string.IsNullOrWhiteSpace(input.Location) ? null : input.Location.Trim();
+        }
     }
 
     private static string EscapeLike(string text) =>

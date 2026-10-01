@@ -55,6 +55,12 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.SetNull);
+            e.Property(p => p.Location).HasMaxLength(100);
+            e.Property(p => p.VariantName).HasMaxLength(100);
+            e.HasOne(p => p.ParentProduct)
+                .WithMany(p => p.Variants)
+                .HasForeignKey(p => p.ParentProductId)
+                .OnDelete(DeleteBehavior.Restrict); // los productos no se borran, se desactivan
         });
 
         model.Entity<CashSession>(e =>

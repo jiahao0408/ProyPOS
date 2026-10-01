@@ -76,6 +76,9 @@
           </ComboBox.ItemTemplate>
         </ComboBox>
 
+        <TextBlock Classes="label" Text="{Binding L[Location]}" />
+        <TextBox Text="{Binding Location}" Watermark="{Binding L[LocationHint]}" />
+
         <TextBlock Classes="label" Text="{Binding L[Photo]}" />
         <Image Source="{Binding Photo}" IsVisible="{Binding HasPhoto}" MaxHeight="160" HorizontalAlignment="Left" Margin="0,0,0,8" />
         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -106,6 +109,56 @@
         <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
           <TextBlock Text="{Binding Message}" />
         </Border>
+
+        <!-- BAZ-05: variantes (talla, color, modelo) -->
+        <StackPanel IsVisible="{Binding IsEditingExisting}" Margin="0,28,0,0">
+          <TextBlock Text="{Binding L[Variants]}" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding L[VariantsHint]}" FontSize="13" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8" />
+          <ListBox ItemsSource="{Binding Variants}" SelectedItem="{Binding SelectedVariant}" IsVisible="{Binding HasVariants}" MaxHeight="240">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:VariantRow">
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Barcode}" FontSize="13" Opacity="0.7" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="16" VerticalAlignment="Center" Margin="8,0" />
+                  <Button Grid.Column="2" MinHeight="36" FontSize="13" Padding="8,2"
+                          Content="{Binding $parent[ListBox].((vm:ProductsPageViewModel)DataContext).L[Deactivate]}"
+                          IsVisible="{Binding IsActive}"
+                          Command="{Binding $parent[ListBox].((vm:ProductsPageViewModel)DataContext).ToggleVariantActiveCommand}"
+                          CommandParameter="{Binding}" />
+                  <Button Grid.Column="2" MinHeight="36" FontSize="13" Padding="8,2"
+                          Content="{Binding $parent[ListBox].((vm:ProductsPageViewModel)DataContext).L[Activate]}"
+                          IsVisible="{Binding !IsActive}"
+                          Command="{Binding $parent[ListBox].((vm:ProductsPageViewModel)DataContext).ToggleVariantActiveCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Grid ColumnDefinitions="*,8,*,8,110" Margin="0,8,0,0">
+            <StackPanel>
+              <TextBlock Classes="label" Text="{Binding L[VariantName]}" />
+              <TextBox Text="{Binding VariantName}" Watermark="{Binding L[VariantNameHint]}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Classes="label" Text="{Binding L[Barcode]}" />
+              <TextBox Text="{Binding VariantBarcode}" />
+            </StackPanel>
+            <StackPanel Grid.Column="4">
+              <TextBlock Classes="label" Text="{Binding L[VariantPrice]}" />
+              <TextBox Text="{Binding VariantPriceText}" Watermark="{Binding L[VariantPriceHint]}" />
+            </StackPanel>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+            <Button Classes="primary" Content="{Binding L[SaveVariant]}" Command="{Binding SaveVariantCommand}" />
+            <Button Content="{Binding L[NewVariant]}" Command="{Binding NewVariantCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding VariantMessage}" Margin="0,6,0,0" TextWrapping="Wrap"
+                     IsVisible="{Binding VariantMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
   </Grid>

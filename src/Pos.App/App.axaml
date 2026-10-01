@@ -33,6 +33,9 @@
     <DataTemplate DataType="vm:ReturnDialogViewModel"><v:ReturnDialogView /></DataTemplate>
     <DataTemplate DataType="vm:ExchangeDialogViewModel"><v:ExchangeDialogView /></DataTemplate>
     <DataTemplate DataType="vm:AuditPageViewModel"><v:AuditPageView /></DataTemplate>
+    <DataTemplate DataType="vm:VariantPickerViewModel"><v:VariantPickerView /></DataTemplate>
+    <DataTemplate DataType="vm:PriceCheckViewModel"><v:PriceCheckView /></DataTemplate>
+    <DataTemplate DataType="vm:PricesPageViewModel"><v:PricesPageView /></DataTemplate>
   </Application.DataTemplates>
 
   <Application.Resources>

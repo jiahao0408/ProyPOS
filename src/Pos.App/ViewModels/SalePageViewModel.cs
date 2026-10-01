@@ -23,7 +23,8 @@ public sealed record CategoryButton(int? Id, string Name, IBrush? Background);
 
 public sealed record GenericButton(Category Section, IBrush? Background);
 
-public sealed record ProductButton(Product Product, string Name, string Price);
+/// <param name="HasVariants">BAZ-05: al tocarlo se elige la variante.</param>
+public sealed record ProductButton(Product Product, string Name, string Price, bool HasVariants = false);
 
 public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total, string? DiscountText);
 
@@ -31,7 +32,7 @@ public sealed record TicketLineRow(TicketLine Line, string Description, int Quan
 /// Pantalla de venta (sección 2).
 /// VEN-01: añadir por categoría, búsqueda o código de barras. VEN-02: cambiar cantidades y quitar líneas.
 /// VEN-03/04: cobro. HW-04: lector en modo teclado. BAZ-02: artículo genérico. BAZ-03: alta rápida.
-/// CAJ-01: con la caja cerrada solo deja abrirla.
+/// CAJ-01: con la caja cerrada solo deja abrirla. BAZ-05: variantes. BAZ-06: verificador de precios (F9).
 /// </summary>
 public partial class SalePageViewModel(
     ILocalizer localizer,
@@ -163,8 +164,44 @@ public partial class SalePageViewModel(
     [RelayCommand]
     private void AddProduct(ProductButton button)
     {
-        AddToTicket(TicketItem.FromProduct(button.Product), 1);
         SearchText = "";
+        if (button.HasVariants)
+            ChooseVariant(button.Product, 1);
+        else
+            AddToTicket(TicketItem.FromProduct(button.Product), 1);
+    }
+
+    /// <summary>BAZ-05: un producto con variantes no se vende tal cual; se elige la variante.</summary>
+    private void ChooseVariant(Product parent, int quantity)
+    {
+        var variants = catalog.GetVariants(parent.Id);
+        Dialog = new VariantPickerViewModel(L, formatter, parent, variants,
+            pick: variant =>
+            {
+                CloseDialog();
+                AddToTicket(TicketItem.FromProduct(variant), quantity);
+            },
+            cancel: CloseDialog);
+    }
+
+    /// <summary>Añade el producto, o pide la variante si la tiene.</summary>
+    private void AddOrChooseVariant(Product product, int quantity)
+    {
+        if (catalog.WithVariants([product.Id]).Count > 0)
+            ChooseVariant(product, quantity);
+        else
+            AddToTicket(TicketItem.FromProduct(product), quantity);
+    }
+
+    // --- Verificador de precios (BAZ-06) ---
+
+    [RelayCommand]
+    private void CheckPrice()
+    {
+        if (!IsCashOpen || IsDialogOpen)
+            return;
+        ClearMessage();
+        Dialog = new PriceCheckViewModel(L, formatter, catalog, close: CloseDialog);
     }
 
     /// <summary>
@@ -182,15 +219,19 @@ public partial class SalePageViewModel(
         var product = catalog.FindByBarcode(text);
         if (product is not null)
         {
-            AddToTicket(TicketItem.FromProduct(product), quantity);
             SearchText = "";
+            AddOrChooseVariant(product, quantity);
             return;
         }
 
         if (Products.Count == 1)
         {
-            AddToTicket(TicketItem.FromProduct(Products[0].Product), quantity);
+            var only = Products[0];
             SearchText = "";
+            if (only.HasVariants)
+                ChooseVariant(only.Product, quantity);
+            else
+                AddToTicket(TicketItem.FromProduct(only.Product), quantity);
             return;
         }
 
@@ -488,16 +529,16 @@ public partial class SalePageViewModel(
         if (!IsCashOpen)
             return;
 
+        // Al navegar por categorías salen los productos (las variantes se eligen al tocarlos);
+        // al buscar también salen las variantes, para encontrar "camiseta roja" directamente.
         var products = IsSearching
             ? catalog.Search(ParseQuantityPrefix(SearchText.Trim()).Text, limit: SearchLimit)
-            : catalog.Search(null, _selectedCategoryId);
+            : catalog.Search(null, _selectedCategoryId, includeVariants: false);
+        var withVariants = catalog.WithVariants(products.Select(p => p.Id));
 
         Products.Clear();
         foreach (var p in products)
-        {
-            // INV-02: el cajero ve las unidades disponibles, pero no puede editarlas.
-            Products.Add(new ProductButton(p, p.Name, formatter.FormatMoney(p.Price)));
-        }
+            Products.Add(new ProductButton(p, p.Name, formatter.FormatMoney(p.Price), withVariants.Contains(p.Id)));
     }
 
     private static (int Quantity, string Text) ParseQuantityPrefix(string text)

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Pos.App.ViewModels;
 using Pos.Core.Domain;
 using Pos.Modules.Products;
@@ -212,6 +213,43 @@ public class ScreenshotTests
         OpenAdmin(typeof(AuditPageViewModel));
         Capture(window, "55-auditoria");
 
+        // Sección 7: variantes, verificador de precios y cambio masivo de precios
+        var ropa = catalog.SaveCategory(null, "Ropa", 3, "#EC4899", false).Value!;
+        var camiseta = catalog.SaveProduct(null, new ProductInput("Camiseta", 9.95m, 21m, null, ropa.Id, null, "Pasillo 2, estante B")).Value!;
+        catalog.SaveVariant(camiseta.Id, null, "Roja M", "8410000000108", null);
+        catalog.SaveVariant(camiseta.Id, null, "Roja XL", "8410000000115", 11.95m);
+        catalog.SaveVariant(camiseta.Id, null, "Azul S", "8410000000122", null);
+
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(SalePageViewModel)));
+        var sale7 = (SalePageViewModel)workspace.CurrentPage!;
+        sale7.SelectCategoryCommand.Execute(sale7.Categories.Single(c => c.Name == "Ropa"));
+        sale7.AddProductCommand.Execute(sale7.Products.Single(p => p.Name == "Camiseta"));
+        Capture(window, "60-elegir-variante");
+        sale7.CloseDialogCommand.Execute(null);
+
+        sale7.CheckPriceCommand.Execute(null);
+        var priceCheck = (PriceCheckViewModel)sale7.Dialog!;
+        priceCheck.SearchText = "8410000000115";
+        priceCheck.SubmitCommand.Execute(null);
+        Capture(window, "61-consultar-precio");
+        priceCheck.CloseCommand.Execute(null);
+
+        OpenAdmin(typeof(ProductsPageViewModel));
+        var products7 = (ProductsPageViewModel)workspace.CurrentPage!;
+        products7.SelectedRow = products7.Products.Single(p => p.Name == "Camiseta");
+        Capture(window, "62-variantes");
+        products7.SelectedVariant = products7.Variants.Single(v => v.Name == "Roja XL");
+        foreach (var scroll in window.GetVisualDescendants().OfType<ScrollViewer>())
+            scroll.ScrollToEnd();
+        Capture(window, "62b-variantes-lista");
+
+        OpenAdmin(typeof(PricesPageViewModel));
+        var prices7 = (PricesPageViewModel)workspace.CurrentPage!;
+        prices7.SelectedCategory = prices7.CategoryOptions.Single(c => c.Name == "Hogar");
+        prices7.ValueText = "5";
+        prices7.PreviewCommand.Execute(null);
+        Capture(window, "63-precios");
+
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");
 
@@ -226,6 +264,7 @@ public class ScreenshotTests
             workspace.AdminPrompt!.PinEntry.Digit(d.ToString());
         var settings = Assert.IsType<SettingsPageViewModel>(workspace.CurrentPage);
         settings.SelectedLanguage = settings.Languages.Single(l => l.Code == "zh");
+        settings.SelectedPrintLanguage = settings.PrintLanguages.Single(l => l.Code == "es");
         settings.SaveCommand.Execute(null);
         Capture(window, "08-ajustes-chino");
     }

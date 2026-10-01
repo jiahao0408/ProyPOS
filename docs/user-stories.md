@@ -6,6 +6,8 @@ Prioridad: **M** = imprescindible para el MVP (34) · **S** = segunda versión �
 
 Fuente: `App_POS_Bazar_Especificacion_User_Stories.pdf` (1 oct 2026, @Jiahao).
 
+> **Cambio de alcance (2 oct 2026): la tienda no lleva stock.** Las historias de inventario (INV-01 … INV-06) y la compra por cajas (BAZ-04) quedan fuera. Donde otras historias mencionan el stock (VEN-06, DAT-02, BAZ-05, BAZ-06), esa parte no se hace: la devolución no suma stock, las variantes no tienen stock propio y el verificador muestra precio y ubicación.
+
 ---
 
 ## 1. Ventas y cobro (VEN)
@@ -28,7 +30,7 @@ Fuente: `App_POS_Bazar_Especificacion_User_Stories.pdf` (1 oct 2026, @Jiahao).
 | PRE-03 | Admin | Quiero cambiar precios de varios productos a la vez, para actualizar tarifas | Subida/bajada por % o importe sobre una categoría; vista previa antes de guardar | S |
 | PRE-04 | Admin | Quiero ver el historial de precios de un producto, para controlar cambios | Cada cambio guarda fecha, usuario, precio anterior y nuevo | C |
 
-## 3. Inventario (INV)
+## 3. Inventario (INV) — fuera de alcance: no se lleva stock
 
 | ID | Rol | User story | Criterios de aceptación | Prior. |
 |---|---|---|---|---|

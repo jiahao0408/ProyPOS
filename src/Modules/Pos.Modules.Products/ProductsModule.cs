@@ -12,5 +12,6 @@ public sealed class ProductsModule : IModule
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<CatalogService>();
+        services.AddSingleton<PriceService>();
     }
 }

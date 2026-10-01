@@ -1,8 +1,8 @@
 # StarSeaPOS — TPV de escritorio para bazar
 
-TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, inventario, tickets, facturas, caja y Verifactu**. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
+TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, descuento de stock, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Entradas de mercancía por cajas, cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. 267 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) y sección 7 (cambio masivo de precios, variantes, verificador de precios) hechas, e idioma de impresión de los tickets propio. 298 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -26,9 +26,11 @@ TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**
 
 ## Alcance del MVP
 
-**Dentro:** vender, cobrar, controlar stock y cerrar caja desde el PC del mostrador, en el idioma de cada usuario. Incluye las funciones propias de un bazar (escáner, artículo genérico, alta rápida, compra por cajas, etiquetas) y el envío de facturas a la AEAT con Verifactu.
+**Dentro:** vender, cobrar y cerrar caja desde el PC del mostrador, en el idioma de cada usuario. Incluye las funciones propias de un bazar (escáner, artículo genérico, alta rápida, etiquetas) y el envío de facturas a la AEAT con Verifactu.
 
 **Fuera del MVP:** tienda online, fidelización avanzada y multi-local.
+
+**Sin stock:** la tienda no controla existencias. Se han quitado el módulo de inventario (INV-01 … INV-06), las entradas de mercancía, los proveedores y la compra por cajas (BAZ-04). Las tablas y columnas antiguas siguen en la base de datos sin uso, para no perder datos de instalaciones anteriores.
 
 El MVP son las **34 historias con prioridad M**, repartidas en **5 sprints de 2 semanas**.
 
@@ -36,8 +38,8 @@ El MVP son las **34 historias con prioridad M**, repartidas en **5 sprints de 2 
 
 | Rol | Qué hace | Permisos clave |
 |---|---|---|
-| **Administrador** | Configura negocio, productos, precios, stock, impresora y pantalla; ve reportes | Todo: usuarios, precios, impuestos, devoluciones, ajustes de stock, facturas rectificativas |
-| **Cajero** | Vende, cobra, imprime tickets y emite facturas | Vender, cobrar, imprimir, consultar stock. **No** cambia precios ni anula ventas cerradas |
+| **Administrador** | Configura negocio, productos, precios, impresora y pantalla; ve reportes | Todo: usuarios, precios, impuestos, devoluciones, facturas rectificativas |
+| **Cajero** | Vende, cobra, imprime tickets y emite facturas | Vender, cobrar, imprimir, consultar precios. **No** cambia precios ni anula ventas cerradas |
 
 Cuando un cajero intenta una acción de administrador, la app pide el PIN de un administrador (USR-02).
 
@@ -47,7 +49,7 @@ Cuando un cajero intenta una acción de administrador, la app pide el PIN de un 
 |---|---|---|---|---|
 | 1 | Ventas y cobro | `VEN` | 6 | VEN-01 … VEN-04 |
 | 2 | Productos y precios | `PRE` | 4 | PRE-01, PRE-02 |
-| 3 | Inventario | `INV` | 6 | INV-01 … INV-03 |
+| 3 | ~~Inventario~~ (quitado: no se lleva stock) | `INV` | 6 | — |
 | 4 | Impresión de tickets | `IMP` | 4 | IMP-01 … IMP-03 |
 | 5 | Facturación | `FAC` | 6 | FAC-01, FAC-02, FAC-04, FAC-06 |
 | 6 | Caja | `CAJ` | 3 | CAJ-01, CAJ-02 |
@@ -56,7 +58,7 @@ Cuando un cajero intenta una acción de administrador, la app pide el PIN de un 
 | 9 | Idiomas y extensibilidad | `CFG` | 6 | CFG-01, CFG-04 |
 | 10 | Conexión con Verifactu | `VFA` | 6 | VFA-01, VFA-02, VFA-03, VFA-06 |
 | 11 | Importar y exportar datos | `DAT` | 5 | DAT-01, DAT-03 |
-| 12 | Funciones de bazar | `BAZ` | 7 | BAZ-01 … BAZ-04 |
+| 12 | Funciones de bazar | `BAZ` | 7 | BAZ-01 … BAZ-03 (BAZ-04 quitada) |
 | | **Total** | | **60** | **34** |
 
 Prioridades: **M** = imprescindible para el MVP · **S** = segunda versión · **C** = deseable.
@@ -70,7 +72,7 @@ La app funciona sola en el PC; la nube es opcional. **La base de datos local es 
 ```mermaid
 flowchart TB
     subgraph APP["App de escritorio (C# .NET 8 + Avalonia)"]
-        UI["Interfaz gráfica multidioma<br/>Venta · Cobro · Productos · Stock · Facturas · Caja"]
+        UI["Interfaz gráfica multidioma<br/>Venta · Cobro · Productos · Precios · Facturas · Caja"]
         BL["Lógica de negocio (MVVM + módulos)<br/>Precios e IVA · numeración de facturas · permisos por rol"]
         DB[("Base de datos local<br/>SQLite + EF Core + SQLCipher")]
         UI --> BL --> DB
@@ -120,11 +122,10 @@ StarSeaPOS/
 │   ├── Pos.App/                 # Shell Avalonia: ventanas, MVVM, DI (Composition.cs), temas
 │   ├── Pos.Core/                # Dominio, IModule, ILocalizer, PinHasher, cálculo de IVA
 │   ├── Pos.Data/                # EF Core, PosDbContext, migraciones, SQLCipher
-│   ├── Pos.Localization/        # JsonLocalizer: carga locales/*.json en tiempo de ejecución (CFG)
+│   ├── Pos.Localization/        # JsonLocalizer (locales/*.json), formatos regionales e idioma de impresión (CFG)
 │   └── Modules/
 │       ├── Pos.Modules.Sales/        # VEN
 │       ├── Pos.Modules.Products/     # PRE
-│       ├── Pos.Modules.Inventory/    # INV
 │       ├── Pos.Modules.Printing/     # IMP
 │       ├── Pos.Modules.Invoicing/    # FAC
 │       ├── Pos.Modules.CashRegister/ # CAJ
@@ -167,8 +168,6 @@ Primer arranque: con la BD vacía, la app pide crear el administrador.
 | VEN-02 Cantidades y líneas | `Ticket` (módulo Sales) | El ticket vive en memoria hasta cobrar: quitar una línea no deja rastro. Botones −, + y ✕ |
 | VEN-03 Efectivo | `PaymentView`, `SalesService.Checkout` | Muestra el cambio al teclear; botones de importe justo y billetes; vacío = importe justo. No deja cobrar menos del total |
 | VEN-04 Tarjeta y mixto | `PaymentRequest` | Se guarda el importe de cada método; la suma es siempre el total |
-| INV-01 Descuento de stock | `StockLedger` | Cada venta resta stock y deja un movimiento, en la misma transacción que la venta. El stock puede quedar en negativo |
-| INV-02 Consulta de stock | Botones de producto, página Productos | Visible para el cajero; no hay ningún sitio donde editarlo (eso es INV-03/05) |
 | HW-04 Escáner | `SalePageView.axaml.cs` | Lector USB en modo teclado: todo lo tecleado fuera de un cuadro de texto va al buscador, así no se pierde ningún escaneo. Código desconocido = aviso + alta rápida |
 | BAZ-02 Artículo genérico | Botones de sección | Categorías marcadas como sección: importe libre, IVA general (21 %), cuenta en las ventas por sección |
 | BAZ-03 Alta rápida | `QuickCreateView`, `CatalogService.QuickCreate` | Nombre, precio y sección con el código ya relleno. Si lo crea un cajero queda pendiente de revisión (filtro en Productos) |
@@ -176,7 +175,7 @@ Primer arranque: con la BD vacía, la app pide crear el administrador.
 Atajos: **F12** cobrar · **Esc** cerrar la ventana de cobro / alta rápida · **Enter** confirmar.
 
 **Seguridad de los datos de venta:**
-- Venta, líneas, pagos y stock se guardan en **una sola transacción**: o se guarda todo o nada.
+- Venta, líneas, pagos y factura se guardan en **una sola transacción**: o se guarda todo o nada.
 - SQLite con `synchronous = FULL`: cuando la app dice "cobrada", la venta ya está en disco aunque se vaya la luz.
 - Triggers en la BD impiden **modificar o borrar** ventas, líneas y pagos (datos de facturación).
 - La línea guarda nombre, precio e IVA del momento: cambiar el producto después no altera ventas pasadas.
@@ -199,11 +198,9 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 
 | Historia | Dónde | Notas |
 |---|---|---|
-| INV-03 Entradas de mercancía | Página **Entradas**, `ReceiptService` | Proveedor (se crea al vuelo), nº de albarán, productos escaneados o buscados, cantidad y coste. Suma stock y recalcula el **coste medio ponderado** (si el stock era 0 o negativo, vale el coste nuevo). Un código desconocido abre el alta rápida |
-| BAZ-04 Cajas y unidades | Casilla "Caja de N" en cada línea | Con unidades por caja en la ficha, se recibe por cajas: 3 cajas de 12 = 36 unidades; coste unitario = coste de la caja / 12 |
 | CAJ-02 Cierre con arqueo | Botón **Cerrar caja** en Venta | Muestra ventas, efectivo y tarjeta, efectivo esperado (fondo + cobros en efectivo) y el descuadre en vivo al teclear lo contado. Guarda una foto de los totales con número Z correlativo e imprime el cierre Z. No deja cerrar con un ticket a medias |
 | BAZ-01 Etiquetas | Página **Etiquetas**, `LabelService` | Cantidad por producto; imprime nombre, precio y código de barras (EAN-13 o CODE128). Los productos sin código reciben uno interno EAN-13 que empieza por **29** (rango reservado para uso interno) y ya se pueden escanear. Impresora de etiquetas propia o la de tickets |
-| DAT-01 Importar | Página **Datos y copias** | Productos (nombre, precio, IVA, código, categoría, unidades por caja, coste, stock) y clientes. CSV (`;` o `,`, UTF-8 o el Windows-1252 de Excel en español) o Excel. Plantilla descargable, vista previa con el error de cada fila; los códigos o NIF duplicados no se importan; las categorías que no existen se crean |
+| DAT-01 Importar | Página **Datos y copias** | Productos (nombre, precio, IVA, código, categoría) y clientes. Las columnas de más (por ejemplo, el stock de una plantilla antigua) se ignoran. CSV (`;` o `,`, UTF-8 o el Windows-1252 de Excel en español) o Excel. Plantilla descargable, vista previa con el error de cada fila; los códigos o NIF duplicados no se importan; las categorías que no existen se crean |
 | DAT-03 Copia y restauración | Página **Datos y copias**, `BackupService` | Fichero `.sspos` cifrado con contraseña (AES-256-GCM, PBKDF2 600.000 iteraciones): se puede guardar en un USB o en OneDrive y **restaurar en otro PC**. Restaurar pide confirmación y antes guarda una copia del estado actual |
 | Copia diaria automática | Al arrancar | Copia cifrada en `%LOCALAPPDATA%\StarSeaPOS\backups`, una al día, se guardan las 7 últimas |
 
@@ -230,12 +227,23 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 | Historia | Dónde | Notas |
 |---|---|---|
 | VEN-05 Descuentos | Botón **%** en cada línea y **Descuento** en Venta | Por línea (porcentaje o importe) y sobre el total del ticket. El cajero puede llegar al límite configurado en Ajustes (10 % por defecto); por encima hace falta el PIN de un administrador, y si se cancela se deshace el descuento. El ticket impreso muestra el precio de tarifa y una línea "Dto." |
-| VEN-06 Devoluciones | Botón **Devolver** en Tickets, `SalesService.Return` | Devolución total o parcial con motivo obligatorio. Reembolso en efectivo o con tarjeta. El cajero necesita el PIN de un administrador. Suma el stock de nuevo. No deja devolver más unidades de las vendidas, aunque se haga en varias veces. Con descuentos, la última unidad devuelve exactamente lo que quedaba por devolver (sin céntimos de más ni de menos) |
+| VEN-06 Devoluciones | Botón **Devolver** en Tickets, `SalesService.Return` | Devolución total o parcial con motivo obligatorio. Reembolso en efectivo o con tarjeta. El cajero necesita el PIN de un administrador. No deja devolver más unidades de las vendidas, aunque se haga en varias veces. Con descuentos, la última unidad devuelve exactamente lo que quedaba por devolver (sin céntimos de más ni de menos) |
 | FAC-03 Rectificativas | `InvoiceSaleHook`, serie **R** | Cada devolución emite una factura rectificativa por diferencias con número correlativo propio (R2026-000001…), que indica la factura original y el motivo. Lleva el mismo cliente que la original. En Verifactu va como **R5** si rectifica un ticket y como **R1** si rectifica una factura completa, con `TipoRectificativa` "I" y la referencia a la factura rectificada |
 | BAZ-07 Cambios y ticket regalo | Botones **Cambio** y **Ticket regalo** en Tickets | Un cambio es una devolución más una venta nueva. Lo devuelto se paga como **vale** en la venta nueva. Si el cliente debe dinero, lo paga; si la tienda debe dinero, hace falta el PIN de un administrador si es un cajero. El ticket regalo no lleva precios ni el QR de la AEAT (que lleva el importe), pero sí el número de factura en un QR para encontrar la venta |
 | USR-03 Auditoría | Página **Auditoría** (solo administrador), `AuditLog` | Registra los descuentos, las devoluciones y los cambios con el usuario y quién autorizó. Las entradas no se pueden modificar ni borrar (triggers) |
 
 **Cuidado con las migraciones:** cuando EF Core tiene que reconstruir una tabla en SQLite (por ejemplo, para añadir una clave ajena), la borra y la vuelve a crear, y **los triggers de inmutabilidad se pierden sin aviso**. EF hace esas reconstrucciones al final de la migración, así que recrear los triggers en la misma migración no basta. Hay que hacerlo en una migración posterior con `BillingTriggers.Recreate`. El test `MigrationSafetyTests` aplica todas las migraciones y comprueba que cada tabla de facturación sigue protegida.
+
+### Cómo está hecha la sección 7 (precios, variantes y verificador)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| PRE-03 Cambio masivo de precios | Página **Precios** (solo administrador), `PriceService` | Categoría o todo el catálogo; por porcentaje o por importe; un valor negativo baja los precios. Primero la **vista previa** (precio actual → nuevo) y luego **Aplicar**. Redondeo a céntimos; no deja ningún precio por debajo de cero. Queda en la auditoría |
+| BAZ-05 Variantes | Ficha del producto (sección **Variantes**), `CatalogService.SaveVariant` | Talla, color o modelo. Cada variante es un producto con su código de barras y, si se indica, su propio precio; si no, el del producto. Comparten IVA, categoría, foto y ubicación. En la venta el producto sale una vez y al tocarlo se elige la variante; escanear el código de una variante la añade directamente. En el ticket y la factura sale con su nombre completo ("Camiseta · Roja XL") |
+| BAZ-06 Verificador de precios | Botón **Consultar precio (F9)** en Venta | Se escanea o se busca el producto y se ve el precio, la **ubicación en la tienda** (campo nuevo en la ficha), la categoría y las variantes con su precio. No añade nada al ticket |
+| Idioma de impresión | **Ajustes** → Idioma de impresión de los tickets, `PrintLocalization` | Los tickets, las facturas en PDF y el cierre Z se imprimen en su propio idioma, distinto del de la aplicación (por ejemplo, la app en chino y los tickets en español). Sin elegir, se imprime en el idioma de la aplicación. La moneda y el formato de fecha son los mismos |
+
+Al cambiar el precio del producto, las variantes que tenían el mismo precio lo siguen; las de precio propio lo mantienen. Desactivar el producto desactiva sus variantes.
 
 ## Primeros pasos
 
@@ -292,6 +300,7 @@ dotnet ef migrations add <Nombre> --project src/Pos.Data
 - El cambio de idioma se aplica **sin reiniciar** (CFG-01).
 - Codificación UTF-8 obligatoria (alfabetos como el chino).
 - Moneda, fecha y separadores decimales según la región; euro por defecto (CFG-04).
+- El **idioma de impresión** de los tickets se elige aparte en Ajustes; sin elegir, es el de la aplicación.
 - Los datos fiscales del ticket **no se traducen** (CFG-03).
 
 Idiomas previstos: español, catalán, inglés, chino, alemán y francés.
@@ -324,13 +333,14 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 | Fase | Contenido | Historias |
 |---|---|---|
 | **Sprint 1 — Base** | Login, roles, catálogo, apertura de caja, sistema de idiomas | USR-01, USR-02, PRE-01, PRE-02, CAJ-01, CFG-01, CFG-04 |
-| **Sprint 2 — Vender y cobrar** | Venta por escáner, artículo genérico, alta rápida, cobro y descuento de stock | VEN-01 … VEN-04, INV-01, INV-02, HW-04, BAZ-02, BAZ-03 |
+| **Sprint 2 — Vender y cobrar** | Venta por escáner, artículo genérico, alta rápida y cobro | VEN-01 … VEN-04, HW-04, BAZ-02, BAZ-03 |
 | **Sprint 3 — Imprimir y facturar** | Impresora térmica, tickets, facturas y facturar un ticket ya emitido | HW-01, IMP-01 … IMP-03, FAC-01, FAC-02, FAC-06 |
-| **Sprint 4 — Cierre, stock y datos** | Entradas de mercancía por cajas, etiquetas de precio, cierre Z, importación de catálogo, copias de seguridad | INV-03, CAJ-02, DAT-01, DAT-03, BAZ-01, BAZ-04 |
+| **Sprint 4 — Cierre y datos** | Etiquetas de precio, cierre Z, importación de catálogo, copias de seguridad | CAJ-02, DAT-01, DAT-03, BAZ-01 |
 | **Sprint 5 — Verifactu** | Huella y QR, certificado, envío a la AEAT, cola sin conexión, pruebas e instalador para Windows | FAC-04, VFA-01, VFA-02, VFA-03, VFA-06 |
 | **Sección 6 — Devoluciones y descuentos** ✅ | Descuentos con límite de cajero, devoluciones con rectificativa, cambios, ticket regalo, auditoría | VEN-05, VEN-06, FAC-03, BAZ-07, USR-03 |
-| **Versión 2** | Pantalla de cliente, cajón, variantes por talla y color, verificador de precios, ticket regalo y cambios, descuentos, devoluciones, rectificativas, modalidad y panel Verifactu, alertas y ajustes de stock, cambio masivo de precios, informe de ventas, exportaciones, auditoría, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
-| **Versión 3** | Historial de precios, recuento físico, ticket digital, migración desde otro TPV, módulos ampliables (fidelización, venta online, multi-tienda) | Historias **C** |
+| **Sección 7 — Precios y variantes** ✅ | Cambio masivo de precios, variantes por talla y color, verificador de precios, idioma de impresión | PRE-03, BAZ-05, BAZ-06 |
+| **Versión 2 (resto)** | Pantalla de cliente, cajón, modalidad y panel Verifactu, informe de ventas, exportaciones, auditoría, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
+| **Versión 3** | Historial de precios, ticket digital, migración desde otro TPV, módulos ampliables (fidelización, venta online, multi-tienda) | Historias **C** |
 
 ## Decisiones abiertas
 
@@ -342,7 +352,6 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Bluetooth (HW-01):** el stack solo cubre USB, serie COM y red. En Windows muchas impresoras Bluetooth se exponen como puerto COM virtual; hay que confirmarlo con el modelo real.
 - **Escáner por cámara (HW-04):** implementado el lector USB en modo teclado; la lectura con cámara queda para la versión 2 (exige una librería de visión). Confirmar que basta con el lector.
 - **IVA del artículo genérico y del alta rápida (BAZ-02, BAZ-03):** se usa el 21 %. Si alguna sección vende con otro tipo (por ejemplo libros al 4 %), habría que añadir un IVA por sección.
-- **Stock negativo:** se permite vender aunque el stock sea 0, para no parar la venta por un recuento mal hecho; se muestra en rojo.
 - **Series:** `T` (simplificadas) y `F` (completas) más el año, numeración que vuelve a 1 cada año. Confirmar con la gestoría.
 - **Precio sin IVA en la factura completa:** se redondea a 2 decimales por línea; el desglose por tipo (base y cuota) es el que vale fiscalmente.
 - **PDF:** QuestPDF con licencia Community (gratuita para empresas con menos de 1 M$ de ingresos anuales).

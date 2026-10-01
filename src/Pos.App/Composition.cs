@@ -120,6 +120,7 @@ internal static class Composition
         services.AddTransient<VerifactuPageViewModel>();
         services.AddTransient<AboutPageViewModel>();
         services.AddTransient<AuditPageViewModel>();
+        services.AddTransient<PricesPageViewModel>();
 
         overrides?.Invoke(services);
         return services.BuildServiceProvider();

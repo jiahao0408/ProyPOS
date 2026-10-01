@@ -5,6 +5,7 @@
              x:DataType="vm:SalePageViewModel">
   <UserControl.KeyBindings>
     <KeyBinding Gesture="F12" Command="{Binding ChargeCommand}" />
+    <KeyBinding Gesture="F9" Command="{Binding CheckPriceCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CloseDialogCommand}" />
   </UserControl.KeyBindings>
 
@@ -39,8 +40,12 @@
         </TextBox>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
           <TextBlock Text="{Binding CashInfo}" FontSize="13" Opacity="0.6" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
-                  Content="{Binding L[CloseCash]}" Command="{Binding StartCloseCashCommand}" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+                    Content="{Binding L[PriceCheckF9]}" Command="{Binding CheckPriceCommand}" />
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+                    Content="{Binding L[CloseCash]}" Command="{Binding StartCloseCashCommand}" />
+          </StackPanel>
         </Grid>
 
         <Border DockPanel.Dock="Top" Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
@@ -96,6 +101,8 @@
                   <StackPanel>
                     <TextBlock Text="{Binding Name}" TextWrapping="Wrap" TextAlignment="Center" FontSize="15" MaxHeight="40" />
                     <TextBlock Text="{Binding Price}" TextAlignment="Center" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding $parent[ItemsControl].((vm:SalePageViewModel)DataContext).L[ChooseVariant]}"
+                               IsVisible="{Binding HasVariants}" TextAlignment="Center" FontSize="12" Opacity="0.7" />
                   </StackPanel>
                 </Button>
               </DataTemplate>

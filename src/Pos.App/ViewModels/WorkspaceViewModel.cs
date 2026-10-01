@@ -95,6 +95,7 @@ public partial class WorkspaceViewModel : ViewModelBase
             new NavItemViewModel(localizer, "NavTickets", typeof(TicketsPageViewModel), requiresAdmin: false),
             new NavItemViewModel(localizer, "NavLabels", typeof(LabelsPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavProducts", typeof(ProductsPageViewModel), requiresAdmin: true),
+            new NavItemViewModel(localizer, "NavPrices", typeof(PricesPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavCategories", typeof(CategoriesPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavUsers", typeof(UsersPageViewModel), requiresAdmin: true),
             new NavItemViewModel(localizer, "NavBusiness", typeof(BusinessPageViewModel), requiresAdmin: true),

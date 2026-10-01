@@ -15,9 +15,15 @@ public sealed record ProductRow(
 
 public sealed record CategoryOption(int? Id, string Name);
 
+/// <summary>BAZ-05: una variante en la ficha de su producto.</summary>
+public sealed record VariantRow(int Id, string Name, string Barcode, string Price, bool OwnPrice, bool IsActive);
+
 public sealed record VatOption(decimal Rate, string Title);
 
-/// <summary>PRE-01: alta y edición de productos, con búsqueda rápida sobre el catálogo.</summary>
+/// <summary>
+/// PRE-01: alta y edición de productos, con búsqueda rápida sobre el catálogo.
+/// BAZ-05: variantes con su código y su precio. BAZ-06: ubicación en la tienda.
+/// </summary>
 public partial class ProductsPageViewModel(
     ILocalizer localizer,
     CatalogService catalog,
@@ -60,6 +66,9 @@ public partial class ProductsPageViewModel(
     private CategoryOption? _selectedCategory;
 
     [ObservableProperty]
+    private string _location = "";
+
+    [ObservableProperty]
     private string? _photoPath;
 
     [ObservableProperty]
@@ -74,6 +83,31 @@ public partial class ProductsPageViewModel(
     private bool _editingIsActive = true;
 
     public ObservableCollection<ProductRow> Products { get; } = [];
+
+    // --- Variantes (BAZ-05) ---
+
+    private decimal _editingPrice;
+    private int? _editingVariantId;
+
+    public ObservableCollection<VariantRow> Variants { get; } = [];
+
+    [ObservableProperty]
+    private VariantRow? _selectedVariant;
+
+    [ObservableProperty]
+    private string _variantName = "";
+
+    [ObservableProperty]
+    private string _variantBarcode = "";
+
+    /// <summary>Vacío = el mismo precio que el producto.</summary>
+    [ObservableProperty]
+    private string _variantPriceText = "";
+
+    [ObservableProperty]
+    private string? _variantMessage;
+
+    public bool HasVariants => Variants.Count > 0;
 
     public ObservableCollection<CategoryOption> CategoryOptions { get; } = [];
 
@@ -137,9 +171,13 @@ public partial class ProductsPageViewModel(
         PriceText = "";
         SelectedVat = VatOptions[0];
         Barcode = "";
+        Location = "";
         SelectedCategory = CategoryOptions.FirstOrDefault();
         PhotoPath = null;
         SelectedRow = null;
+        Variants.Clear();
+        OnPropertyChanged(nameof(HasVariants));
+        NewVariant();
         ClearMessage();
     }
 
@@ -152,7 +190,7 @@ public partial class ProductsPageViewModel(
             return;
         }
 
-        var input = new ProductInput(Name, price, SelectedVat?.Rate ?? -1, Barcode, SelectedCategory?.Id, PhotoPath);
+        var input = new ProductInput(Name, price, SelectedVat?.Rate ?? -1, Barcode, SelectedCategory?.Id, PhotoPath, Location);
         var result = catalog.SaveProduct(_editingId, input);
         if (!Check(result))
             return;
@@ -200,14 +238,84 @@ public partial class ProductsPageViewModel(
         Barcode = product.Barcode ?? "";
         SelectedCategory = CategoryOptions.FirstOrDefault(c => c.Id == product.CategoryId) ?? CategoryOptions.FirstOrDefault();
         PhotoPath = product.PhotoPath;
+        Location = product.Location ?? "";
+        _editingPrice = product.Price;
+        RefreshVariants();
+        NewVariant();
         ClearMessage();
+    }
+
+    partial void OnSelectedVariantChanged(VariantRow? value)
+    {
+        if (value is null)
+            return;
+        _editingVariantId = value.Id;
+        VariantName = catalog.GetProduct(value.Id)?.VariantName ?? value.Name;
+        VariantBarcode = value.Barcode;
+        VariantPriceText = value.OwnPrice ? value.Price : "";
+        VariantMessage = null;
+    }
+
+    [RelayCommand]
+    private void NewVariant()
+    {
+        _editingVariantId = null;
+        SelectedVariant = null;
+        VariantName = "";
+        VariantBarcode = "";
+        VariantPriceText = "";
+        VariantMessage = null;
+    }
+
+    [RelayCommand]
+    private void SaveVariant()
+    {
+        if (_editingId is not { } parentId)
+            return;
+        decimal? price = null;
+        if (VariantPriceText.Trim().Length > 0)
+        {
+            if (!formatter.TryParseAmount(VariantPriceText, out var parsed))
+            {
+                VariantMessage = L["ErrorAmountFormat"];
+                return;
+            }
+            price = parsed;
+        }
+
+        var result = catalog.SaveVariant(parentId, _editingVariantId, VariantName, VariantBarcode, price);
+        if (!result.Success)
+        {
+            VariantMessage = L[result.ErrorKey!];
+            return;
+        }
+        RefreshVariants();
+        NewVariant();
+        VariantMessage = L["Saved"];
+    }
+
+    [RelayCommand]
+    private void ToggleVariantActive(VariantRow row)
+    {
+        catalog.SetProductActive(row.Id, !row.IsActive);
+        RefreshVariants();
+    }
+
+    private void RefreshVariants()
+    {
+        Variants.Clear();
+        if (_editingId is { } id)
+            foreach (var v in catalog.GetVariants(id, includeInactive: true))
+                Variants.Add(new VariantRow(v.Id, v.VariantName ?? v.Name, v.Barcode ?? "", formatter.FormatAmount(v.Price),
+                    v.Price != _editingPrice, v.IsActive));
+        OnPropertyChanged(nameof(HasVariants));
     }
 
     private void RefreshList()
     {
         var products = ShowPendingOnly
             ? catalog.GetPendingReview()
-            : catalog.Search(SearchText, includeInactive: ShowInactive);
+            : catalog.Search(SearchText, includeInactive: ShowInactive, includeVariants: false);
         Products.Clear();
         foreach (var p in products)
             Products.Add(ToRow(p));
