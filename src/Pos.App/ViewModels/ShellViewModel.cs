@@ -25,7 +25,8 @@ public partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private ViewModelBase _currentScreen;
 
-    public ShellViewModel(IServiceProvider services, ILocalizer localizer, ISession session, UserService users, SettingsStore settings, TimeProvider clock)
+    public ShellViewModel(IServiceProvider services, ILocalizer localizer, ISession session, UserService users, SettingsStore settings,
+        TimeProvider clock, UserLanguage userLanguage)
         : base(localizer)
     {
         _services = services;
@@ -39,6 +40,7 @@ public partial class ShellViewModel : ViewModelBase
         _session.Changed += (_, _) =>
         {
             RegisterActivity();
+            userLanguage.Apply(_session.CurrentUser); // CFG-02: el idioma del que entra, o el de la tienda al salir
             CurrentScreen = ScreenForSession();
         };
     }

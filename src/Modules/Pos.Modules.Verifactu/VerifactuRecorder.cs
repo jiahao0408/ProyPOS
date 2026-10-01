@@ -8,6 +8,8 @@ namespace Pos.Modules.Verifactu;
 /// <summary>
 /// FAC-04: con cada factura se genera su registro de facturación encadenado, en la misma
 /// transacción que la factura (si no se puede generar, la venta no se guarda).
+/// VFA-04: en VERI*FACTU queda pendiente de enviar; en No VERI*FACTU no se envía: se firma después
+/// (<see cref="VerifactuSigner"/>) y se conserva.
 /// </summary>
 public sealed class VerifactuRecorder(TimeProvider clock) : IInvoiceHook
 {
@@ -35,7 +37,7 @@ public sealed class VerifactuRecorder(TimeProvider clock) : IInvoiceHook
             PreviousHash = previous?.Hash,
             GeneratedAt = VerifactuHash.Timestamp(clock.GetLocalNow()),
             Hash = "",
-            Status = VerifactuStatus.Pending,
+            Status = db.Settings.Find(VerifactuSettingKeys.Enabled)?.Value == "true" ? VerifactuStatus.Pending : VerifactuStatus.NotSent,
         };
         record.Hash = VerifactuHash.ForAlta(record.IssuerNif, record.InvoiceNumber, record.IssueDate, record.InvoiceType,
             record.TotalVat, record.Total, record.PreviousHash, record.GeneratedAt);

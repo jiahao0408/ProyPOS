@@ -19,6 +19,8 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<VerifactuRecord> VerifactuRecords => Set<VerifactuRecord>();
+    public DbSet<VerifactuSignature> VerifactuSignatures => Set<VerifactuSignature>();
+    public DbSet<VerifactuEvent> VerifactuEvents => Set<VerifactuEvent>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<GoodsReceipt> GoodsReceipts => Set<GoodsReceipt>();
     public DbSet<GoodsReceiptLine> GoodsReceiptLines => Set<GoodsReceiptLine>();
@@ -75,6 +77,22 @@ public class PosDbContext(DbContextOptions<PosDbContext> options) : DbContext(op
             e.Ignore(s => s.Difference);
             e.HasIndex(s => s.ClosedAtUtc);
             e.HasIndex(s => s.ZNumber).IsUnique();
+        });
+
+        model.Entity<VerifactuSignature>(e =>
+        {
+            e.HasIndex(s => s.RecordId).IsUnique();
+            e.Property(s => s.CertificateSubject).HasMaxLength(300);
+            e.HasOne(s => s.Record).WithMany().HasForeignKey(s => s.RecordId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        model.Entity<VerifactuEvent>(e =>
+        {
+            e.Property(v => v.Type).HasMaxLength(40);
+            e.Property(v => v.Details).HasMaxLength(1000);
+            e.Property(v => v.UserName).HasMaxLength(100);
+            e.Property(v => v.PreviousHash).HasMaxLength(64);
+            e.Property(v => v.Hash).HasMaxLength(64);
         });
 
         model.Entity<VerifactuRecord>(e =>

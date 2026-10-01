@@ -19,6 +19,8 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.6" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+    <!-- VFA-04: firma XAdES de los registros No VERI*FACTU -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="8.0.4" />
 
     <!-- Facturación, impresión y hardware -->
     <PackageVersion Include="QuestPDF" Version="2024.10.2" />

@@ -187,7 +187,8 @@ public sealed class Section8Tests : IDisposable
 
         Assert.Equal(4, exported.Records);
         using (var zip = ZipFile.OpenRead(path))
-            Assert.Equal([BillingRecordExport.RecordsFile, BillingRecordExport.InvoicesFile, BillingRecordExport.ReadmeFile, BillingRecordExport.ManifestFile],
+            Assert.Equal([BillingRecordExport.RecordsFile, BillingRecordExport.InvoicesFile, BillingRecordExport.EventsFile,
+                    BillingRecordExport.ReadmeFile, BillingRecordExport.ManifestFile],
                 zip.Entries.Select(e => e.FullName));
         var check = _billing.Verify(path);
         Assert.True(check.IsValid, $"{check.ErrorKey} {check.Detail}");

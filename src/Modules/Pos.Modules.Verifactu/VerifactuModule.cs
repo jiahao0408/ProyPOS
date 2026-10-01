@@ -17,6 +17,8 @@ public sealed class VerifactuModule : IModule
         services.AddSingleton<CertificateStore>();
         services.AddSingleton<IVerifactuTransport, HttpVerifactuTransport>();
         services.AddSingleton<VerifactuSender>();
+        services.AddSingleton<VerifactuSigner>();
+        services.AddSingleton<VerifactuModeService>();
         services.AddSingleton<VerifactuQueue>();
     }
 }

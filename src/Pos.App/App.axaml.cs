@@ -34,6 +34,25 @@ public partial class App : Application
                     Program.LogError("Copia automática", e);
                 }
             });
+            // VFA-04: en No VERI*FACTU, el arranque queda en el registro de eventos.
+            try
+            {
+                services.GetRequiredService<VerifactuModeService>().RecordStartup(services.GetRequiredService<ProducerInfo>().Version);
+            }
+            catch (Exception e)
+            {
+                Program.LogError("Registro de eventos", e);
+            }
+
+            // CFG-06: ¿hay versión nueva? Solo avisa; instalar lo decide un administrador.
+            var updates = services.GetRequiredService<Pos.App.Updates.UpdateService>();
+            _ = Task.Run(async () =>
+            {
+                var result = await updates.CheckAsync();
+                if (result.ErrorKey is not null)
+                    Program.LogError("Actualizaciones", new InvalidOperationException(result.ErrorDetail));
+            });
+
             // VFA-03: cola de envíos a la AEAT en segundo plano.
             var queue = services.GetRequiredService<VerifactuQueue>();
             queue.Failed += e => Program.LogError("Cola Verifactu", e);

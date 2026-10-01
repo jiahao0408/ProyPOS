@@ -16,6 +16,12 @@
       <Border Classes="message error" IsVisible="{Binding IsIncomplete}">
         <TextBlock Text="{Binding L[ProducerIncomplete]}" />
       </Border>
+      <!-- CFG-06: actualizaciones -->
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+        <Button Content="{Binding L[UpdateCheck]}" Command="{Binding CheckUpdatesCommand}" IsEnabled="{Binding !IsUpdating}" />
+        <Button Classes="primary" Content="{Binding L[UpdateInstall]}" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstall}" />
+        <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
       <TextBlock Classes="label" Margin="0,16,0,4" Text="{Binding L[ResponsibleDeclaration]}" />
     </StackPanel>
     <Border Background="White" CornerRadius="4" Padding="16" BoxShadow="0 2 8 0 #30000000">

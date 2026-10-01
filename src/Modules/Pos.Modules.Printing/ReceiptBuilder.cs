@@ -14,9 +14,11 @@ namespace Pos.Modules.Printing;
 /// </summary>
 public sealed class ReceiptBuilder(PrintLocalization print)
 {
-    public IReadOnlyList<ReceiptElement> Build(InvoiceDocument doc, BusinessProfile business, PrinterProfile printer, bool copy)
+    /// <param name="language">CFG-03: idioma de este ticket (turistas); null = el de impresión. Los datos fiscales no se traducen.</param>
+    public IReadOnlyList<ReceiptElement> Build(InvoiceDocument doc, BusinessProfile business, PrinterProfile printer, bool copy,
+        string? language = null)
     {
-        var (L, formatter) = print.For();
+        var (L, formatter) = print.For(language);
         var width = printer.CharsPerLine;
         string Amount(decimal a) => formatter.FormatAmount(a);
         var r = new List<ReceiptElement>();

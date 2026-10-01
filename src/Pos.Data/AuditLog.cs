@@ -10,6 +10,8 @@ public static class AuditActions
     public const string Discount = "Discount";
     public const string PriceChange = "PriceChange";
     public const string CashDrawer = "CashDrawer";
+    public const string VerifactuMode = "VerifactuMode";
+    public const string VerifactuCorrection = "VerifactuCorrection";
 }
 
 /// <summary>

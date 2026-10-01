@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) y sección 8 (informe de ventas, exportaciones y registro de facturación) hechas, e idioma de impresión de los tickets propio. 310 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 332 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -256,6 +256,25 @@ Al cambiar el precio del producto, las variantes que tenían el mismo precio lo 
 
 **Por qué no se puede alterar sin que se note (DAT-04):** cambiar un importe rompe la huella de ese registro y la de todos los siguientes. Si alguien recalcula la cadena entera, la huella final ya no coincide con la de la base de datos (ni con la que tiene la AEAT, que recibió cada registro). La huella final sale en pantalla al exportar para poder anotarla.
 
+### Cómo está hecha la sección 9 (hardware)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| HW-02 Pantalla de cliente | `CustomerDisplayViewModel`, `CustomerDisplayWindow`; se activa en **Impresora y cajón** | Ventana a pantalla completa en el **segundo monitor** (si solo hay uno, ventana normal para arrastrarla al visor). Muestra cada línea y el total mientras se vende, "¡Gracias!" con el total y el cambio al cobrar, y el nombre de la tienda con un mensaje de bienvenida en reposo. Los textos salen en el idioma de impresión (el del cliente) |
+| HW-03 Cajón portamonedas | `PrintService.OpenDrawerAsync`, botón **Abrir cajón** en Venta | Pulso ESC/POS `ESC p 0 25 250` por la impresora de tickets (conector RJ11). Se abre solo al cobrar algo en efectivo (opción en Impresora y cajón; con tarjeta no). A mano, sin venta: el cajero necesita el PIN de un administrador y queda en la auditoría. Botón **Probar cajón** |
+
+### Cómo está hecha la sección 10 (idiomas, Verifactu y actualizaciones)
+
+| Historia | Dónde | Notas |
+|---|---|---|
+| CFG-02 Idioma por usuario | Selector de idioma en la barra superior, `UserLanguage` | Cada usuario elige su idioma y se guarda en su ficha; al entrar con su PIN la interfaz cambia a ese idioma y al salir vuelve al de la tienda (Ajustes). El cambio de uno no afecta a los demás |
+| CFG-03 Ticket en el idioma del cliente | Selector **Idioma del ticket** en la ventana de cobro | Por defecto, el idioma de impresión de Ajustes. Solo cambian los textos del ticket: los datos fiscales (emisor, NIF, número, importes) son los mismos |
+| VFA-04 Modalidad | Página **Verifactu**, `VerifactuModeService`, `VerifactuSigner`, `XadesSigner` | **VERI\*FACTU:** los registros se envían a la AEAT. **No VERI\*FACTU:** no se envían; cada registro se firma con el certificado (XAdES enveloped, RSA-SHA256, con hora de firma y huella del certificado) y se lleva un **registro de eventos** encadenado (arranques, cambios de modalidad, exportaciones, anomalías como registros sin firmar o exportaciones alteradas). Firmas y eventos no se pueden modificar ni borrar (triggers). El cambio de modalidad queda en la auditoría y en los eventos; si este año ya se ha enviado algo en VERI\*FACTU no se puede volver a No VERI\*FACTU hasta el 1 de enero. El registro de facturación exportado (DAT-04) incluye los eventos |
+| VFA-05 Panel de envíos | Página **Verifactu** | Filtro por estado (pendientes, aceptados, con errores, rechazados, no enviados). Los rechazados y los aceptados con errores tienen **Subsanar y reenviar**: se genera un registro nuevo de la misma factura con `Subsanacion = S` (y `RechazoPrevio = S` si fue rechazado), encadenado al último y en la cola. El original no se toca |
+| CFG-06 Actualizaciones automáticas | `UpdateService`, **Acerca de**, aviso en la barra superior | Al arrancar mira `update.json` (versión, dirección del MSI y su SHA-256) y avisa si hay versión nueva. Un administrador la instala: se descarga el MSI, se comprueba su SHA-256 (si no coincide, no se instala), se hace una **copia de seguridad** de la base de datos y se lanza el instalador, que sustituye la versión anterior sin tocar los datos. La versión nueva aplica las migraciones al arrancar. `build-installer.ps1` genera el `update.json` junto al MSI |
+
+**Ojo con la modalidad por defecto:** mientras no se elija VERI\*FACTU (con el certificado cargado), la aplicación funciona como **No VERI\*FACTU**: los registros no se envían, se firman en cuanto haya certificado y quedan guardados. Los registros generados en una modalidad se quedan en ella: pasar a VERI\*FACTU no envía los anteriores.
+
 ## Primeros pasos
 
 Guía completa para preparar el PC (herramientas, IDE, base de datos, hardware, problemas frecuentes): [entornoDeConfiguracion.md](entornoDeConfiguracion.md).
@@ -351,7 +370,8 @@ Obligatorio desde el **1 de enero de 2027** para sociedades y el **1 de julio de
 | **Sección 6 — Devoluciones y descuentos** ✅ | Descuentos con límite de cajero, devoluciones con rectificativa, cambios, ticket regalo, auditoría | VEN-05, VEN-06, FAC-03, BAZ-07, USR-03 |
 | **Sección 7 — Precios y variantes** ✅ | Cambio masivo de precios, variantes por talla y color, verificador de precios, idioma de impresión | PRE-03, BAZ-05, BAZ-06 |
 | **Sección 8 — Informes y exportaciones** ✅ | Informe de ventas, exportar datos y facturas, registro de facturación | CAJ-03, DAT-02, FAC-05, DAT-04 |
-| **Versión 2 (resto)** | Pantalla de cliente, cajón, modalidad y panel Verifactu, idioma por usuario, tickets en el idioma del cliente, actualizaciones automáticas | Historias **S** |
+| **Sección 9 — Hardware** ✅ | Pantalla de cliente, cajón portamonedas | HW-02, HW-03 |
+| **Sección 10 — Idiomas, Verifactu y actualizaciones** ✅ | Idioma por usuario, ticket en el idioma del cliente, modalidad y panel Verifactu, actualizaciones automáticas | CFG-02, CFG-03, VFA-04, VFA-05, CFG-06 |
 | **Versión 3** | Historial de precios, ticket digital, migración desde otro TPV, módulos ampliables (fidelización, venta online, multi-tienda) | Historias **C** |
 
 ## Decisiones abiertas
@@ -374,6 +394,9 @@ Puntos de la especificación que conviene cerrar antes de empezar:
 - **Verifactu, homologación:** la huella coincide con el ejemplo oficial de la AEAT, pero el mensaje SOAP completo no se ha probado contra el servidor (hace falta un certificado real). Puntos a confirmar en el entorno de pruebas: formato del importe en el QR (`17.40`), código de "registro duplicado" (se ha supuesto el 3000, que se trata como aceptado) y, si el certificado es de sello, la dirección del servicio (`www10`).
 - **Registros de anulación:** el algoritmo está hecho (`VerifactuHash.ForAnulacion`), pero el MVP no anula facturas (las rectificativas, FAC-03, son de la versión 2), así que no se generan.
 - **QR en entorno de pruebas:** mientras Verifactu esté en "Pruebas", el QR del ticket apunta al servidor de pruebas de la AEAT. Al pasar a producción apunta al real.
+- **No VERI\*FACTU, formato de la firma:** se firma cada RegistroAlta con XAdES enveloped (RSA-SHA256, `SigningTime` y `SigningCertificate`). Hay que validarlo con la AEAT o con un validador XAdES, por si exigen una política de firma (XAdES-EPES) concreta.
+- **Subsanaciones (VFA-05):** se envía `Subsanacion = S` y, si el registro fue rechazado, `RechazoPrevio = S`. Confirmar en el entorno de pruebas de la AEAT los valores exactos (la especificación también contempla `RechazoPrevio = X`).
+- **Actualizaciones (CFG-06):** por defecto se busca `update.json` en la última publicación (release) del repositorio de GitHub; hay que publicar ahí el MSI y el `update.json` que genera `build-installer.ps1`, o cambiar la dirección en Ajustes.
 - **Backend:** ASP.NET Core o Node.js. ASP.NET Core permite compartir modelos con la app en C#.
 
 ## Contribuir

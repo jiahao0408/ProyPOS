@@ -41,14 +41,19 @@ public sealed class PrintService(
     }
 
     /// <param name="copy">IMP-02: las reimpresiones llevan la marca "COPIA".</param>
-    public Task<PrintOutcome> PrintInvoiceAsync(int invoiceId, bool copy, CancellationToken cancellationToken = default)
+    /// <param name="language">CFG-03: idioma del ticket para este cliente; null = el de impresión.</param>
+    public Task<PrintOutcome> PrintInvoiceAsync(int invoiceId, bool copy, string? language = null, CancellationToken cancellationToken = default)
     {
         var doc = invoices.Get(invoiceId);
         if (doc is null)
             return Task.FromResult(new PrintOutcome("Invoice not found"));
         var profile = profiles.GetPrinter();
-        return SendAsync(builder.Build(doc, profiles.GetBusiness(), profile, copy), profile, cancellationToken);
+        return SendAsync(builder.Build(doc, profiles.GetBusiness(), profile, copy, language), profile, cancellationToken);
     }
+
+    /// <summary>CFG-03: el ticket en otro idioma, en texto, para verlo en pantalla.</summary>
+    public string Preview(InvoiceDocument doc, bool copy, string? language) =>
+        TextPreview.Render(builder.Build(doc, profiles.GetBusiness(), profiles.GetPrinter(), copy, language), profiles.GetPrinter());
 
     /// <summary>BAZ-07: ticket regalo (sin precios).</summary>
     public Task<PrintOutcome> PrintGiftAsync(int invoiceId, CancellationToken cancellationToken = default)

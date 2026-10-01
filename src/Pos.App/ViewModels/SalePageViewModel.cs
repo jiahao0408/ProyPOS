@@ -46,7 +46,8 @@ public partial class SalePageViewModel(
     ProfileStore profiles,
     UserService users,
     RegionFormatter formatter,
-    CustomerDisplayViewModel customerDisplay) : PageViewModel(localizer)
+    CustomerDisplayViewModel customerDisplay,
+    PrintLocalization printLocalization) : PageViewModel(localizer)
 {
     /// <summary>VEN-05: admin que autorizó con su PIN un descuento por encima del límite del cajero.</summary>
     private string? _discountAuthorizedBy;
@@ -298,7 +299,7 @@ public partial class SalePageViewModel(
 
         ClearMessage();
         Dialog = new PaymentViewModel(L, formatter, _ticket.Total, confirm: Pay, cancel: CloseDialog,
-            findCustomer: invoices.FindCustomer);
+            findCustomer: invoices.FindCustomer, printLanguage: printLocalization.CurrentLanguage);
     }
 
     // --- Descuentos (VEN-05) ---
@@ -419,7 +420,8 @@ public partial class SalePageViewModel(
         FocusSearchRequested?.Invoke();
     }
 
-    private OperationResult Pay(PaymentRequest payment, InvoiceCustomer? customer)
+    /// <param name="ticketLanguage">CFG-03: idioma del ticket de esta venta (solo cambian los textos, no los datos fiscales).</param>
+    private OperationResult Pay(PaymentRequest payment, InvoiceCustomer? customer, string? ticketLanguage)
     {
         var result = sales.Checkout(_ticket, payment, session.CurrentUser!.Id, customer, _discountAuthorizedBy);
         if (!result.Success)
@@ -447,14 +449,14 @@ public partial class SalePageViewModel(
             switch (profiles.GetPrinter().AutoPrint)
             {
                 case AutoPrintMode.Yes:
-                    Print(invoice.InvoiceId);
+                    Print(invoice.InvoiceId, ticketLanguage);
                     break;
                 case AutoPrintMode.Ask:
                     Dialog = new PrintPromptViewModel(L, completed,
                         print: () =>
                         {
                             CloseDialog();
-                            Print(invoice.InvoiceId);
+                            Print(invoice.InvoiceId, ticketLanguage);
                         },
                         skip: CloseDialog);
                     break;
@@ -500,14 +502,14 @@ public partial class SalePageViewModel(
     }
 
     /// <summary>Imprime sin bloquear la caja; si falla, la venta ya está guardada y solo se avisa.</summary>
-    private void Print(int invoiceId)
+    private void Print(int invoiceId, string? language)
     {
-        LastPrint = PrintAndReportAsync(invoiceId);
+        LastPrint = PrintAndReportAsync(invoiceId, language);
     }
 
-    private async Task PrintAndReportAsync(int invoiceId)
+    private async Task PrintAndReportAsync(int invoiceId, string? language)
     {
-        var outcome = await printing.PrintInvoiceAsync(invoiceId, copy: false);
+        var outcome = await printing.PrintInvoiceAsync(invoiceId, copy: false, language);
         if (!outcome.Success)
         {
             Message = string.Format(L["ErrorPrintFailed"], outcome.Error);

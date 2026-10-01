@@ -96,6 +96,17 @@ public sealed class UserService(IDbContextFactory<PosDbContext> dbFactory, TimeP
         return OperationResult.Ok();
     }
 
+    /// <summary>CFG-02: idioma del usuario; null = el de la tienda.</summary>
+    public void SetLanguage(int userId, string? languageCode)
+    {
+        using var db = dbFactory.CreateDbContext();
+        var user = db.Users.Find(userId);
+        if (user is null)
+            return;
+        user.LanguageCode = string.IsNullOrWhiteSpace(languageCode) ? null : languageCode;
+        db.SaveChanges();
+    }
+
     public void Unlock(int userId)
     {
         using var db = dbFactory.CreateDbContext();

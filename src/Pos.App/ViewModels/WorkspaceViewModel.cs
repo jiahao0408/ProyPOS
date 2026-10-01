@@ -74,20 +74,44 @@ public partial class WorkspaceViewModel : ViewModelBase
     private readonly IServiceProvider _services;
     private readonly ISession _session;
     private readonly UserService _users;
+    private readonly UserLanguage _userLanguage;
+    private bool _loadingLanguage;
 
     [ObservableProperty]
     private PageViewModel? _currentPage;
+
+    /// <summary>CFG-06: aviso de versión nueva (null = no hay).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdate))]
+    private string? _updateNotice;
+
+    public bool HasUpdate => UpdateNotice is not null;
+
+    /// <summary>CFG-02: idioma de quien ha entrado; código vacío = el de la tienda.</summary>
+    [ObservableProperty]
+    private LanguageInfo? _myLanguage;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAdminPromptOpen))]
     private AdminPinPromptViewModel? _adminPrompt;
 
-    public WorkspaceViewModel(IServiceProvider services, ILocalizer localizer, ISession session, UserService users)
+    public WorkspaceViewModel(IServiceProvider services, ILocalizer localizer, ISession session, UserService users, UserLanguage userLanguage,
+        Pos.App.Updates.UpdateService updates)
         : base(localizer)
     {
+        ShowUpdate(updates.Available);
+        updates.UpdateFound += info =>
+        {
+            // La comprobación del arranque llega desde otro hilo.
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                ShowUpdate(info);
+            else
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowUpdate(info));
+        };
         _services = services;
         _session = session;
         _users = users;
+        _userLanguage = userLanguage;
 
         NavItems =
         [
@@ -108,7 +132,29 @@ public partial class WorkspaceViewModel : ViewModelBase
             new NavItemViewModel(localizer, "NavAbout", typeof(AboutPageViewModel), requiresAdmin: false),
         ];
         localizer.LanguageChanged += (_, _) => OnPropertyChanged(nameof(RoleTitle));
+        _loadingLanguage = true;
+        MyLanguages = [new LanguageInfo("", L["ShopLanguage"]), .. localizer.AvailableLanguages];
+        MyLanguage = MyLanguages.FirstOrDefault(l => l.Code == (session.CurrentUser?.LanguageCode ?? "")) ?? MyLanguages[0];
+        _loadingLanguage = false;
         Show(NavItems[0]);
+    }
+
+    public IReadOnlyList<LanguageInfo> MyLanguages { get; }
+
+    private void ShowUpdate(Pos.App.Updates.UpdateInfo? info) =>
+        UpdateNotice = info is null ? null : string.Format(L["UpdateAvailable"], info.Version);
+
+    [RelayCommand]
+    private void OpenUpdate() => Navigate(NavItems.Single(n => n.PageType == typeof(AboutPageViewModel)));
+
+    partial void OnMyLanguageChanged(LanguageInfo? value)
+    {
+        if (_loadingLanguage || value is null || _session.CurrentUser is not { } user)
+            return;
+        var code = value.Code.Length == 0 ? null : value.Code;
+        _users.SetLanguage(user.Id, code);
+        user.LanguageCode = code;
+        _userLanguage.Apply(user);
     }
 
     public IReadOnlyList<NavItemViewModel> NavItems { get; }

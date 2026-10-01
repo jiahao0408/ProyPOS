@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Pos.Core;
 using Pos.Core.Domain;
 using Pos.Core.Verifactu;
 using Pos.Data;
@@ -57,7 +58,8 @@ public sealed record VerifactuSendResult(int Sent, int Accepted, int Rejected, s
     public static VerifactuSendResult Nothing { get; } = new(0, 0, 0, null, null);
 }
 
-public sealed record VerifactuQueueStatus(int Pending, int Accepted, int AcceptedWithErrors, int Rejected, DateTime? NextSendAfterUtc, string? LastError);
+public sealed record VerifactuQueueStatus(int Pending, int Accepted, int AcceptedWithErrors, int Rejected, DateTime? NextSendAfterUtc, string? LastError,
+    int NotSent = 0);
 
 /// <summary>
 /// VFA-02 y VFA-03: envía a la AEAT los registros pendientes, por orden, hasta 1000 por mensaje.
@@ -107,13 +109,77 @@ public sealed class VerifactuSender(
         var lastError = db.VerifactuRecords.Where(r => r.ErrorMessage != null).OrderByDescending(r => r.LastAttemptUtc)
             .Select(r => r.ErrorMessage).FirstOrDefault();
         return new VerifactuQueueStatus(Count(VerifactuStatus.Pending), Count(VerifactuStatus.Accepted),
-            Count(VerifactuStatus.AcceptedWithErrors), Count(VerifactuStatus.Rejected), NextSendAfter(), lastError);
+            Count(VerifactuStatus.AcceptedWithErrors), Count(VerifactuStatus.Rejected), NextSendAfter(), lastError,
+            Count(VerifactuStatus.NotSent));
     }
 
-    public IReadOnlyList<VerifactuRecord> GetRecent(int limit = 100)
+    /// <summary>VFA-05: registros más recientes, opcionalmente solo los de un estado.</summary>
+    public IReadOnlyList<VerifactuRecord> GetRecent(int limit = 100, VerifactuStatus? status = null)
     {
         using var db = dbFactory.CreateDbContext();
-        return db.VerifactuRecords.AsNoTracking().OrderByDescending(r => r.Id).Take(limit).ToList();
+        var query = db.VerifactuRecords.AsNoTracking();
+        if (status is { } s)
+            query = query.Where(r => r.Status == s);
+        return query.OrderByDescending(r => r.Id).Take(limit).ToList();
+    }
+
+    /// <summary>Ids de los registros que ya tienen una subsanación que no ha sido rechazada.</summary>
+    public IReadOnlySet<int> CorrectedRecordIds()
+    {
+        using var db = dbFactory.CreateDbContext();
+        return db.VerifactuRecords.AsNoTracking()
+            .Where(r => r.CorrectsRecordId != null && r.Status != VerifactuStatus.Rejected)
+            .Select(r => r.CorrectsRecordId!.Value)
+            .ToHashSet();
+    }
+
+    /// <summary>
+    /// VFA-05: reenvía como subsanación un registro rechazado o aceptado con errores. Se genera un registro
+    /// de alta nuevo de la misma factura (Subsanacion = S y, si fue rechazado, RechazoPrevio = S), encadenado
+    /// al último, que entra en la cola. El original no se toca.
+    /// </summary>
+    public OperationResult<VerifactuRecord> CreateCorrection(int recordId, User? user)
+    {
+        if (!IsEnabled)
+            return OperationResult<VerifactuRecord>.Fail("ErrorVerifactuNotEnabled");
+
+        using var db = dbFactory.CreateDbContext();
+        var original = db.VerifactuRecords.Find(recordId);
+        if (original is null)
+            return OperationResult<VerifactuRecord>.Fail("ErrorVerifactuRecordNotFound");
+        if (original.Status is not (VerifactuStatus.Rejected or VerifactuStatus.AcceptedWithErrors))
+            return OperationResult<VerifactuRecord>.Fail("ErrorVerifactuNothingToCorrect");
+        if (db.VerifactuRecords.Any(r => r.CorrectsRecordId == recordId && r.Status != VerifactuStatus.Rejected))
+            return OperationResult<VerifactuRecord>.Fail("ErrorVerifactuAlreadyCorrected");
+
+        var previous = db.VerifactuRecords.OrderByDescending(r => r.Id).First();
+        var record = new VerifactuRecord
+        {
+            InvoiceId = original.InvoiceId,
+            PreviousRecordId = previous.Id,
+            Kind = VerifactuRecordKind.Alta,
+            IssuerNif = original.IssuerNif,
+            IssuerName = original.IssuerName,
+            InvoiceNumber = original.InvoiceNumber,
+            IssueDate = original.IssueDate,
+            InvoiceType = original.InvoiceType,
+            TotalVat = original.TotalVat,
+            Total = original.Total,
+            PreviousHash = previous.Hash,
+            GeneratedAt = VerifactuHash.Timestamp(clock.GetLocalNow()),
+            Hash = "",
+            Status = VerifactuStatus.Pending,
+            CorrectsRecordId = original.Id,
+            PreviouslyRejected = original.Status == VerifactuStatus.Rejected,
+        };
+        record.Hash = VerifactuHash.ForAlta(record.IssuerNif, record.InvoiceNumber, record.IssueDate, record.InvoiceType,
+            record.TotalVat, record.Total, record.PreviousHash, record.GeneratedAt);
+        db.VerifactuRecords.Add(record);
+        AuditLog.Record(db, user, AuditActions.VerifactuCorrection,
+            $"{original.InvoiceNumber}: subsanación del registro {original.Id} ({original.Status}, {original.ErrorCode})",
+            clock.GetUtcNow().UtcDateTime, authorizedBy: null);
+        db.SaveChanges();
+        return OperationResult<VerifactuRecord>.Ok(record);
     }
 
     /// <param name="ignoreWait">Solo para "Enviar ahora" desde la pantalla: no espera al tiempo indicado por la AEAT.</param>
@@ -242,8 +308,11 @@ public sealed class VerifactuSender(
         settings.Set(VerifactuSettingKeys.NextSendAfter, utc.ToString("O", CultureInfo.InvariantCulture));
 }
 
-/// <summary>VFA-03: cola en segundo plano. Cada 30 segundos intenta enviar lo pendiente.</summary>
-public sealed class VerifactuQueue(VerifactuSender sender)
+/// <summary>
+/// VFA-03: cola en segundo plano. Cada 30 segundos intenta enviar lo pendiente (VERI*FACTU)
+/// y firma los registros que no se envían (No VERI*FACTU, VFA-04).
+/// </summary>
+public sealed class VerifactuQueue(VerifactuSender sender, VerifactuSigner signer)
 {
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
 
@@ -257,6 +326,7 @@ public sealed class VerifactuQueue(VerifactuSender sender)
             try
             {
                 await sender.SendPendingAsync(cancellationToken: cancellationToken);
+                signer.SignPending();
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

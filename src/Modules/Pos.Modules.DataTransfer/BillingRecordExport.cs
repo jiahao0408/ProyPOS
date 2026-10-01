@@ -33,6 +33,7 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
 {
     public const string RecordsFile = "registros.csv";
     public const string InvoicesFile = "facturas.csv";
+    public const string EventsFile = "eventos.csv";
     public const string ManifestFile = "manifiesto.txt";
     public const string ReadmeFile = "LEEME.txt";
 
@@ -41,6 +42,8 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
         "Orden", "Tipo", "IDEmisorFactura", "NombreRazonEmisor", "NumSerieFactura", "FechaExpedicionFactura", "TipoFactura",
         "CuotaTotal", "ImporteTotal", "HuellaAnterior", "FechaHoraHusoGenRegistro", "Huella", "EstadoEnvio", "Entorno", "CodigoError",
     ];
+
+    private static readonly string[] EventColumns = ["Id", "Fecha", "Tipo", "Usuario", "Detalle", "HuellaAnterior", "Huella"];
 
     private static readonly string[] InvoiceColumns =
     [
@@ -54,7 +57,12 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
     public BillingVerification Export(string path)
     {
         using var db = dbFactory.CreateDbContext();
+        // VFA-04: la exportación queda en el registro de eventos (y va incluida en el propio fichero).
+        VerifactuEventLog.Record(db, VerifactuEventTypes.Export, $"Registro de facturación exportado: {Path.GetFileName(path)}",
+            clock.GetUtcNow().UtcDateTime);
+        db.SaveChanges();
         var records = db.VerifactuRecords.AsNoTracking().OrderBy(r => r.Id).ToList();
+        var events = db.VerifactuEvents.AsNoTracking().OrderBy(e => e.Id).ToList();
         var invoices = db.Invoices.AsNoTracking().Include(i => i.VatLines).OrderBy(i => i.Id).ToList();
         var codes = invoices.ToDictionary(i => i.Id, i => i.Code);
 
@@ -73,11 +81,18 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
             VerifactuHash.Amount(i.Total),
         ])));
 
+        var eventsCsv = TabularFile.ToCsv(EventColumns, events.Select(e => (IReadOnlyList<string>)
+        [
+            e.Id.ToString(CultureInfo.InvariantCulture), e.AtUtc.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
+            e.Type, e.UserName ?? "", e.Details, e.PreviousHash ?? "", e.Hash,
+        ]));
+
         var finalHash = records.LastOrDefault()?.Hash;
         var files = new Dictionary<string, string>
         {
             [RecordsFile] = recordsCsv,
             [InvoicesFile] = invoicesCsv,
+            [EventsFile] = eventsCsv,
             [ReadmeFile] = Readme(records.Count, finalHash),
         };
 
@@ -108,6 +123,20 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
     /// que la de esta base de datos.
     /// </summary>
     public BillingVerification Verify(string path)
+    {
+        var result = Check(path);
+        if (!result.IsValid && result.ErrorKey != "ErrorExportInvalid")
+        {
+            // VFA-04: una alteración detectada es una anomalía de integridad.
+            using var db = dbFactory.CreateDbContext();
+            VerifactuEventLog.Record(db, VerifactuEventTypes.IntegrityAnomaly,
+                $"{Path.GetFileName(path)}: {result.ErrorKey} {result.Detail}", clock.GetUtcNow().UtcDateTime);
+            db.SaveChanges();
+        }
+        return result;
+    }
+
+    private BillingVerification Check(string path)
     {
         Dictionary<string, string> files;
         try
@@ -154,6 +183,25 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
         if ((finalLine?["HuellaFinal:".Length..].Trim() ?? "") != (previous ?? ""))
             return new BillingVerification(rows.Count, previous, "ErrorExportChainBroken", "HuellaFinal");
 
+        // El registro de eventos también está encadenado.
+        if (files.TryGetValue(EventsFile, out var eventsCsv))
+        {
+            var events = TabularFile.ParseCsv(eventsCsv, ';').Skip(1).Where(r => r.Length >= EventColumns.Length)
+                .Select(r => new VerifactuEvent
+                {
+                    Id = int.TryParse(r[0], out var id) ? id : 0,
+                    AtUtc = DateTime.TryParseExact(r[1], "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+                        DateTimeStyles.AdjustToUniversal, out var at) ? at : default,
+                    Type = r[2],
+                    UserName = r[3].Length == 0 ? null : r[3],
+                    Details = r[4],
+                    PreviousHash = r[5].Length == 0 ? null : r[5],
+                    Hash = r[6],
+                });
+            if (VerifactuEventLog.FirstBroken(events) is { } broken)
+                return new BillingVerification(rows.Count, previous, "ErrorExportEventsBroken", broken.ToString(CultureInfo.InvariantCulture));
+        }
+
         // 3. Los importes de los registros de alta son los de las facturas.
         var totals = TabularFile.ParseCsv(invoicesCsv, ';').Skip(1).Where(r => r.Length >= InvoiceColumns.Length)
             .GroupBy(r => r[0])
@@ -187,6 +235,7 @@ public sealed class BillingRecordExport(IDbContextFactory<PosDbContext> dbFactor
         Contenido
           {RecordsFile}   Registros de facturación de Verifactu, en el orden en que se generaron, con su huella.
           {InvoicesFile}    Facturas emitidas, una fila por tipo de IVA (base, cuota y total).
+          {EventsFile}     Registro de eventos del sistema (arranques, cambios de modalidad, exportaciones, anomalías), encadenado.
           {ManifestFile}  SHA-256 de cada fichero y huella final de la cadena.
 
         Registros: {records}

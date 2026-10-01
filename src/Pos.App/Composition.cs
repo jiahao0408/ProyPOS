@@ -103,6 +103,11 @@ internal static class Composition
             module.ConfigureServices(services);
         }
 
+        services.AddSingleton<UserLanguage>();
+        // CFG-06: actualizaciones (los tests sustituyen el lanzador del instalador y el cliente HTTP).
+        services.AddSingleton<Pos.App.Updates.IInstallerLauncher, Pos.App.Updates.MsiexecLauncher>();
+        services.AddSingleton<Func<HttpClient>>(_ => () => new HttpClient { Timeout = TimeSpan.FromMinutes(10) });
+        services.AddSingleton<Pos.App.Updates.UpdateService>();
         services.AddSingleton<ShellViewModel>();
         services.AddSingleton<CustomerDisplayViewModel>();
         services.AddTransient<FirstRunViewModel>();

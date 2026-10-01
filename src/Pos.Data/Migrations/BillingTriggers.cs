@@ -15,6 +15,9 @@ public static class BillingTriggers
     /// <summary>Tablas que no se pueden modificar ni borrar en absoluto.</summary>
     public static readonly string[] FullyProtected = ["Sales", "SaleLines", "Payments", "Invoices", "InvoiceVatLines"];
 
+    /// <summary>VFA-04: firmas de los registros No VERI*FACTU y registro de eventos.</summary>
+    public static readonly string[] VerifactuProtected = ["VerifactuSignatures", "VerifactuEvents"];
+
     public static void Recreate(MigrationBuilder migrationBuilder, params string[] tables)
     {
         foreach (var table in tables)

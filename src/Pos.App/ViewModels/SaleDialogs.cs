@@ -19,11 +19,14 @@ public enum PaymentMode
 
 public sealed record QuickCashOption(decimal Amount, string Title);
 
-/// <summary>Ventana de cobro: efectivo con cambio (VEN-03), tarjeta o mixto (VEN-04).</summary>
+/// <summary>
+/// Ventana de cobro: efectivo con cambio (VEN-03), tarjeta o mixto (VEN-04).
+/// CFG-03: idioma del ticket para este cliente (por defecto, el de impresión).
+/// </summary>
 public sealed partial class PaymentViewModel : ViewModelBase
 {
     private readonly RegionFormatter _formatter;
-    private readonly Func<PaymentRequest, InvoiceCustomer?, OperationResult> _confirm;
+    private readonly Func<PaymentRequest, InvoiceCustomer?, string?, OperationResult> _confirm;
     private readonly Action _cancel;
 
     [ObservableProperty]
@@ -33,6 +36,10 @@ public sealed partial class PaymentViewModel : ViewModelBase
     /// <summary>FAC-02: el cliente pide factura completa con sus datos fiscales.</summary>
     [ObservableProperty]
     private bool _wantsCompleteInvoice;
+
+    /// <summary>CFG-03: idioma en el que se imprime el ticket de esta venta.</summary>
+    [ObservableProperty]
+    private LanguageInfo? _ticketLanguage;
 
     [ObservableProperty]
     private string _cashTenderedText = "";
@@ -47,10 +54,12 @@ public sealed partial class PaymentViewModel : ViewModelBase
     private string _changeText = "";
 
     public PaymentViewModel(ILocalizer localizer, RegionFormatter formatter, decimal total,
-        Func<PaymentRequest, InvoiceCustomer?, OperationResult> confirm, Action cancel,
-        Func<string, Customer?> findCustomer)
+        Func<PaymentRequest, InvoiceCustomer?, string?, OperationResult> confirm, Action cancel,
+        Func<string, Customer?> findCustomer, string? printLanguage = null)
         : base(localizer)
     {
+        TicketLanguages = localizer.AvailableLanguages;
+        TicketLanguage = TicketLanguages.FirstOrDefault(l => l.Code == (printLanguage ?? localizer.CurrentLanguage));
         _formatter = formatter;
         _confirm = confirm;
         _cancel = cancel;
@@ -74,6 +83,8 @@ public sealed partial class PaymentViewModel : ViewModelBase
     public string TotalText { get; }
 
     public CustomerFormViewModel Customer { get; }
+
+    public IReadOnlyList<LanguageInfo> TicketLanguages { get; }
 
     public IReadOnlyList<QuickCashOption> QuickCash { get; }
 
@@ -114,7 +125,7 @@ public sealed partial class PaymentViewModel : ViewModelBase
             ShowError("ErrorAmountFormat");
             return;
         }
-        Check(_confirm(request, WantsCompleteInvoice ? Customer.ToCustomer() : null));
+        Check(_confirm(request, WantsCompleteInvoice ? Customer.ToCustomer() : null, TicketLanguage?.Code));
     }
 
     /// <summary>

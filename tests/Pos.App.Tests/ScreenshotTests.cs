@@ -261,6 +261,33 @@ public class ScreenshotTests
         data8.ExportBillingRecord(Path.Combine(Folder!, "72-registro.zip"));
         Capture(window, "71-datos-exportar");
 
+        // Sección 9: pantalla de cliente
+        var display = app.Get<CustomerDisplayViewModel>();
+        var displayWindow = new Window { Width = 1024, Height = 600, DataContext = display, Content = new Pos.App.Views.CustomerDisplayView() };
+        displayWindow.Show();
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(SalePageViewModel)));
+        var sale9 = (SalePageViewModel)workspace.CurrentPage!;
+        foreach (var code in new[] { "8410000000011", "8410000000011", "8410000000028" })
+        {
+            sale9.SearchText = code;
+            sale9.SubmitSearchCommand.Execute(null);
+        }
+        Capture(displayWindow, "80-pantalla-cliente");
+        sale9.ChargeCommand.Execute(null);
+        var payment10 = (PaymentViewModel)sale9.Dialog!;
+        payment10.TicketLanguage = payment10.TicketLanguages.Single(l => l.Code == "en");
+        Capture(window, "81-cobro-idioma-ticket");
+        payment10.CashTenderedText = "20";
+        payment10.ConfirmCommand.Execute(null);
+        if (sale9.Dialog is PrintPromptViewModel prompt9)
+            prompt9.SkipCommand.Execute(null);
+        Capture(displayWindow, "82-pantalla-cliente-gracias");
+        displayWindow.Close();
+
+        // Sección 10: Verifactu (modalidad, panel y eventos)
+        OpenAdmin(typeof(VerifactuPageViewModel));
+        Capture(window, "83-verifactu-modalidad");
+
         workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(ProductsPageViewModel)));
         Capture(window, "06-pin-admin");
 

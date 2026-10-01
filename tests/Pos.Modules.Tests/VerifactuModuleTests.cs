@@ -35,6 +35,7 @@ public sealed class VerifactuModuleTests : IDisposable
     public VerifactuModuleTests()
     {
         _settings = new SettingsStore(_db.Factory);
+        _settings.Set(VerifactuSettingKeys.Enabled, "true"); // modalidad VERI*FACTU (los registros se envían)
         var profiles = new ProfileStore(_settings);
         profiles.SaveBusiness(InvoicingTests.Business);
         IInvoiceHook[] hooks = [new VerifactuRecorder(_clock)];
@@ -121,7 +122,7 @@ public sealed class VerifactuModuleTests : IDisposable
         var doc = _invoices.GetCurrentForSale(Sell().Id)!;
 
         Assert.Equal("https://prewww2.aeat.es/wlpl/TIKE-CONT/ValidarQR?nif=B12345674&numserie=T2026-000001&fecha=01-10-2026&importe=7.00", doc.QrUrl);
-        Assert.False(doc.VerifactuMode);
+        Assert.True(doc.VerifactuMode); // modalidad VERI*FACTU: el ticket lleva la leyenda
         Assert.Equal("T2026-000001", Assert.Single(_invoices.Search(doc.QrUrl!)).Code); // FAC-06: escanear el QR
     }
 
@@ -171,6 +172,7 @@ public sealed class VerifactuModuleTests : IDisposable
     [Fact]
     public async Task Disabled_DoesNotSend()
     {
+        _settings.Set(VerifactuSettingKeys.Enabled, "false");
         Sell();
 
         Assert.Equal(VerifactuSendResult.Nothing, await _sender.SendPendingAsync());

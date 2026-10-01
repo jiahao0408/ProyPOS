@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Pos.App.ViewModels"
+             xmlns:loc="using:Pos.Core.Localization"
              x:Class="Pos.App.Views.WorkspaceView"
              x:DataType="vm:WorkspaceViewModel">
   <Grid>
@@ -8,7 +9,7 @@
       <!-- Barra superior -->
       <Border DockPanel.Dock="Top" Padding="16,8"
               Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
           <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
             <TextBlock Text="{Binding L[AppTitle]}" FontSize="24" FontWeight="SemiBold" />
             <TextBlock VerticalAlignment="Center" FontSize="16" Opacity="0.8">
@@ -17,9 +18,26 @@
               <Run Text="{Binding RoleTitle}" />
             </TextBlock>
           </StackPanel>
-          <Button Grid.Column="1" Margin="0,0,8,0" Content="{Binding L[ToggleTheme]}" Command="{Binding ToggleThemeCommand}" />
-          <Button Grid.Column="2" Margin="0,0,8,0" Content="{Binding L[Logout]}" Command="{Binding LogoutCommand}" />
-          <Button Grid.Column="3" Content="{Binding L[Exit]}" Command="{Binding ExitCommand}" />
+          <!-- CFG-02: idioma de este usuario -->
+          <ComboBox Grid.Column="1" Margin="0,0,8,0" MinWidth="170" VerticalAlignment="Center" ToolTip.Tip="{Binding L[MyLanguage]}"
+                    ItemsSource="{Binding MyLanguages}" SelectedItem="{Binding MyLanguage}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="loc:LanguageInfo">
+                <TextBlock Text="{Binding Name}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="2" Margin="0,0,8,0" Content="{Binding L[ToggleTheme]}" Command="{Binding ToggleThemeCommand}" />
+          <Button Grid.Column="3" Margin="0,0,8,0" Content="{Binding L[Logout]}" Command="{Binding LogoutCommand}" />
+          <Button Grid.Column="4" Content="{Binding L[Exit]}" Command="{Binding ExitCommand}" />
+        </Grid>
+      </Border>
+
+      <!-- CFG-06: hay una versión nueva -->
+      <Border DockPanel.Dock="Top" IsVisible="{Binding HasUpdate}" Background="{StaticResource AccentBrush}" Padding="16,6">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding UpdateNotice}" Foreground="White" VerticalAlignment="Center" FontSize="16" />
+          <Button Grid.Column="1" MinHeight="36" FontSize="14" Padding="12,4" Content="{Binding L[UpdateSee]}" Command="{Binding OpenUpdateCommand}" />
         </Grid>
       </Border>
 

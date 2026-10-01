@@ -4,4 +4,8 @@
     <ProjectReference Include="..\..\Pos.Core\Pos.Core.csproj" />
     <ProjectReference Include="..\..\Pos.Data\Pos.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- VFA-04: firma XAdES de los registros en la modalidad No VERI*FACTU -->
+    <PackageReference Include="System.Security.Cryptography.Xml" />
+  </ItemGroup>
 </Project>

@@ -13,6 +13,12 @@ public enum VerifactuStatus
     Accepted = 1,
     AcceptedWithErrors = 2,
     Rejected = 3,
+
+    /// <summary>
+    /// VFA-04: generado en la modalidad No VERI*FACTU. No se envía: se firma y se conserva en el sistema
+    /// para entregarlo si la AEAT lo pide.
+    /// </summary>
+    NotSent = 4,
 }
 
 /// <summary>
@@ -57,6 +63,12 @@ public class VerifactuRecord
     public required string GeneratedAt { get; set; }
 
     public required string Hash { get; set; }
+
+    /// <summary>VFA-05: registro de subsanación que vuelve a enviar este otro (rechazado o aceptado con errores).</summary>
+    public int? CorrectsRecordId { get; set; }
+
+    /// <summary>VFA-05: el registro que se subsana fue rechazado (RechazoPrevio en el XML).</summary>
+    public bool PreviouslyRejected { get; set; }
 
     // --- Estado del envío (lo único que cambia) ---
 

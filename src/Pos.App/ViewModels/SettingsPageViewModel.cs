@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pos.Core.Localization;
 using Pos.Core.Modules;
+using Pos.Core.Security;
 using Pos.Data;
 using Pos.Localization;
 
@@ -15,6 +16,8 @@ public partial class SettingsPageViewModel(
     SettingsStore settings,
     RegionFormatter formatter,
     PrintLocalization print,
+    ISession session,
+    UserLanguage userLanguage,
     TimeProvider clock,
     IEnumerable<IModule> modules) : PageViewModel(localizer)
 {
@@ -44,6 +47,10 @@ public partial class SettingsPageViewModel(
     [ObservableProperty]
     private string _preview = "";
 
+    /// <summary>CFG-06: de dónde se descarga update.json.</summary>
+    [ObservableProperty]
+    private string _updateFeedUrl = "";
+
     [ObservableProperty]
     private IReadOnlyList<DateFormatOption> _dateFormats = [];
 
@@ -59,6 +66,7 @@ public partial class SettingsPageViewModel(
         InactivityMinutesText = settings.GetInt(SettingKeys.InactivityMinutes, ShellViewModel.DefaultInactivityMinutes).ToString(L.Culture);
         MaxCashierDiscountText = (decimal.TryParse(settings.Get(Pos.Modules.Sales.SalesSettingKeys.MaxCashierDiscount), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var max) ? max : Pos.Modules.Sales.SalesSettingKeys.DefaultMaxCashierDiscount).ToString("0.##", L.Culture);
+        UpdateFeedUrl = settings.Get(SettingKeys.UpdateFeedUrl) is { Length: > 0 } feed ? feed : Pos.App.Updates.UpdateService.DefaultFeedUrl;
         RefreshTexts(formatter.DateFormat);
         SelectedPrintLanguage = PrintLanguages.FirstOrDefault(l => l.Code == (print.Language ?? ""));
     }
@@ -94,8 +102,16 @@ public partial class SettingsPageViewModel(
         if (SelectedLanguage is { } language)
         {
             settings.Set(SettingKeys.Language, language.Code);
-            L.SetLanguage(language.Code); // CFG-01: cambia todos los textos sin reiniciar
+            // CFG-01: cambia todos los textos sin reiniciar (salvo si este usuario tiene su propio idioma, CFG-02).
+            userLanguage.Apply(session.CurrentUser);
         }
+
+        if (!Uri.TryCreate(UpdateFeedUrl.Trim(), UriKind.Absolute, out var feedUri) || feedUri.Scheme != Uri.UriSchemeHttps)
+        {
+            ShowError("ErrorUpdateFeedUrl");
+            return;
+        }
+        settings.Set(SettingKeys.UpdateFeedUrl, feedUri.ToString());
 
         var printLanguage = SelectedPrintLanguage?.Code ?? "";
         settings.Set(SettingKeys.PrintLanguage, printLanguage);

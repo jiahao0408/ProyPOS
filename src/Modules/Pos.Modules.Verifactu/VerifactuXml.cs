@@ -33,7 +33,7 @@ public static class VerifactuXml
                 new XElement(Sum1 + "ObligadoEmision",
                     new XElement(Sum1 + "NombreRazon", issuerName),
                     new XElement(Sum1 + "NIF", issuerNif))),
-            records.Select(r => new XElement(Sum + "RegistroFactura", Alta(r, producer, installationNumber))));
+            records.Select(r => new XElement(Sum + "RegistroFactura", RegistroAlta(r, producer, installationNumber))));
 
         var envelope = new XElement(Soap + "Envelope",
             new XAttribute(XNamespace.Xmlns + "soapenv", Soap),
@@ -44,14 +44,19 @@ public static class VerifactuXml
         return new XDocument(new XDeclaration("1.0", "UTF-8", null), envelope).ToString(SaveOptions.DisableFormatting);
     }
 
-    private static XElement Alta(OutgoingRecord o, ProducerInfo producer, string installationNumber)
+    /// <summary>El RegistroAlta de un registro: lo que se envía (VERI*FACTU) o se firma y conserva (No VERI*FACTU).</summary>
+    public static XElement RegistroAlta(OutgoingRecord o, ProducerInfo producer, string installationNumber)
     {
         var r = o.Record;
         var invoice = o.Invoice;
+        var correction = r.CorrectsRecordId is not null;
         return new XElement(Sum1 + "RegistroAlta",
             E("IDVersion", "1.0"),
             InvoiceId("IDFactura", r.IssuerNif, r.InvoiceNumber, r.IssueDate),
             E("NombreRazonEmisor", r.IssuerName),
+            // VFA-05: subsanación de un registro rechazado o aceptado con errores.
+            correction ? E("Subsanacion", "S") : null,
+            correction && r.PreviouslyRejected ? E("RechazoPrevio", "S") : null,
             E("TipoFactura", r.InvoiceType),
             // FAC-03: rectificativa por diferencias (importes en negativo) con la factura que rectifica.
             o.Rectified is { } rectified ? E("TipoRectificativa", "I") : null,
@@ -94,7 +99,7 @@ public static class VerifactuXml
                 E("IdSistemaInformatico", producer.SystemId),
                 E("Version", producer.Version),
                 E("NumeroInstalacion", installationNumber),
-                E("TipoUsoPosibleSoloVerifactu", "S"),
+                E("TipoUsoPosibleSoloVerifactu", "N"), // VFA-04: también funciona como No VERI*FACTU
                 E("TipoUsoPosibleMultiOT", "N"),
                 E("IndicadorMultiplesOT", "N")),
             E("FechaHoraHusoGenRegistro", r.GeneratedAt),

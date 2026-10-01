@@ -45,6 +45,9 @@
       <TextBlock Classes="label" Text="{Binding L[MaxCashierDiscount]}" />
       <TextBox Text="{Binding MaxCashierDiscountText}" />
 
+      <TextBlock Classes="label" Text="{Binding L[UpdateFeedUrl]}" />
+      <TextBox Text="{Binding UpdateFeedUrl}" />
+
       <TextBlock Classes="label" Text="{Binding L[Preview]}" />
       <TextBlock Text="{Binding Preview}" FontSize="18" />
 

@@ -27,15 +27,34 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
-        <CheckBox Margin="0,12,0,0" Content="{Binding L[VerifactuEnabled]}" IsChecked="{Binding Enabled}" />
+        <!-- VFA-04: modalidad -->
+        <TextBlock Classes="label" Text="{Binding L[VerifactuModeLabel]}" />
+        <RadioButton GroupName="VerifactuMode" Content="{Binding L[VerifactuModeVeriFactu]}" IsChecked="{Binding Enabled}" />
+        <RadioButton GroupName="VerifactuMode" Content="{Binding L[VerifactuModeNoVeriFactu]}" IsChecked="{Binding IsNoVeriFactu}" />
+        <TextBlock Text="{Binding L[VerifactuModeHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,4,0,0" />
 
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
           <Button Classes="primary" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />
           <Button Content="{Binding L[TestConnection]}" Command="{Binding TestConnectionCommand}" IsEnabled="{Binding !IsBusy}" />
         </StackPanel>
         <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
-          <TextBlock Text="{Binding Message}" />
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
         </Border>
+
+        <!-- VFA-04: No VERI*FACTU: firmas y registro de eventos -->
+        <TextBlock Text="{Binding L[VerifactuEventLog]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+        <TextBlock Text="{Binding SignatureSummary}" TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button Content="{Binding L[VerifactuSignNow]}" Command="{Binding SignNowCommand}" />
+          <Button Content="{Binding L[VerifactuVerifyEvents]}" Command="{Binding VerifyEventsCommand}" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Events}" Margin="0,8,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:VerifactuEventRow">
+              <TextBlock FontSize="13" TextWrapping="Wrap" Margin="0,2"><Run Text="{Binding When}" Foreground="Gray" /><Run Text="  " /><Run Text="{Binding Type}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding Details}" /></TextBlock>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
     </ScrollViewer>
 
@@ -46,20 +65,30 @@
         <TextBlock Text="{Binding QueueSummary}" TextWrapping="Wrap" VerticalAlignment="Center" />
         <Button Grid.Column="1" Content="{Binding L[SendNow]}" Command="{Binding SendNowCommand}" IsEnabled="{Binding !IsBusy}" />
       </Grid>
+      <!-- VFA-05: filtro por estado -->
+      <ComboBox DockPanel.Dock="Top" MinWidth="240" Margin="0,0,0,8" ItemsSource="{Binding StatusFilters}" SelectedItem="{Binding StatusFilter}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice">
+            <TextBlock Text="{Binding Title}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
       <ListBox ItemsSource="{Binding Records}">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vm:VerifactuRow">
-            <StackPanel>
-              <TextBlock>
-                <Run Text="{Binding Number}" FontWeight="SemiBold" />
-                <Run Text="  " />
-                <Run Text="{Binding Type}" />
-                <Run Text="  " />
-                <Run Text="{Binding Status}" />
-              </TextBlock>
-              <TextBlock Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-                         Classes.short="{Binding IsProblem}" FontSize="13" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel>
+                <TextBlock><Run Text="{Binding Number}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding Type}" /><Run Text="  " /><Run Text="{Binding Status}" /></TextBlock>
+                <TextBlock Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                           Foreground="{StaticResource ErrorBrush}" FontSize="13" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Note}" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" FontSize="13" Opacity="0.7" />
+              </StackPanel>
+              <Button Grid.Column="1" MinHeight="36" FontSize="13" Padding="8,2" VerticalAlignment="Center"
+                      Content="{Binding $parent[ListBox].((vm:VerifactuPageViewModel)DataContext).L[VerifactuCorrect]}"
+                      IsVisible="{Binding CanCorrect}"
+                      Command="{Binding $parent[ListBox].((vm:VerifactuPageViewModel)DataContext).CorrectCommand}"
+                      CommandParameter="{Binding}" />
+            </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>

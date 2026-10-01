@@ -13,6 +13,9 @@ public static class SettingKeys
     public const string CurrencySymbol = "region.currencySymbol";
     public const string DateFormat = "region.dateFormat";
     public const string InactivityMinutes = "security.inactivityMinutes";
+
+    /// <summary>CFG-06: dirección del fichero update.json con la última versión.</summary>
+    public const string UpdateFeedUrl = "updates.feedUrl";
 }
 
 /// <summary>Lectura y escritura de ajustes clave-valor (tabla Settings).</summary>

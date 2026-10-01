@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Pos.App.ViewModels"
              xmlns:v="using:Pos.App.Views"
+             xmlns:loc="using:Pos.Core.Localization"
              x:Class="Pos.App.Views.PaymentView"
              x:DataType="vm:PaymentViewModel">
   <Border Classes="dialog">
@@ -57,6 +58,18 @@
           <TextBlock Grid.Column="1" Text="{Binding ChangeText}" FontSize="32" FontWeight="Bold" Foreground="{StaticResource OkBrush}" />
         </Grid>
       </StackPanel>
+
+      <!-- CFG-03: idioma del ticket (turistas). Los datos fiscales no cambian. -->
+      <Grid ColumnDefinitions="Auto,8,*" Margin="0,4,0,0">
+        <TextBlock Text="{Binding L[TicketLanguage]}" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="2" HorizontalAlignment="Stretch" ItemsSource="{Binding TicketLanguages}" SelectedItem="{Binding TicketLanguage}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="loc:LanguageInfo">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </Grid>
 
       <!-- FAC-02: factura completa con datos del cliente -->
       <CheckBox Content="{Binding L[WantsCompleteInvoice]}" IsChecked="{Binding WantsCompleteInvoice}" Margin="0,4,0,0" />

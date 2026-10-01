@@ -24,7 +24,7 @@ public sealed class MigrationSafetyTests : IDisposable
     {
         var triggers = Triggers();
 
-        foreach (var table in BillingTriggers.FullyProtected)
+        foreach (var table in BillingTriggers.FullyProtected.Concat(BillingTriggers.VerifactuProtected))
         {
             Assert.Contains($"TR_{table}_NoUpdate", triggers);
             Assert.Contains($"TR_{table}_NoDelete", triggers);

@@ -128,6 +128,17 @@ public sealed class BackupService(DatabaseFile? database, TimeProvider clock)
         return today;
     }
 
+    /// <summary>CFG-06: copia antes de actualizar, junto a las automáticas. Devuelve la ruta (null si la BD no es un fichero).</summary>
+    public string? CreatePreUpdateCopy(string newVersion)
+    {
+        if (database is null)
+            return null;
+        Directory.CreateDirectory(database.BackupsDirectory);
+        var path = Path.Combine(database.BackupsDirectory, $"pre-update-{newVersion}-{Stamp()}.db");
+        CopyEncrypted(database, path);
+        return path;
+    }
+
     // --- SQLite ---
 
     /// <summary>Copia en caliente y consistente (API de backup de SQLite) a otro fichero cifrado con la misma clave.</summary>
