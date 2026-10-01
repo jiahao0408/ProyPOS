@@ -27,7 +27,6 @@
     <ProjectReference Include="..\Pos.Localization\Pos.Localization.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Sales\Pos.Modules.Sales.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Products\Pos.Modules.Products.csproj" />
-    <ProjectReference Include="..\Modules\Pos.Modules.Inventory\Pos.Modules.Inventory.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Printing\Pos.Modules.Printing.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.Invoicing\Pos.Modules.Invoicing.csproj" />
     <ProjectReference Include="..\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />

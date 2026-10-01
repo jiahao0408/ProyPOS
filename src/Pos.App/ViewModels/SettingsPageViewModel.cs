@@ -9,16 +9,24 @@ namespace Pos.App.ViewModels;
 
 public sealed record DateFormatOption(string Format, string Title);
 
-/// <summary>CFG-01 (idioma de la interfaz) y CFG-04 (moneda y formatos), más la inactividad (USR-01).</summary>
+/// <summary>CFG-01 (idioma de la interfaz), idioma de impresión de los tickets, CFG-04 (moneda y formatos), más la inactividad (USR-01).</summary>
 public partial class SettingsPageViewModel(
     ILocalizer localizer,
     SettingsStore settings,
     RegionFormatter formatter,
+    PrintLocalization print,
     TimeProvider clock,
     IEnumerable<IModule> modules) : PageViewModel(localizer)
 {
     [ObservableProperty]
     private LanguageInfo? _selectedLanguage;
+
+    /// <summary>Idioma de los tickets impresos; código vacío = el de la aplicación.</summary>
+    [ObservableProperty]
+    private LanguageInfo? _selectedPrintLanguage;
+
+    [ObservableProperty]
+    private IReadOnlyList<LanguageInfo> _printLanguages = [];
 
     [ObservableProperty]
     private string _currencySymbol = "";
@@ -52,6 +60,7 @@ public partial class SettingsPageViewModel(
         MaxCashierDiscountText = (decimal.TryParse(settings.Get(Pos.Modules.Sales.SalesSettingKeys.MaxCashierDiscount), System.Globalization.NumberStyles.Number,
             System.Globalization.CultureInfo.InvariantCulture, out var max) ? max : Pos.Modules.Sales.SalesSettingKeys.DefaultMaxCashierDiscount).ToString("0.##", L.Culture);
         RefreshTexts(formatter.DateFormat);
+        SelectedPrintLanguage = PrintLanguages.FirstOrDefault(l => l.Code == (print.Language ?? ""));
     }
 
     [RelayCommand]
@@ -88,7 +97,12 @@ public partial class SettingsPageViewModel(
             L.SetLanguage(language.Code); // CFG-01: cambia todos los textos sin reiniciar
         }
 
+        var printLanguage = SelectedPrintLanguage?.Code ?? "";
+        settings.Set(SettingKeys.PrintLanguage, printLanguage);
+        print.Language = printLanguage.Length == 0 ? null : printLanguage;
+
         RefreshTexts(dateFormat);
+        SelectedPrintLanguage = PrintLanguages.FirstOrDefault(l => l.Code == printLanguage);
         ShowInfo("Saved");
     }
 
@@ -99,6 +113,7 @@ public partial class SettingsPageViewModel(
             .Select(f => new DateFormatOption(f, f.Length == 0 ? L["DateFormatLanguage"] : f))
             .ToList();
         SelectedDateFormat = DateFormats.FirstOrDefault(f => f.Format == dateFormat) ?? DateFormats[0];
+        PrintLanguages = [new LanguageInfo("", L["PrintLanguageSameAsApp"]), .. Languages];
         ModuleNames = modules.Select(m => $"{m.Id} · {L[m.NameKey]}").ToList();
         Preview = $"{formatter.FormatMoney(1234.5m)}   ·   {formatter.FormatDate(clock.GetLocalNow().DateTime)}";
     }

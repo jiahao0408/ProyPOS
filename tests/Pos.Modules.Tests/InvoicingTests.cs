@@ -217,7 +217,7 @@ public sealed class InvoicingTests : IDisposable
     {
         var doc = _invoices.GetCurrentForSale(Sell(Customer).Id)!;
         var localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
-        var pdf = new InvoicePdf(localizer, new RegionFormatter(localizer)).Render(doc);
+        var pdf = new InvoicePdf(new PrintLocalization(localizer, new RegionFormatter(localizer))).Render(doc);
 
         Assert.Equal("%PDF", Encoding.ASCII.GetString(pdf, 0, 4));
         Assert.True(pdf.Length > 1000);

@@ -15,7 +15,7 @@ namespace Pos.Modules.Invoicing;
 /// número y serie, fecha, emisor y cliente con NIF y domicilio, precio unitario sin IVA,
 /// base, tipo y cuota por cada tipo de IVA y total.
 /// </summary>
-public sealed class InvoicePdf(ILocalizer localizer, RegionFormatter formatter)
+public sealed class InvoicePdf(PrintLocalization print)
 {
     static InvoicePdf()
     {
@@ -29,7 +29,7 @@ public sealed class InvoicePdf(ILocalizer localizer, RegionFormatter formatter)
 
     private Document Build(InvoiceDocument doc)
     {
-        var L = localizer;
+        var (L, formatter) = print.For();
         string Money(decimal amount) => formatter.FormatMoney(amount);
         string Amount(decimal amount) => formatter.FormatAmount(amount);
 

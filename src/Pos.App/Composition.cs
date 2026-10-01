@@ -10,7 +10,6 @@ using Pos.Modules.Bazaar;
 using Pos.Modules.CashRegister;
 using Pos.Modules.DataTransfer;
 using Pos.Modules.Hardware;
-using Pos.Modules.Inventory;
 using Pos.Modules.Invoicing;
 using Pos.Modules.Printing;
 using Pos.Modules.Products;
@@ -80,6 +79,10 @@ internal static class Composition
                 DateFormat = settings.Get(SettingKeys.DateFormat, ""),
             };
         });
+        services.AddSingleton(sp => new PrintLocalization(sp.GetRequiredService<ILocalizer>(), sp.GetRequiredService<RegionFormatter>())
+        {
+            Language = sp.GetRequiredService<SettingsStore>().Get(SettingKeys.PrintLanguage),
+        });
 
         IModule[] modules =
         [
@@ -87,7 +90,6 @@ internal static class Composition
             new ProductsModule(),
             new CashRegisterModule(),
             new SalesModule(),
-            new InventoryModule(),
             new PrintingModule(),
             new InvoicingModule(),
             new HardwareModule(),
@@ -113,7 +115,6 @@ internal static class Composition
         services.AddTransient<TicketsPageViewModel>();
         services.AddTransient<BusinessPageViewModel>();
         services.AddTransient<PrinterPageViewModel>();
-        services.AddTransient<ReceiptsPageViewModel>();
         services.AddTransient<LabelsPageViewModel>();
         services.AddTransient<DataPageViewModel>();
         services.AddTransient<VerifactuPageViewModel>();

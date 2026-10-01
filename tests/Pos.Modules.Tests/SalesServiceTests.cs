@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Time.Testing;
 using Pos.Core.Domain;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
 using Pos.Modules.Users;
@@ -17,7 +16,6 @@ public sealed class SalesServiceTests : IDisposable
     private readonly SalesService _sales;
     private readonly CatalogService _catalog;
     private readonly CashRegisterService _cash;
-    private readonly StockService _stock;
     private readonly int _userId;
     private readonly Product _taza;
 
@@ -26,7 +24,6 @@ public sealed class SalesServiceTests : IDisposable
         _sales = new SalesService(_db.Factory, _clock);
         _catalog = new CatalogService(_db.Factory);
         _cash = new CashRegisterService(_db.Factory, _clock);
-        _stock = new StockService(_db.Factory);
         _userId = new UserService(_db.Factory, _clock).CreateUser("Luis", "2222", Role.Cashier).Value!.Id;
         _taza = _catalog.SaveProduct(null, new ProductInput("Taza", 3.50m, 21m, "111", null, null)).Value!;
         _cash.Open(_userId, 100m);
@@ -107,19 +104,7 @@ public sealed class SalesServiceTests : IDisposable
     }
 
     [Fact]
-    public void Sale_DecrementsStock()
-    {
-        // INV-01: vender 3 unidades resta 3.
-        _sales.Checkout(TicketWith(3), PaymentRequest.Cash(20m), _userId);
-
-        Assert.Equal(-3, _stock.GetStock(_taza.Id));
-        var movement = Assert.Single(_stock.GetMovements(_taza.Id));
-        Assert.Equal((-3, StockMovementReason.Sale), (movement.Quantity, movement.Reason));
-        Assert.NotNull(movement.SaleId);
-    }
-
-    [Fact]
-    public void GenericItem_DoesNotTouchStock()
+    public void GenericItem_KeepsItsCategory()
     {
         var hogar = _catalog.SaveCategory(null, "Hogar", 0, null, true).Value!;
         var ticket = new Ticket();
@@ -130,7 +115,6 @@ public sealed class SalesServiceTests : IDisposable
         var line = Assert.Single(_sales.GetSale(result.Value!.Sale.Id)!.Lines);
         Assert.Null(line.ProductId);
         Assert.Equal(hogar.Id, line.CategoryId); // BAZ-02: aparece en ventas por sección
-        Assert.Equal(0, _stock.GetStock(_taza.Id));
     }
 
     [Fact]

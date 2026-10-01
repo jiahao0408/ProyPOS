@@ -5,7 +5,6 @@ using Pos.Core.Domain;
 using Pos.Data;
 using Pos.Localization;
 using Pos.Modules.DataTransfer;
-using Pos.Modules.Inventory;
 using Pos.Modules.Products;
 
 namespace Pos.Modules.Tests;
@@ -21,7 +20,7 @@ public sealed class DataTransferTests : IDisposable
     public DataTransferTests()
     {
         var localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
-        _import = new ImportService(_memory.Factory, localizer, new RegionFormatter(localizer), _clock);
+        _import = new ImportService(_memory.Factory, localizer, new RegionFormatter(localizer));
     }
 
     public void Dispose()
@@ -50,13 +49,13 @@ public sealed class DataTransferTests : IDisposable
     public void Products_PreviewShowsErrorsPerRow()
     {
         var csv = WriteCsv("""
-            Nombre;Precio;IVA;Código;Categoría;Ud/caja;Coste;Stock
-            Taza;3,50;21;8410000000011;Hogar;12;1,20;24
-            ;2;21;;;;;
-            Vaso;abc;21;;;;;
-            Plato;4;7;;;;;
-            Taza bis;3;21;8410000000011;;;;
-            Libro;10,40;4%;;Papelería;;;
+            Nombre;Precio;IVA;Código;Categoría
+            Taza;3,50;21;8410000000011;Hogar
+            ;2;21;;
+            Vaso;abc;21;;
+            Plato;4;7;;
+            Taza bis;3;21;8410000000011;
+            Libro;10,40;4%;;Papelería
             """);
 
         var preview = _import.Preview(ImportKind.Products, csv);
@@ -69,12 +68,13 @@ public sealed class DataTransferTests : IDisposable
     }
 
     [Fact]
-    public void Products_ImportCreatesCategoriesCostAndStock()
+    public void Products_ImportCreatesCategories()
     {
+        // Las columnas de más (p. ej. el stock de una plantilla antigua) se ignoran: la tienda no lleva stock.
         var csv = WriteCsv("""
-            Nombre;Precio;IVA;Código;Categoría;Ud/caja;Coste;Stock
-            Taza;3,50;21;8410000000011;Hogar;12;1,20;24
-            Libro;10.40;4;;Papelería;;;
+            Nombre;Precio;IVA;Código;Categoría;Stock
+            Taza;3,50;21;8410000000011;Hogar;24
+            Libro;10.40;4;;Papelería;
             """);
 
         var imported = _import.Import(_import.Preview(ImportKind.Products, csv));
@@ -82,9 +82,8 @@ public sealed class DataTransferTests : IDisposable
         Assert.Equal(2, imported);
         var catalog = new CatalogService(_memory.Factory);
         var taza = catalog.FindByBarcode("8410000000011")!;
-        Assert.Equal((3.50m, 21m, 12, 1.20m, 24), (taza.Price, taza.VatRate, taza.UnitsPerBox, taza.CostPrice, taza.Stock));
+        Assert.Equal((3.50m, 21m, "Hogar"), (taza.Price, taza.VatRate, catalog.GetCategories().Single(c => c.Id == taza.CategoryId).Name));
         Assert.Equal(["Hogar", "Papelería"], catalog.GetCategories().Select(c => c.Name).Order());
-        Assert.Equal(StockMovementReason.Count, Assert.Single(new StockService(_memory.Factory).GetMovements(taza.Id)).Reason);
     }
 
     [Fact]

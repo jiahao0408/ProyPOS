@@ -23,7 +23,7 @@ public sealed record CategoryButton(int? Id, string Name, IBrush? Background);
 
 public sealed record GenericButton(Category Section, IBrush? Background);
 
-public sealed record ProductButton(Product Product, string Name, string Price, string Stock, bool OutOfStock);
+public sealed record ProductButton(Product Product, string Name, string Price);
 
 public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total, string? DiscountText);
 
@@ -384,7 +384,6 @@ public partial class SalePageViewModel(
         _discountAuthorizedBy = null;
         CloseDialog();
         RefreshTicket();
-        RefreshProducts(); // el stock ha cambiado
 
         var invoice = invoices.GetCurrentForSale(sale.Id);
         var completed = string.Format(L["SaleCompleted"], invoice?.Code ?? sale.Id.ToString(L.Culture), formatter.FormatMoney(change));
@@ -497,8 +496,7 @@ public partial class SalePageViewModel(
         foreach (var p in products)
         {
             // INV-02: el cajero ve las unidades disponibles, pero no puede editarlas.
-            Products.Add(new ProductButton(p, p.Name, formatter.FormatMoney(p.Price),
-                string.Format(L["StockUnits"], p.Stock), p.Stock <= 0));
+            Products.Add(new ProductButton(p, p.Name, formatter.FormatMoney(p.Price)));
         }
     }
 

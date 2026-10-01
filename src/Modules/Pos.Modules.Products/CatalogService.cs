@@ -13,8 +13,7 @@ public sealed record ProductInput(
     decimal VatRate,
     string? Barcode,
     int? CategoryId,
-    string? PhotoPath,
-    int UnitsPerBox = 1);
+    string? PhotoPath);
 
 public static class TicketDefaults
 {
@@ -155,8 +154,6 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
             return OperationResult<Product>.Fail("ErrorPriceDecimals");
         if (!VatRates.IsValid(input.VatRate))
             return OperationResult<Product>.Fail("ErrorVatRate");
-        if (input.UnitsPerBox < 1)
-            return OperationResult<Product>.Fail("ErrorUnitsPerBox");
 
         using var db = dbFactory.CreateDbContext();
         if (barcode is not null && db.Products.Any(p => p.Barcode == barcode && p.Id != id))
@@ -183,7 +180,6 @@ public sealed class CatalogService(IDbContextFactory<PosDbContext> dbFactory)
         product.Barcode = barcode;
         product.CategoryId = input.CategoryId;
         product.PhotoPath = string.IsNullOrWhiteSpace(input.PhotoPath) ? null : input.PhotoPath;
-        product.UnitsPerBox = input.UnitsPerBox;
         // Guardar desde la ficha de admin cuenta como revisado (BAZ-03).
         product.PendingReview = pendingReview;
         db.SaveChanges();

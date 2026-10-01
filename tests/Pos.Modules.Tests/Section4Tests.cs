@@ -5,7 +5,6 @@ using Pos.Data;
 using Pos.Localization;
 using Pos.Modules.Bazaar;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Printing;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
@@ -13,14 +12,12 @@ using Pos.Modules.Users;
 
 namespace Pos.Modules.Tests;
 
-/// <summary>Sección 4: entradas de mercancía, cierre de caja y etiquetas.</summary>
+/// <summary>Sección 4: cierre de caja y etiquetas.</summary>
 public sealed class Section4Tests : IDisposable
 {
     private readonly TestDatabase _db = new();
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero));
     private readonly CatalogService _catalog;
-    private readonly ReceiptService _receipts;
-    private readonly StockService _stock;
     private readonly CashRegisterService _cash;
     private readonly SalesService _sales;
     private readonly int _userId;
@@ -28,8 +25,6 @@ public sealed class Section4Tests : IDisposable
     public Section4Tests()
     {
         _catalog = new CatalogService(_db.Factory);
-        _receipts = new ReceiptService(_db.Factory, _clock);
-        _stock = new StockService(_db.Factory);
         _cash = new CashRegisterService(_db.Factory, _clock);
         _sales = new SalesService(_db.Factory, _clock);
         _userId = new UserService(_db.Factory, _clock).CreateUser("Ana", "1111", Role.Admin).Value!.Id;
@@ -37,69 +32,8 @@ public sealed class Section4Tests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private Product NewProduct(string name = "Vaso", int unitsPerBox = 12, string? barcode = null) =>
-        _catalog.SaveProduct(null, new ProductInput(name, 2m, 21m, barcode, null, null, unitsPerBox)).Value!;
-
-    // --- INV-03 / BAZ-04 ---
-
-    [Fact]
-    public void Receive_ByBoxes_AddsUnitsAndComputesUnitCost()
-    {
-        // BAZ-04: recibir 3 cajas de 12 suma 36 unidades; coste unitario calculado.
-        var vaso = NewProduct();
-
-        var result = _receipts.Receive(null, "ALB-001", [new ReceiptLineInput(vaso.Id, 3, InBoxes: true, Cost: 18m)], _userId);
-
-        Assert.True(result.Success, result.ErrorKey);
-        Assert.Equal(36, _stock.GetStock(vaso.Id));
-        var line = Assert.Single(result.Value!.Lines);
-        Assert.Equal((3, 36, 1.5m, 54m), (line.Boxes, line.Units, line.UnitCost, line.LineCost));
-        Assert.Equal(1.5m, _catalog.GetProduct(vaso.Id)!.CostPrice);
-    }
-
-    [Fact]
-    public void Receive_UpdatesWeightedAverageCost()
-    {
-        // INV-03: actualiza stock y coste medio.
-        var vaso = NewProduct();
-        _receipts.Receive(null, null, [new ReceiptLineInput(vaso.Id, 10, false, 1.00m)], _userId);
-
-        _receipts.Receive(null, null, [new ReceiptLineInput(vaso.Id, 30, false, 2.00m)], _userId);
-
-        Assert.Equal(40, _stock.GetStock(vaso.Id));
-        Assert.Equal(1.75m, _catalog.GetProduct(vaso.Id)!.CostPrice); // (10×1 + 30×2) / 40
-    }
-
-    [Fact]
-    public void Receive_AfterNegativeStock_UsesNewCost()
-    {
-        Assert.Equal(3m, ReceiptService.AverageCost(stock: -5, currentCost: 1m, units: 10, unitCost: 3m));
-    }
-
-    [Fact]
-    public void Receive_RecordsSupplierAndMovement()
-    {
-        var supplier = _receipts.CreateSupplier("Mayorista Oriente").Value!;
-        var vaso = NewProduct();
-
-        _receipts.Receive(supplier.Id, "ALB-7", [new ReceiptLineInput(vaso.Id, 2, true, 10m)], _userId);
-
-        var movement = Assert.Single(_stock.GetMovements(vaso.Id));
-        Assert.Equal((24, StockMovementReason.Receipt), (movement.Quantity, movement.Reason));
-        Assert.Equal(supplier.Id, Assert.Single(_receipts.GetRecent()).SupplierId);
-        Assert.Equal("ErrorSupplierNameTaken", _receipts.CreateSupplier("Mayorista Oriente").ErrorKey);
-    }
-
-    [Theory]
-    [InlineData(0, 1, "ErrorQuantity")]
-    [InlineData(1, -1, "ErrorCostNegative")]
-    public void Receive_Validates(int quantity, decimal cost, string expectedError)
-    {
-        var vaso = NewProduct();
-
-        Assert.Equal(expectedError, _receipts.Receive(null, null, [new ReceiptLineInput(vaso.Id, quantity, false, cost)], _userId).ErrorKey);
-        Assert.Equal("ErrorReceiptEmpty", _receipts.Receive(null, null, [], _userId).ErrorKey);
-    }
+    private Product NewProduct(string name = "Vaso", string? barcode = null) =>
+        _catalog.SaveProduct(null, new ProductInput(name, 2m, 21m, barcode, null, null)).Value!;
 
     // --- CAJ-02 ---
 
@@ -149,7 +83,7 @@ public sealed class Section4Tests : IDisposable
     public void ZReport_ShowsTotalsAndDifference()
     {
         var localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
-        var builder = new ReportBuilder(localizer, new RegionFormatter(localizer));
+        var builder = new ReportBuilder(new PrintLocalization(localizer, new RegionFormatter(localizer)));
         var z = new ZReportDocument(7, DateTime.UtcNow, DateTime.UtcNow, "Ana", 3, 60m, 30m, 30m, 100m, 130m, 128m,
             [new ZReportVatLine(21m, 49.59m, 10.41m, 60m)]);
 
@@ -184,7 +118,7 @@ public sealed class Section4Tests : IDisposable
     public void Labels_PrintNamePriceAndBarcode()
     {
         var localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
-        var builder = new ReportBuilder(localizer, new RegionFormatter(localizer));
+        var builder = new ReportBuilder(new PrintLocalization(localizer, new RegionFormatter(localizer)));
 
         var elements = builder.BuildLabels([new LabelItem("Llavero", 1.95m, "2900000000018", 2)], PrinterProfile.Default);
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Pos.Core.Domain;
 using Pos.Core.Invoicing;
@@ -32,10 +31,10 @@ public sealed record ImportPreview(ImportKind Kind, IReadOnlyList<string> Header
 /// DAT-01: importar productos y clientes desde CSV o Excel. Plantilla descargable; vista previa con
 /// errores por fila; los códigos (o NIF) duplicados no se importan. Las columnas van en el orden de la plantilla.
 /// </summary>
-public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILocalizer localizer, RegionFormatter formatter, TimeProvider clock)
+public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILocalizer localizer, RegionFormatter formatter)
 {
     private static readonly string[] ProductColumns =
-        ["ColName", "ColPrice", "ColVat", "ColBarcode", "ColCategory", "ColUnitsPerBox", "ColCost", "ColStock"];
+        ["ColName", "ColPrice", "ColVat", "ColBarcode", "ColCategory"];
 
     private static readonly string[] CustomerColumns =
         ["ColNif", "ColCustomerName", "ColAddress", "ColPostalCode", "ColCity"];
@@ -47,7 +46,7 @@ public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILo
     public void WriteTemplate(ImportKind kind, string path)
     {
         IReadOnlyList<string> example = kind == ImportKind.Products
-            ? ["Taza de cerámica", "3,50", "21", "8410000000011", "Hogar", "12", "1,20", "24"]
+            ? ["Taza de cerámica", "3,50", "21", "8410000000011", "Hogar"]
             : ["B12345674", "Papelería Pérez S.L.", "Calle Sol 5", "08001", "Barcelona"];
         TabularFile.Write(path, Headers(kind), [example]);
     }
@@ -77,11 +76,7 @@ public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILo
         using var transaction = db.Database.BeginTransaction();
         if (preview.Kind == ImportKind.Products)
         {
-            var initialStock = ImportProducts(db, valid);
-            db.SaveChanges(); // los productos necesitan su Id antes de registrar el stock inicial
-            var now = clock.GetUtcNow().UtcDateTime;
-            foreach (var (product, stock) in initialStock)
-                StockLedger.Record(db, product, stock, StockMovementReason.Count, now, userId: null, note: "Importación");
+            ImportProducts(db, valid);
         }
         else
             ImportCustomers(db, valid);
@@ -112,22 +107,14 @@ public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILo
                 error = "ErrorBarcodeTaken";
             else if (barcode.Length > 0 && !seen.Add(barcode))
                 error = "ErrorDuplicateInFile";
-            else if (!TryParseInt(v[5], 1, out var perBox) || perBox < 1)
-                error = "ErrorUnitsPerBox";
-            else if (v[6].Length > 0 && (!formatter.TryParseAmount(v[6], out var cost) || cost < 0))
-                error = "ErrorAmountFormat";
-            else if (!TryParseInt(v[7], 0, out _))
-                error = "ErrorNumberFormat";
             result.Add(new ImportRow(line, v, error));
         }
         return result;
     }
 
-    /// <summary>Añade los productos y devuelve los que traen stock inicial.</summary>
-    private List<(Product Product, int Stock)> ImportProducts(PosDbContext db, IEnumerable<ImportRow> rows)
+    private void ImportProducts(PosDbContext db, IEnumerable<ImportRow> rows)
     {
         var categories = db.Categories.ToList().ToDictionary(c => c.Name, StringComparer.CurrentCultureIgnoreCase);
-        var initialStock = new List<(Product, int)>();
 
         foreach (var row in rows)
         {
@@ -142,25 +129,16 @@ public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILo
 
             formatter.TryParseAmount(v[1], out var price);
             TryParseVat(v[2], out var vat);
-            TryParseInt(v[5], 1, out var perBox);
-            var cost = v[6].Length > 0 && formatter.TryParseAmount(v[6], out var c) ? Math.Round(c, 4) : 0m;
-            TryParseInt(v[7], 0, out var stock);
 
-            var product = new Product
+            db.Products.Add(new Product
             {
                 Name = v[0],
                 Price = price,
                 VatRate = vat,
                 Barcode = v[3].Length > 0 ? v[3] : null,
                 Category = category,
-                UnitsPerBox = perBox,
-                CostPrice = cost,
-            };
-            db.Products.Add(product);
-            if (stock != 0)
-                initialStock.Add((product, stock));
+            });
         }
-        return initialStock;
     }
 
     // --- Clientes ---
@@ -216,16 +194,5 @@ public sealed class ImportService(IDbContextFactory<PosDbContext> dbFactory, ILo
             value *= 100;
         rate = Math.Round(value, 2);
         return VatRates.IsValid(rate);
-    }
-
-    private static bool TryParseInt(string text, int empty, out int value)
-    {
-        value = empty;
-        if (text.Length == 0)
-            return true;
-        if (!decimal.TryParse(text.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out var d) || d != decimal.Truncate(d))
-            return false;
-        value = (int)d;
-        return true;
     }
 }

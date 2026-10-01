@@ -4,7 +4,6 @@ using Avalonia.Input;
 using Pos.App.ViewModels;
 using Pos.Core.Domain;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
 using Pos.Modules.Users;
@@ -122,9 +121,9 @@ public class Sprint2Tests
     }
 
     [AvaloniaFact]
-    public void CashPayment_ShowsChangeAndDecrementsStock()
+    public void CashPayment_ShowsChange()
     {
-        // VEN-03 + INV-01.
+        // VEN-03.
         using var shop = new Shop();
         shop.Scan("3*8410000000011");
 
@@ -137,7 +136,6 @@ public class Sprint2Tests
         Assert.False(shop.Sale.IsDialogOpen);
         Assert.Empty(shop.Sale.TicketLines);
         Assert.Contains("Cambio: 9,50 €", shop.Sale.Message!.Replace(' ', ' '));
-        Assert.Equal(-3, shop.App.Get<StockService>().GetStock(shop.Taza.Id));
     }
 
     [AvaloniaFact]
@@ -271,17 +269,6 @@ public class Sprint2Tests
         quick.SaveCommand.Execute(null);
 
         Assert.False(shop.App.Get<CatalogService>().FindByBarcode("8419999999999")!.PendingReview);
-    }
-
-    [AvaloniaFact]
-    public void Stock_IsShownToCashier()
-    {
-        // INV-02: muestra unidades disponibles (el cajero no tiene dónde editarlas).
-        using var shop = new Shop();
-
-        shop.Sale.SearchText = "Taza";
-
-        Assert.Equal("Stock: 0", Assert.Single(shop.Sale.Products).Stock);
     }
 
     [AvaloniaFact]

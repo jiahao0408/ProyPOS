@@ -7,6 +7,9 @@ namespace Pos.Data;
 public static class SettingKeys
 {
     public const string Language = "ui.language";
+
+    /// <summary>Idioma de los tickets y documentos impresos; sin valor = el de la aplicación.</summary>
+    public const string PrintLanguage = "print.language";
     public const string CurrencySymbol = "region.currencySymbol";
     public const string DateFormat = "region.dateFormat";
     public const string InactivityMinutes = "security.inactivityMinutes";

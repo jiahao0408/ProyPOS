@@ -8,15 +8,15 @@ using static Pos.Modules.Printing.ReceiptText2;
 namespace Pos.Modules.Printing;
 
 /// <summary>
-/// Maqueta el ticket de una factura (IMP-01/02/03, FAC-01/02/06).
+/// Maqueta el ticket de una factura (IMP-01/02/03, FAC-01/02/06) en el idioma de impresión.
 /// Los datos fiscales salen de la factura (tal como se emitió); el logo, el teléfono
 /// y el mensaje del pie, de los ajustes actuales del negocio.
 /// </summary>
-public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatter)
+public sealed class ReceiptBuilder(PrintLocalization print)
 {
     public IReadOnlyList<ReceiptElement> Build(InvoiceDocument doc, BusinessProfile business, PrinterProfile printer, bool copy)
     {
-        var L = localizer;
+        var (L, formatter) = print.For();
         var width = printer.CharsPerLine;
         string Amount(decimal a) => formatter.FormatAmount(a);
         var r = new List<ReceiptElement>();
@@ -126,7 +126,7 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
     /// </summary>
     public IReadOnlyList<ReceiptElement> BuildGift(InvoiceDocument doc, BusinessProfile business, PrinterProfile printer)
     {
-        var L = localizer;
+        var (L, formatter) = print.For();
         var width = printer.CharsPerLine;
         var r = new List<ReceiptElement>();
         if (business.LogoPath is { } logo && File.Exists(logo))
@@ -172,6 +172,7 @@ public sealed class ReceiptBuilder(ILocalizer localizer, RegionFormatter formatt
     /// <summary>Ticket de prueba para el botón "Probar impresora" (HW-01).</summary>
     public IReadOnlyList<ReceiptElement> BuildTest(BusinessProfile business, PrinterProfile printer)
     {
+        var (localizer, formatter) = print.For();
         var width = printer.CharsPerLine;
         var r = new List<ReceiptElement>();
         if (business.LogoPath is { } logo && File.Exists(logo))

@@ -96,8 +96,6 @@
                   <StackPanel>
                     <TextBlock Text="{Binding Name}" TextWrapping="Wrap" TextAlignment="Center" FontSize="15" MaxHeight="40" />
                     <TextBlock Text="{Binding Price}" TextAlignment="Center" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Stock}" TextAlignment="Center" FontSize="12" Opacity="0.7"
-                               Classes.out="{Binding OutOfStock}" />
                   </StackPanel>
                 </Button>
               </DataTemplate>

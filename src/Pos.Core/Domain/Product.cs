@@ -42,16 +42,12 @@ public class Product
 
     public Category? Category { get; set; }
 
-    /// <summary>
-    /// Unidades disponibles (INV-02). Solo cambia con movimientos de stock (INV-01).
-    /// Puede quedar en negativo: en un bazar no se para una venta por un stock mal contado.
-    /// </summary>
+    // Stock, coste y unidades por caja: columnas de la versión con inventario. La tienda no lleva stock
+    // y la aplicación ya no las usa; se dejan en la base de datos para no perder datos de instalaciones antiguas.
     public int Stock { get; set; }
 
-    /// <summary>Coste medio de una unidad sin IVA (INV-03). Se recalcula con cada entrada de mercancía.</summary>
     public decimal CostPrice { get; set; }
 
-    /// <summary>Unidades por caja del mayorista: recibir 3 cajas de 12 suma 36 unidades (BAZ-04).</summary>
     public int UnitsPerBox { get; set; } = 1;
 
     /// <summary>Creado por un cajero con el alta rápida al escanear; el admin debe revisarlo (BAZ-03).</summary>

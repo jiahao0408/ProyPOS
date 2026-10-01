@@ -26,6 +26,8 @@ public sealed class PrintingTests : IDisposable
 
     private readonly TestDatabase _db = new();
     private readonly ProfileStore _profiles;
+    private readonly JsonLocalizer _localizer;
+    private readonly PrintLocalization _print;
     private readonly ReceiptBuilder _builder;
     private readonly ReportBuilder _reports;
     private readonly string _folder = Directory.CreateTempSubdirectory("starseapos-print-").FullName;
@@ -34,9 +36,10 @@ public sealed class PrintingTests : IDisposable
     {
         _profiles = new ProfileStore(new SettingsStore(_db.Factory));
         _profiles.SaveBusiness(InvoicingTests.Business);
-        var localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
-        _builder = new ReceiptBuilder(localizer, new RegionFormatter(localizer));
-        _reports = new ReportBuilder(localizer, new RegionFormatter(localizer));
+        _localizer = new JsonLocalizer(Path.Combine(AppContext.BaseDirectory, "locales"));
+        _print = new PrintLocalization(_localizer, new RegionFormatter(_localizer));
+        _builder = new ReceiptBuilder(_print);
+        _reports = new ReportBuilder(_print);
     }
 
     public void Dispose()
@@ -67,6 +70,23 @@ public sealed class PrintingTests : IDisposable
         Assert.Contains("¡Gracias por su visita!", text); // pie (IMP-03)
         Assert.Contains("[QR: T2026-000007]", text);     // para buscarlo luego (FAC-06)
         Assert.DoesNotContain("COPIA", text);
+    }
+
+    [Fact]
+    public void Ticket_IsPrintedInThePrintLanguage_NotTheAppLanguage()
+    {
+        // La app en chino, los tickets en español.
+        _localizer.SetLanguage("zh");
+        _print.Language = "es";
+
+        var text = Preview(Doc);
+
+        Assert.Contains("FACTURA SIMPLIFICADA", text);
+        Assert.Contains("17,40", text);
+        Assert.Equal("zh", _localizer.CurrentLanguage); // la interfaz no cambia
+
+        _print.Language = null; // sin idioma de impresión: el de la aplicación
+        Assert.Contains("简易发票", Preview(Doc));
     }
 
     [Fact]

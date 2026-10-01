@@ -9,8 +9,6 @@ public static class AuditActions
     public const string Exchange = "Exchange";
     public const string Discount = "Discount";
     public const string PriceChange = "PriceChange";
-    public const string StockAdjustment = "StockAdjustment";
-    public const string StockCount = "StockCount";
     public const string CashDrawer = "CashDrawer";
 }
 

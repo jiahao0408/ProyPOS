@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- Los módulos dependen del núcleo y de la capa de datos, nunca entre sí ni de la app. -->
-  <ItemGroup>
-    <ProjectReference Include="..\..\Pos.Core\Pos.Core.csproj" />
-    <ProjectReference Include="..\..\Pos.Data\Pos.Data.csproj" />
-  </ItemGroup>
-</Project>

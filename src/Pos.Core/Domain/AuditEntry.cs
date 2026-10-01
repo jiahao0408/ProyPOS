@@ -1,7 +1,7 @@
 namespace Pos.Core.Domain;
 
 /// <summary>
-/// USR-03: registro de acciones sensibles (devoluciones, descuentos, cambios de precio, ajustes de stock…).
+/// USR-03: registro de acciones sensibles (devoluciones, descuentos, cambios de precio…).
 /// Guarda usuario, fecha, acción y valores. No se puede modificar ni borrar.
 /// </summary>
 public class AuditEntry

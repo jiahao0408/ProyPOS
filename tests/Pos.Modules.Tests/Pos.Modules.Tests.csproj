@@ -21,7 +21,6 @@
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Products\Pos.Modules.Products.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.CashRegister\Pos.Modules.CashRegister.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Sales\Pos.Modules.Sales.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Pos.Modules.Inventory\Pos.Modules.Inventory.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Invoicing\Pos.Modules.Invoicing.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Printing\Pos.Modules.Printing.csproj" />
     <ProjectReference Include="..\..\src\Modules\Pos.Modules.Hardware\Pos.Modules.Hardware.csproj" />

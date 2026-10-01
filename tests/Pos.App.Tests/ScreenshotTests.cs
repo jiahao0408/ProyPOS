@@ -45,7 +45,7 @@ public class ScreenshotTests
         catalog.SaveCategory(null, "Juguetes", 2, "#6366F1", false);
         catalog.SaveProduct(null, new ProductInput("Taza de cerámica", 3.50m, 21m, "8410000000011", hogar.Id, null));
         catalog.SaveProduct(null, new ProductInput("Cuaderno A4", 2.95m, 21m, "8410000000028", papeleria.Id, null));
-        catalog.SaveProduct(null, new ProductInput("Bolígrafo azul", 0.60m, 21m, "8410000000035", papeleria.Id, null, 50));
+        catalog.SaveProduct(null, new ProductInput("Bolígrafo azul", 0.60m, 21m, "8410000000035", papeleria.Id, null));
 
         var window = app.ShowWindow();
         var loginVm = Assert.IsType<LoginViewModel>(app.Shell.CurrentScreen);
@@ -133,7 +133,7 @@ public class ScreenshotTests
             workspace.AdminPrompt!.PinEntry.Digit(d.ToString());
         Capture(window, "25-impresora");
 
-        // Sección 4: entradas, etiquetas, datos y cierre de caja
+        // Sección 4: etiquetas, datos y cierre de caja
         void OpenAdmin(Type page)
         {
             workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == page));
@@ -141,22 +141,6 @@ public class ScreenshotTests
                 foreach (var d in "1111")
                     prompt.PinEntry.Digit(d.ToString());
         }
-
-        OpenAdmin(typeof(ReceiptsPageViewModel));
-        var receiptsPage = (ReceiptsPageViewModel)workspace.CurrentPage!;
-        receiptsPage.NewSupplierName = "Mayorista Oriente";
-        receiptsPage.AddSupplierCommand.Execute(null);
-        receiptsPage.Reference = "ALB-2026-0815";
-        foreach (var code in new[] { "8410000000035", "8410000000011" })
-        {
-            receiptsPage.SearchText = code;
-            receiptsPage.SubmitSearchCommand.Execute(null);
-        }
-        receiptsPage.Lines[0].QuantityText = "3";
-        receiptsPage.Lines[0].CostText = "12";
-        receiptsPage.Lines[1].QuantityText = "24";
-        receiptsPage.Lines[1].CostText = "1,10";
-        Capture(window, "30-entrada");
 
         OpenAdmin(typeof(LabelsPageViewModel));
         var labelsPage = (LabelsPageViewModel)workspace.CurrentPage!;

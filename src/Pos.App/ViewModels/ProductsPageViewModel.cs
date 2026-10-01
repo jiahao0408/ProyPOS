@@ -11,8 +11,7 @@ using Pos.Modules.Products;
 namespace Pos.App.ViewModels;
 
 public sealed record ProductRow(
-    int Id, string Name, string Price, string Barcode, string Category, bool IsActive, bool PendingReview,
-    string Stock, bool OutOfStock);
+    int Id, string Name, string Price, string Barcode, string Category, bool IsActive, bool PendingReview);
 
 public sealed record CategoryOption(int? Id, string Name);
 
@@ -59,9 +58,6 @@ public partial class ProductsPageViewModel(
 
     [ObservableProperty]
     private CategoryOption? _selectedCategory;
-
-    [ObservableProperty]
-    private string _unitsPerBoxText = "1";
 
     [ObservableProperty]
     private string? _photoPath;
@@ -142,7 +138,6 @@ public partial class ProductsPageViewModel(
         SelectedVat = VatOptions[0];
         Barcode = "";
         SelectedCategory = CategoryOptions.FirstOrDefault();
-        UnitsPerBoxText = "1";
         PhotoPath = null;
         SelectedRow = null;
         ClearMessage();
@@ -156,13 +151,8 @@ public partial class ProductsPageViewModel(
             ShowError("ErrorAmountFormat");
             return;
         }
-        if (!int.TryParse(UnitsPerBoxText, out var unitsPerBox))
-        {
-            ShowError("ErrorNumberFormat");
-            return;
-        }
 
-        var input = new ProductInput(Name, price, SelectedVat?.Rate ?? -1, Barcode, SelectedCategory?.Id, PhotoPath, unitsPerBox);
+        var input = new ProductInput(Name, price, SelectedVat?.Rate ?? -1, Barcode, SelectedCategory?.Id, PhotoPath);
         var result = catalog.SaveProduct(_editingId, input);
         if (!Check(result))
             return;
@@ -209,7 +199,6 @@ public partial class ProductsPageViewModel(
         SelectedVat = VatOptions.FirstOrDefault(v => v.Rate == product.VatRate);
         Barcode = product.Barcode ?? "";
         SelectedCategory = CategoryOptions.FirstOrDefault(c => c.Id == product.CategoryId) ?? CategoryOptions.FirstOrDefault();
-        UnitsPerBoxText = product.UnitsPerBox.ToString(L.Culture);
         PhotoPath = product.PhotoPath;
         ClearMessage();
     }
@@ -229,6 +218,5 @@ public partial class ProductsPageViewModel(
     }
 
     private ProductRow ToRow(Product p) => new(
-        p.Id, p.Name, formatter.FormatMoney(p.Price), p.Barcode ?? "", p.Category?.Name ?? "", p.IsActive, p.PendingReview,
-        string.Format(L["StockUnits"], p.Stock), p.Stock <= 0);
+        p.Id, p.Name, formatter.FormatMoney(p.Price), p.Barcode ?? "", p.Category?.Name ?? "", p.IsActive, p.PendingReview);
 }

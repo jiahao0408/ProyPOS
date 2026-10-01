@@ -8,7 +8,7 @@
     <StackPanel MaxWidth="560" HorizontalAlignment="Left">
       <TextBlock Classes="title" Text="{Binding L[NavSettings]}" />
 
-      <TextBlock Classes="label" Text="{Binding L[Language]}" />
+      <TextBlock Classes="label" Text="{Binding L[AppLanguage]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}">
         <ComboBox.ItemTemplate>
           <DataTemplate x:DataType="loc:LanguageInfo">
@@ -16,6 +16,16 @@
           </DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
+
+      <TextBlock Classes="label" Text="{Binding L[PrintLanguage]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PrintLanguages}" SelectedItem="{Binding SelectedPrintLanguage}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="loc:LanguageInfo">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <TextBlock Text="{Binding L[PrintLanguageHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,4,0,0" />
 
       <TextBlock Classes="label" Text="{Binding L[CurrencySymbol]}" />
       <TextBox Text="{Binding CurrencySymbol}" MaxLength="5" />

@@ -3,7 +3,6 @@ using Pos.App.ViewModels;
 using Pos.Core.Domain;
 using Pos.Data;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Printing;
 using Pos.Modules.Products;
 using Pos.Modules.Users;
@@ -147,7 +146,6 @@ public class Sprint6Tests
         Assert.Contains("Motivo de la devolución: Taza rota", tickets.Preview);
         Assert.Contains("-1 x Taza", tickets.Preview);
         Assert.Equal(2, shop.App.PrintedTickets); // el ticket de la venta y la rectificativa
-        Assert.Equal(-1, shop.App.Get<StockService>().GetStock(shop.Taza.Id));
     }
 
     [AvaloniaFact]
@@ -170,8 +168,6 @@ public class Sprint6Tests
         Assert.False(tickets.IsDialogOpen);
         Assert.StartsWith("Cambio hecho (rectificativa R2026-000001)", tickets.Message);
         Assert.Equal(["T2026-000002", "R2026-000001", "T2026-000001"], tickets.Invoices.Select(i => i.Code)); // más reciente primero
-        Assert.Equal(0, shop.App.Get<StockService>().GetStock(shop.Taza.Id));
-        Assert.Equal(-1, shop.App.Get<StockService>().GetStock(shop.Plato.Id));
     }
 
     [AvaloniaFact]

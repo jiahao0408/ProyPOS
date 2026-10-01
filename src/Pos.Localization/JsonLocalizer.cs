@@ -33,6 +33,9 @@ public sealed class JsonLocalizer : ILocalizer
 
     public string DefaultLanguage { get; }
 
+    /// <summary>Carpeta de las traducciones (para crear otro localizador, p. ej. el de impresión).</summary>
+    public string LocalesDirectory => _directory;
+
     public string CurrentLanguage { get; private set; }
 
     public CultureInfo Culture => CultureInfo.GetCultureInfo(CurrentLanguage);

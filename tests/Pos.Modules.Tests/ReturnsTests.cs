@@ -4,7 +4,6 @@ using Microsoft.Extensions.Time.Testing;
 using Pos.Core.Domain;
 using Pos.Data;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Invoicing;
 using Pos.Modules.Products;
 using Pos.Modules.Sales;
@@ -21,7 +20,6 @@ public sealed class ReturnsTests : IDisposable
     private readonly SettingsStore _settings;
     private readonly SalesService _sales;
     private readonly InvoiceService _invoices;
-    private readonly StockService _stock;
     private readonly CashRegisterService _cash;
     private readonly int _cashierId;
     private readonly int _adminId;
@@ -36,7 +34,6 @@ public sealed class ReturnsTests : IDisposable
         IInvoiceHook[] invoiceHooks = [new VerifactuRecorder(_clock)];
         _sales = new SalesService(_db.Factory, _clock, [new InvoiceSaleHook(profiles, invoiceHooks)]);
         _invoices = new InvoiceService(_db.Factory, profiles, _clock, invoiceHooks, _settings);
-        _stock = new StockService(_db.Factory);
         _cash = new CashRegisterService(_db.Factory, _clock);
         var users = new UserService(_db.Factory, _clock);
         _cashierId = users.CreateUser("Luis", "2222", Role.Cashier).Value!.Id;
@@ -117,7 +114,7 @@ public sealed class ReturnsTests : IDisposable
     // --- VEN-06 / FAC-03 ---
 
     [Fact]
-    public void Return_RestocksRefundsAndIssuesRectificative()
+    public void Return_RefundsAndIssuesRectificative()
     {
         var sale = Sell(TicketOf((_taza, 3)));
         var line = Assert.Single(_sales.GetReturnable(sale.Id));
@@ -128,7 +125,6 @@ public sealed class ReturnsTests : IDisposable
         var returned = _sales.GetSale(result.Value!.Id)!;
         Assert.Equal((SaleKind.Return, -7.00m, -2, "Taza rota"), (returned.Kind, returned.Total, returned.Lines[0].Quantity, returned.Reason));
         Assert.Equal((PaymentMethod.Cash, -7.00m), (returned.Payments[0].Method, returned.Payments[0].Amount));
-        Assert.Equal(-1, _stock.GetStock(_taza.Id)); // -3 vendidas + 2 devueltas (INV-01)
         Assert.Equal(1, Assert.Single(_sales.GetReturnable(sale.Id)).Returnable);
 
         var rectificative = _invoices.GetCurrentForSale(returned.Id)!;
@@ -235,8 +231,6 @@ public sealed class ReturnsTests : IDisposable
         Assert.Equal([(PaymentMethod.StoreCredit, -3.50m)], _sales.GetSale(returned.Id)!.Payments.Select(p => (p.Method, p.Amount)));
         Assert.Equal([(PaymentMethod.StoreCredit, 3.50m), (PaymentMethod.Cash, 1.50m)],
             _sales.GetSale(newSale.Id)!.Payments.Select(p => (p.Method, p.Amount)));
-        Assert.Equal(0, _stock.GetStock(_taza.Id));
-        Assert.Equal(-1, _stock.GetStock(_plato.Id));
         Assert.Equal(InvoiceType.Rectificative, _invoices.GetCurrentForSale(returned.Id)!.Type);
         Assert.Equal(InvoiceType.Simplified, _invoices.GetCurrentForSale(newSale.Id)!.Type);
         Assert.Equal(AuditActions.Exchange, Assert.Single(Audit()).Action);

@@ -4,13 +4,12 @@ using Pos.Core.Domain;
 using Pos.Core.Printing;
 using Pos.Data;
 using Pos.Modules.CashRegister;
-using Pos.Modules.Inventory;
 using Pos.Modules.Products;
 using Pos.Modules.Users;
 
 namespace Pos.App.Tests;
 
-/// <summary>Recorridos de la sección 4 (cierre, stock y datos) con la interfaz real.</summary>
+/// <summary>Recorridos de la sección 4 (cierre y datos) con la interfaz real.</summary>
 public class Sprint4Tests
 {
     private sealed class Shop : IDisposable
@@ -20,7 +19,7 @@ public class Sprint4Tests
             var users = App.Get<UserService>();
             var admin = users.CreateUser("Ana", "1111", Role.Admin).Value!;
             var catalog = App.Get<CatalogService>();
-            Vaso = catalog.SaveProduct(null, new ProductInput("Vaso", 2m, 21m, "8410000000016", null, null, UnitsPerBox: 12)).Value!;
+            Vaso = catalog.SaveProduct(null, new ProductInput("Vaso", 2m, 21m, "8410000000016", null, null)).Value!;
             Llavero = catalog.SaveProduct(null, new ProductInput("Llavero", 1.95m, 21m, null, null, null)).Value!;
             App.Get<CashRegisterService>().Open(admin.Id, 100m);
 
@@ -85,48 +84,6 @@ public class Sprint4Tests
 
         Assert.False(sale.IsDialogOpen);
         Assert.Equal("Cobra o vacía el ticket antes de cerrar la caja.", sale.Message);
-    }
-
-    [AvaloniaFact]
-    public void Receipt_ByBoxesWithNewSupplier()
-    {
-        // INV-03 + BAZ-04.
-        using var shop = new Shop();
-        var page = shop.Open<ReceiptsPageViewModel>();
-
-        page.NewSupplierName = "Mayorista Oriente";
-        page.AddSupplierCommand.Execute(null);
-        page.Reference = "ALB-123";
-        page.SearchText = "8410000000016";
-        page.SubmitSearchCommand.Execute(null);
-        var line = Assert.Single(page.Lines);
-        Assert.True(line.InBoxes); // viene en cajas de 12
-        line.QuantityText = "3";
-        line.CostText = "18";
-        Assert.Equal("36 unidades al stock", line.UnitsText);
-        page.SaveCommand.Execute(null);
-
-        Assert.Equal("Entrada guardada: 36 unidades, coste 54,00 €.", page.Message!.Replace(' ', ' '));
-        Assert.Equal(36, shop.App.Get<StockService>().GetStock(shop.Vaso.Id));
-        Assert.Equal(1.5m, shop.App.Get<CatalogService>().GetProduct(shop.Vaso.Id)!.CostPrice);
-        Assert.Equal("Mayorista Oriente", Assert.Single(shop.App.Get<ReceiptService>().GetSuppliers()).Name);
-    }
-
-    [AvaloniaFact]
-    public void Receipt_UnknownBarcodeOffersQuickCreate()
-    {
-        using var shop = new Shop();
-        var page = shop.Open<ReceiptsPageViewModel>();
-
-        page.SearchText = "8419999999999";
-        page.SubmitSearchCommand.Execute(null);
-        var quick = Assert.IsType<QuickCreateViewModel>(page.Dialog);
-        quick.Name = "Pelota";
-        quick.PriceText = "2,50";
-        quick.SaveCommand.Execute(null);
-
-        Assert.Equal("Pelota", Assert.Single(page.Lines).Name);
-        Assert.False(shop.App.Get<CatalogService>().FindByBarcode("8419999999999")!.PendingReview); // lo crea el admin
     }
 
     [AvaloniaFact]

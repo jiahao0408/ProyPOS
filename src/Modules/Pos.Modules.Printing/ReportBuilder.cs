@@ -7,11 +7,11 @@ using static Pos.Modules.Printing.ReceiptText2;
 namespace Pos.Modules.Printing;
 
 /// <summary>Cierre Z (CAJ-02) y etiquetas de precio (BAZ-01).</summary>
-public sealed class ReportBuilder(ILocalizer localizer, RegionFormatter formatter)
+public sealed class ReportBuilder(PrintLocalization print)
 {
     public IReadOnlyList<ReceiptElement> BuildZReport(ZReportDocument z, BusinessProfile business, PrinterProfile printer)
     {
-        var L = localizer;
+        var (L, formatter) = print.For();
         var width = printer.CharsPerLine;
         string Amount(decimal a) => formatter.FormatAmount(a);
         string Row(string label, decimal value) => Columns(label, Amount(value), width);
@@ -49,6 +49,7 @@ public sealed class ReportBuilder(ILocalizer localizer, RegionFormatter formatte
     /// <summary>Una etiqueta por copia: nombre, precio grande y código de barras, separadas por un corte.</summary>
     public IReadOnlyList<ReceiptElement> BuildLabels(IEnumerable<LabelItem> items, PrinterProfile printer)
     {
+        var (_, formatter) = print.For();
         var width = printer.CharsPerLine;
         var r = new List<ReceiptElement>();
         foreach (var item in items)

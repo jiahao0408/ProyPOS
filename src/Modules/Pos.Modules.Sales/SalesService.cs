@@ -42,7 +42,7 @@ public static class SalesSettingKeys
 }
 
 /// <summary>
-/// Cobro de un ticket (VEN-03, VEN-04) con descuento de stock (INV-01), devoluciones (VEN-06) y cambios (BAZ-07),
+/// Cobro de un ticket (VEN-03, VEN-04) con devoluciones (VEN-06) y cambios (BAZ-07),
 /// cada uno en una sola transacción. Los módulos registrados como <see cref="ISaleHook"/> (la facturación,
 /// que a su vez avisa a Verifactu) añaden sus datos en esa misma transacción.
 /// </summary>
@@ -92,8 +92,7 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
             return OperationResult<CheckoutResult>.Fail("ErrorCashClosed"); // CAJ-01
 
         var now = clock.GetUtcNow().UtcDateTime;
-        var products = LoadProducts(db, ticket);
-        if (products is null)
+        if (!ProductsExist(db, ticket))
             return OperationResult<CheckoutResult>.Fail("ErrorProductNotFound");
 
         var (sale, change) = BuildSale(ticket, payment, session.Id, userId, now);
@@ -102,7 +101,7 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
             return OperationResult<CheckoutResult>.Fail(hookError);
 
         using var transaction = db.Database.BeginTransaction();
-        Save(db, sale, context, products);
+        Save(db, sale, context);
         if (ticket.Discount > 0)
         {
             AuditLog.Record(db, user, AuditActions.Discount,
@@ -125,7 +124,7 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
 
     /// <summary>
     /// VEN-06: devolución de una venta cerrada. Motivo obligatorio (el PIN de admin lo pide la interfaz
-    /// y llega en <paramref name="authorizedBy"/>). Devuelve el stock, reembolsa con el método indicado y
+    /// y llega en <paramref name="authorizedBy"/>). Reembolsa con el método indicado y
     /// genera la factura rectificativa (FAC-03). La venta original no se toca.
     /// </summary>
     public OperationResult<Sale> Return(int originalSaleId, IReadOnlyList<ReturnLineRequest> lines, string reason,
@@ -144,14 +143,14 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         if (!built.Success)
             return OperationResult<Sale>.Fail(built.ErrorKey!);
 
-        var (returnSale, products) = built.Value!;
+        var returnSale = built.Value!;
         returnSale.Payments.Add(new Payment { Method = refundMethod, Amount = returnSale.Total });
         var context = new CheckoutContext(returnSale, null, userId, now);
         if (Validate(context) is { } hookError)
             return OperationResult<Sale>.Fail(hookError);
 
         using var transaction = db.Database.BeginTransaction();
-        Save(db, returnSale, context, products);
+        Save(db, returnSale, context);
         AuditLog.Record(db, db.Users.Find(userId), AuditActions.Return,
             $"Venta {originalSaleId} · {Describe(returnSale)} · {(-returnSale.Total).ToString("0.00", CultureInfo.InvariantCulture)} € ({refundMethod}) · motivo: {reason.Trim()}",
             now, authorizedBy);
@@ -182,9 +181,8 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         var built = BuildReturn(db, originalSaleId, lines, reason, session.Id, userId, now);
         if (!built.Success)
             return OperationResult<ExchangeResult>.Fail(built.ErrorKey!);
-        var (returnSale, returnProducts) = built.Value!;
-        var newProducts = LoadProducts(db, newTicket);
-        if (newProducts is null)
+        var returnSale = built.Value!;
+        if (!ProductsExist(db, newTicket))
             return OperationResult<ExchangeResult>.Fail("ErrorProductNotFound");
 
         var credit = -returnSale.Total;           // lo que vale lo devuelto
@@ -217,8 +215,8 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
             return OperationResult<ExchangeResult>.Fail(hookError);
 
         using var transaction = db.Database.BeginTransaction();
-        Save(db, returnSale, returnContext, returnProducts);
-        Save(db, newSale, saleContext, newProducts);
+        Save(db, returnSale, returnContext);
+        Save(db, newSale, saleContext);
         AuditLog.Record(db, db.Users.Find(userId), AuditActions.Exchange,
             $"Venta {originalSaleId} · devuelve {Describe(returnSale)} · se lleva {Describe(newSale)} · diferencia {difference.ToString("0.00", CultureInfo.InvariantCulture)} €",
             now, authorizedBy);
@@ -283,18 +281,18 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         return (sale, change);
     }
 
-    private static OperationResult<(Sale Sale, Dictionary<int, Product> Products)> BuildReturn(PosDbContext db, int originalSaleId,
+    private static OperationResult<Sale> BuildReturn(PosDbContext db, int originalSaleId,
         IReadOnlyList<ReturnLineRequest> requests, string reason, int sessionId, int userId, DateTime now)
     {
         if (string.IsNullOrWhiteSpace(reason))
-            return OperationResult<(Sale, Dictionary<int, Product>)>.Fail("ErrorReasonRequired");
+            return OperationResult<Sale>.Fail("ErrorReasonRequired");
         var wanted = requests.Where(r => r.Quantity > 0).ToList();
         if (wanted.Count == 0)
-            return OperationResult<(Sale, Dictionary<int, Product>)>.Fail("ErrorNothingToReturn");
+            return OperationResult<Sale>.Fail("ErrorNothingToReturn");
 
         var original = db.Sales.AsNoTracking().FirstOrDefault(s => s.Id == originalSaleId);
         if (original is null || original.Kind != SaleKind.Sale)
-            return OperationResult<(Sale, Dictionary<int, Product>)>.Fail("ErrorSaleNotFound");
+            return OperationResult<Sale>.Fail("ErrorSaleNotFound");
 
         var returnable = Returnable(db, originalSaleId).ToDictionary(r => r.Line.Id);
         var sale = new Sale
@@ -309,7 +307,7 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         foreach (var request in wanted)
         {
             if (!returnable.TryGetValue(request.OriginalLineId, out var line) || request.Quantity > line.Returnable)
-                return OperationResult<(Sale, Dictionary<int, Product>)>.Fail("ErrorReturnTooMany");
+                return OperationResult<Sale>.Fail("ErrorReturnTooMany");
 
             // Lo pagado por esas unidades (con su parte de descuento). La última unidad devuelve el resto
             // exacto, para que la suma de devoluciones nunca pase de lo cobrado.
@@ -330,9 +328,7 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
         }
         sale.Total = sale.Lines.Sum(l => l.LineTotal);
 
-        var ids = sale.Lines.Select(l => l.ProductId).OfType<int>().Distinct().ToList();
-        var products = db.Products.Where(p => ids.Contains(p.Id)).ToDictionary(p => p.Id);
-        return OperationResult<(Sale, Dictionary<int, Product>)>.Ok((sale, products));
+        return OperationResult<Sale>.Ok(sale);
     }
 
     private static List<ReturnableLine> Returnable(PosDbContext db, int saleId)
@@ -350,23 +346,19 @@ public sealed class SalesService(IDbContextFactory<PosDbContext> dbFactory, Time
     private static decimal AlreadyRefunded(PosDbContext db, int lineId) =>
         -db.SaleLines.AsNoTracking().Where(l => l.OriginalLineId == lineId).Select(l => l.LineTotal).AsEnumerable().Sum();
 
-    private static Dictionary<int, Product>? LoadProducts(PosDbContext db, Ticket ticket)
+    private static bool ProductsExist(PosDbContext db, Ticket ticket)
     {
         var ids = ticket.Lines.Select(l => l.Item.ProductId).OfType<int>().Distinct().ToList();
-        var products = db.Products.Where(p => ids.Contains(p.Id)).ToDictionary(p => p.Id);
-        return products.Count == ids.Count ? products : null;
+        return db.Products.Count(p => ids.Contains(p.Id)) == ids.Count;
     }
 
     private string? Validate(CheckoutContext context) =>
         hooks.Select(h => h.Validate(context)).FirstOrDefault(e => e is not null);
 
-    /// <summary>Guarda la venta (o devolución), mueve el stock (INV-01) y avisa a los hooks (factura, Verifactu).</summary>
-    private void Save(PosDbContext db, Sale sale, CheckoutContext context, Dictionary<int, Product> products)
+    /// <summary>Guarda la venta (o devolución) y avisa a los hooks (factura, Verifactu). La tienda no lleva stock.</summary>
+    private void Save(PosDbContext db, Sale sale, CheckoutContext context)
     {
         db.Sales.Add(sale);
-        var reason = sale.Kind == SaleKind.Return ? StockMovementReason.Return : StockMovementReason.Sale;
-        foreach (var line in sale.Lines.Where(l => l.ProductId is not null))
-            StockLedger.Record(db, products[line.ProductId!.Value], -line.Quantity, reason, context.NowUtc, context.UserId, sale);
         foreach (var hook in hooks)
             hook.OnSaleCreated(db, context);
     }
