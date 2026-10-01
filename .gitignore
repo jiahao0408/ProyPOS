@@ -1,0 +1,44 @@
+# Build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+*.msi
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Tests
+TestResults/
+coverage*/
+*.coverage
+
+# NuGet
+*.nupkg
+**/packages/
+
+# Datos locales: la BD y las copias contienen ventas y facturas reales
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+backups/
+
+# Secretos
+appsettings.*.local.json
+*.env
+.env*
+
+# SO
+Thumbs.db
+.DS_Store
