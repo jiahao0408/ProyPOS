@@ -90,6 +90,15 @@ public sealed class CashRegisterService(IDbContextFactory<PosDbContext> dbFactor
         return OperationResult<CashSummary>.Ok(summary with { Session = session });
     }
 
+    /// <summary>HW-03: la apertura manual del cajón (sin venta) queda en la auditoría, con quién la autorizó.</summary>
+    public void RecordDrawerOpened(int userId, string? authorizedBy)
+    {
+        using var db = dbFactory.CreateDbContext();
+        AuditLog.Record(db, db.Users.Find(userId), AuditActions.CashDrawer, "Apertura manual del cajón",
+            clock.GetUtcNow().UtcDateTime, authorizedBy);
+        db.SaveChanges();
+    }
+
     public IReadOnlyList<CashSession> GetClosedSessions(int limit = 30)
     {
         using var db = dbFactory.CreateDbContext();

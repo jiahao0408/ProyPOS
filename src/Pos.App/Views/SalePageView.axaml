@@ -44,6 +44,8 @@
             <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
                     Content="{Binding L[PriceCheckF9]}" Command="{Binding CheckPriceCommand}" />
             <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+                    Content="{Binding L[OpenDrawer]}" Command="{Binding OpenDrawerCommand}" />
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
                     Content="{Binding L[CloseCash]}" Command="{Binding StartCloseCashCommand}" />
           </StackPanel>
         </Grid>

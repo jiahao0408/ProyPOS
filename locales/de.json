@@ -458,5 +458,19 @@
   "BillingExport": "Register exportieren…",
   "BillingVerify": "Export prüfen…",
   "ColReplacedBy": "Ersetzt durch",
-  "InvoiceBookReplacedNote": "Bons, die durch eine vollständige Rechnung ersetzt wurden (FAC-06), sind durchgestrichen und zählen nicht zur Summe: der Verkauf ist bereits in der Rechnung enthalten."
+  "InvoiceBookReplacedNote": "Bons, die durch eine vollständige Rechnung ersetzt wurden (FAC-06), sind durchgestrichen und zählen nicht zur Summe: der Verkauf ist bereits in der Rechnung enthalten.",
+  "OpenDrawer": "Kassenlade öffnen",
+  "ErrorDrawerFailed": "Die Kassenlade konnte nicht geöffnet werden: {0}",
+  "DrawerTestSent": "Impuls an die Kassenlade gesendet.",
+  "CashDrawer": "Kassenlade",
+  "CashDrawerHint": "Die Kassenlade hängt am Bondrucker (RJ11-Anschluss) und öffnet mit einem Impuls. Manuelles Öffnen ohne Verkauf verlangt eine Administrator-PIN und wird protokolliert.",
+  "OpenDrawerOnCash": "Kassenlade bei Barzahlung öffnen",
+  "CustomerDisplay": "Kundenanzeige",
+  "CustomerDisplayHint": "Zweiter Bildschirm oder Kundendisplay: zeigt jeden Artikel und die Summe, im Ruhezustand eine Begrüßung. Mit einem zweiten Monitor füllt sie diesen ganz aus.",
+  "CustomerDisplayEnabled": "Kundenanzeige einblenden",
+  "CustomerDisplayWelcomeLabel": "Begrüßungstext",
+  "CustomerDisplayWelcome": "Willkommen!",
+  "CustomerDisplayThanks": "Vielen Dank für Ihren Einkauf!",
+  "CustomerDisplayChange": "Rückgeld: {0}",
+  "DrawerTest": "Kassenlade testen"
 }

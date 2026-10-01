@@ -63,6 +63,10 @@ public sealed class PrintService(
     public string PreviewGift(InvoiceDocument doc) =>
         TextPreview.Render(builder.BuildGift(doc, profiles.GetBusiness(), profiles.GetPrinter()), profiles.GetPrinter());
 
+    /// <summary>HW-03: abre el cajón portamonedas con un pulso a través de la impresora de tickets.</summary>
+    public Task<PrintOutcome> OpenDrawerAsync(CancellationToken cancellationToken = default) =>
+        SendAsync([new ReceiptDrawerKick()], profiles.GetPrinter(), cancellationToken);
+
     public Task<PrintOutcome> PrintTestAsync(CancellationToken cancellationToken = default)
     {
         var profile = profiles.GetPrinter();
@@ -141,6 +145,9 @@ public static class TextPreview
                     break;
                 case ReceiptCut:
                     sb.AppendLine(new string('✂', 1) + new string('·', width - 1));
+                    break;
+                case ReceiptDrawerKick:
+                    sb.AppendLine("[CAJÓN]");
                     break;
             }
         }

@@ -74,6 +74,15 @@ public sealed record PrinterProfile(
     public int DotsPerLine => PaperWidthMm <= 58 ? 384 : 576;
 }
 
+/// <summary>
+/// HW-03: cajón portamonedas conectado a la impresora de tickets.
+/// HW-02: pantalla de cliente en un segundo monitor, con un mensaje de bienvenida en reposo.
+/// </summary>
+public sealed record HardwareProfile(bool OpenDrawerOnCash, bool CustomerDisplay, string WelcomeMessage)
+{
+    public static HardwareProfile Default { get; } = new(false, false, "");
+}
+
 /// <summary>Lee y guarda los perfiles en la tabla de ajustes.</summary>
 public sealed class ProfileStore(SettingsStore settings)
 {
@@ -97,6 +106,18 @@ public sealed class ProfileStore(SettingsStore settings)
         settings.Set("business.phone", p.Phone.Trim());
         settings.Set("business.footer", p.FooterMessage.Trim());
         settings.Set("business.logoPath", p.LogoPath ?? "");
+    }
+
+    public HardwareProfile GetHardware() => new(
+        settings.Get("drawer.openOnCash", "false") == "true",
+        settings.Get("display.enabled", "false") == "true",
+        settings.Get("display.welcome", ""));
+
+    public void SaveHardware(HardwareProfile p)
+    {
+        settings.Set("drawer.openOnCash", p.OpenDrawerOnCash ? "true" : "false");
+        settings.Set("display.enabled", p.CustomerDisplay ? "true" : "false");
+        settings.Set("display.welcome", p.WelcomeMessage.Trim());
     }
 
     public PrinterProfile GetPrinter() => Read("printer");

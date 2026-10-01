@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.CustomerDisplayView"
+             x:DataType="vm:CustomerDisplayViewModel">
+  <!-- HW-02: pantalla de cliente (segundo monitor). Letra grande: se lee desde el otro lado del mostrador. -->
+  <Border Background="#0F172A" Padding="48">
+    <Grid>
+      <!-- En reposo: bienvenida -->
+      <StackPanel IsVisible="{Binding IsWelcome}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+        <TextBlock Text="{Binding BusinessName}" FontSize="56" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding WelcomeText}" FontSize="36" Foreground="#93C5FD" TextAlignment="Center" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <!-- Venta en curso: líneas y total -->
+      <DockPanel IsVisible="{Binding IsTicket}">
+        <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="0,24,0,0">
+          <TextBlock Text="{Binding TotalLabel}" FontSize="48" Foreground="White" FontWeight="SemiBold" />
+          <TextBlock Grid.Column="1" Text="{Binding TotalText}" FontSize="72" Foreground="#FDE047" FontWeight="Bold" />
+        </Grid>
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Lines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CustomerDisplayLine">
+                <Grid ColumnDefinitions="90,*,Auto" Margin="0,6">
+                  <TextBlock Text="{Binding Quantity}" FontSize="30" Foreground="#94A3B8" />
+                  <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="30" Foreground="White" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="{Binding Total}" FontSize="30" Foreground="White" Margin="24,0,0,0" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+
+      <!-- Recién cobrado -->
+      <StackPanel IsVisible="{Binding IsThanks}" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+        <TextBlock Text="{Binding ThanksText}" FontSize="56" FontWeight="Bold" Foreground="White" TextAlignment="Center" />
+        <TextBlock FontSize="40" Foreground="#FDE047" TextAlignment="Center"><Run Text="{Binding TotalLabel}" /><Run Text=": " /><Run Text="{Binding TotalText}" /></TextBlock>
+        <TextBlock Text="{Binding ChangeText}" FontSize="40" Foreground="#86EFAC" TextAlignment="Center" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

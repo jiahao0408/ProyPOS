@@ -458,5 +458,19 @@
   "BillingExport": "Exportar registre…",
   "BillingVerify": "Verificar exportació…",
   "ColReplacedBy": "Substituïda per",
-  "InvoiceBookReplacedNote": "Els tiquets substituïts per una factura completa (FAC-06) surten ratllats i no sumen als totals: el que s'ha venut ja compta a la factura completa."
+  "InvoiceBookReplacedNote": "Els tiquets substituïts per una factura completa (FAC-06) surten ratllats i no sumen als totals: el que s'ha venut ja compta a la factura completa.",
+  "OpenDrawer": "Obrir calaix",
+  "ErrorDrawerFailed": "No s'ha pogut obrir el calaix: {0}",
+  "DrawerTestSent": "Pols enviat al calaix.",
+  "CashDrawer": "Calaix portamonedes",
+  "CashDrawerHint": "El calaix va connectat a la impressora de tiquets (connector RJ11) i s'obre amb un pols. Obrir-lo a mà sense venda demana el PIN d'un administrador i queda a l'auditoria.",
+  "OpenDrawerOnCash": "Obrir el calaix en cobrar en efectiu",
+  "CustomerDisplay": "Pantalla de client",
+  "CustomerDisplayHint": "Segona pantalla o visor de cara al client: mostra cada producte i el total, i un missatge de benvinguda en repòs. Si hi ha un segon monitor, ocupa tota aquella pantalla.",
+  "CustomerDisplayEnabled": "Mostrar la pantalla de client",
+  "CustomerDisplayWelcomeLabel": "Missatge de benvinguda",
+  "CustomerDisplayWelcome": "Benvingut!",
+  "CustomerDisplayThanks": "Gràcies per la seva compra!",
+  "CustomerDisplayChange": "Canvi: {0}",
+  "DrawerTest": "Provar calaix"
 }

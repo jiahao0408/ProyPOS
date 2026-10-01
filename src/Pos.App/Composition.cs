@@ -104,6 +104,7 @@ internal static class Composition
         }
 
         services.AddSingleton<ShellViewModel>();
+        services.AddSingleton<CustomerDisplayViewModel>();
         services.AddTransient<FirstRunViewModel>();
         services.AddTransient<LoginViewModel>();
         services.AddTransient<WorkspaceViewModel>();

@@ -458,5 +458,19 @@
   "BillingExport": "Exportar registro…",
   "BillingVerify": "Verificar exportación…",
   "ColReplacedBy": "Sustituida por",
-  "InvoiceBookReplacedNote": "Los tickets sustituidos por una factura completa (FAC-06) salen tachados y no suman en los totales: lo vendido ya cuenta en la factura completa."
+  "InvoiceBookReplacedNote": "Los tickets sustituidos por una factura completa (FAC-06) salen tachados y no suman en los totales: lo vendido ya cuenta en la factura completa.",
+  "OpenDrawer": "Abrir cajón",
+  "ErrorDrawerFailed": "No se pudo abrir el cajón: {0}",
+  "DrawerTestSent": "Pulso enviado al cajón.",
+  "CashDrawer": "Cajón portamonedas",
+  "CashDrawerHint": "El cajón va conectado a la impresora de tickets (conector RJ11) y se abre con un pulso. Abrirlo a mano sin venta pide el PIN de un administrador y queda en la auditoría.",
+  "OpenDrawerOnCash": "Abrir el cajón al cobrar en efectivo",
+  "CustomerDisplay": "Pantalla de cliente",
+  "CustomerDisplayHint": "Segunda pantalla o visor de cara al cliente: muestra cada producto y el total, y un mensaje de bienvenida en reposo. Si hay un segundo monitor, ocupa toda esa pantalla.",
+  "CustomerDisplayEnabled": "Mostrar la pantalla de cliente",
+  "CustomerDisplayWelcomeLabel": "Mensaje de bienvenida",
+  "CustomerDisplayWelcome": "¡Bienvenido!",
+  "CustomerDisplayThanks": "¡Gracias por su compra!",
+  "CustomerDisplayChange": "Cambio: {0}",
+  "DrawerTest": "Probar cajón"
 }

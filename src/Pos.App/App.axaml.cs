@@ -46,6 +46,8 @@ public partial class App : Application
                 DataContext = services.GetRequiredService<ShellViewModel>(),
                 WindowState = Program.Windowed ? WindowState.Maximized : WindowState.FullScreen,
             };
+            // HW-02: pantalla de cliente en el segundo monitor.
+            CustomerDisplayWindow.Follow(services.GetRequiredService<CustomerDisplayViewModel>(), desktop.MainWindow);
         }
 
         base.OnFrameworkInitializationCompleted();

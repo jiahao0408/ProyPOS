@@ -72,6 +72,10 @@ public static class EscPosEncoder
                         o.AddRange([Esc, (byte)'a', 0]);
                     }
                     break;
+                case ReceiptDrawerKick:
+                    // ESC p m t1 t2: pulso en el pin 2 (m = 0) de 50 ms encendido y 500 ms apagado (unidades de 2 ms).
+                    o.AddRange([Esc, (byte)'p', 0, 25, 250]);
+                    break;
                 case ReceiptCut:
                     o.AddRange([Esc, (byte)'d', 4]);  // avanzar 4 líneas
                     o.AddRange([Gs, (byte)'V', 66, 0]); // corte parcial

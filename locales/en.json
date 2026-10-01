@@ -458,5 +458,19 @@
   "BillingExport": "Export record…",
   "BillingVerify": "Verify export…",
   "ColReplacedBy": "Replaced by",
-  "InvoiceBookReplacedNote": "Tickets replaced by a full invoice (FAC-06) are struck through and do not add to the totals: the sale already counts in the full invoice."
+  "InvoiceBookReplacedNote": "Tickets replaced by a full invoice (FAC-06) are struck through and do not add to the totals: the sale already counts in the full invoice.",
+  "OpenDrawer": "Open drawer",
+  "ErrorDrawerFailed": "The drawer could not be opened: {0}",
+  "DrawerTestSent": "Pulse sent to the drawer.",
+  "CashDrawer": "Cash drawer",
+  "CashDrawerHint": "The drawer is connected to the receipt printer (RJ11 connector) and opens with a pulse. Opening it by hand without a sale asks for an administrator PIN and is recorded in the audit log.",
+  "OpenDrawerOnCash": "Open the drawer on cash payments",
+  "CustomerDisplay": "Customer display",
+  "CustomerDisplayHint": "Second screen or pole display facing the customer: shows each product and the total, and a welcome message when idle. With a second monitor it uses that whole screen.",
+  "CustomerDisplayEnabled": "Show the customer display",
+  "CustomerDisplayWelcomeLabel": "Welcome message",
+  "CustomerDisplayWelcome": "Welcome!",
+  "CustomerDisplayThanks": "Thank you for your purchase!",
+  "CustomerDisplayChange": "Change: {0}",
+  "DrawerTest": "Test drawer"
 }

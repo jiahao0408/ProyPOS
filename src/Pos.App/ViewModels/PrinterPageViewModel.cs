@@ -16,9 +16,21 @@ public interface IChoice
 public sealed record Choice<T>(T Value, string Title) : IChoice;
 
 /// <summary>HW-01: impresora térmica (USB, COM/Bluetooth o red), papel de 58 u 80 mm y prueba de impresión. IMP-01: impresión al cobrar.</summary>
-public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore profiles, PrintService printing)
+public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore profiles, PrintService printing,
+    CustomerDisplayViewModel customerDisplay)
     : PageViewModel(localizer)
 {
+    // --- HW-03 cajón y HW-02 pantalla de cliente ---
+
+    [ObservableProperty]
+    private bool _openDrawerOnCash;
+
+    [ObservableProperty]
+    private bool _customerDisplayEnabled;
+
+    [ObservableProperty]
+    private string _welcomeMessage = "";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TargetHint), nameof(ShowBaudRate))]
     private Choice<PrinterConnection>? _connection;
@@ -116,6 +128,11 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         LabelConnection = Connections.First(c => c.Value == labels.Connection);
         LabelTarget = labels.Target;
         LabelPaperWidth = PaperWidths.FirstOrDefault(w => w.Value == labels.PaperWidthMm) ?? PaperWidths[1];
+
+        var hardware = profiles.GetHardware();
+        OpenDrawerOnCash = hardware.OpenDrawerOnCash;
+        CustomerDisplayEnabled = hardware.CustomerDisplay;
+        WelcomeMessage = hardware.WelcomeMessage;
     }
 
     partial void OnConnectionChanged(Choice<PrinterConnection>? value)
@@ -141,7 +158,26 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
                 Target = LabelTarget.Trim(),
                 PaperWidthMm = LabelPaperWidth?.Value ?? 58,
             });
+            profiles.SaveHardware(new HardwareProfile(OpenDrawerOnCash, CustomerDisplayEnabled, WelcomeMessage));
+            customerDisplay.IsEnabled = CustomerDisplayEnabled; // abre o cierra la ventana del segundo monitor
+            customerDisplay.ShowWelcome();
             ShowInfo("Saved");
+        }
+    }
+
+    /// <summary>HW-03: prueba del cajón.</summary>
+    [RelayCommand]
+    private void TestDrawer() => LastTest = TestDrawerAsync();
+
+    private async Task TestDrawerAsync()
+    {
+        var outcome = await printing.OpenDrawerAsync();
+        if (outcome.Success)
+            ShowInfo("DrawerTestSent");
+        else
+        {
+            Message = string.Format(L["ErrorDrawerFailed"], outcome.Error);
+            MessageIsError = true;
         }
     }
 

@@ -27,6 +27,9 @@ public sealed record ReceiptBarcode(string Code) : ReceiptElement;
 /// <summary>Avanza el papel y lo corta.</summary>
 public sealed record ReceiptCut : ReceiptElement;
 
+/// <summary>HW-03: pulso para abrir el cajón conectado a la impresora (no imprime nada).</summary>
+public sealed record ReceiptDrawerKick : ReceiptElement;
+
 /// <summary>Ayudas para maquetar líneas de ancho fijo.</summary>
 public static class ReceiptText2
 {

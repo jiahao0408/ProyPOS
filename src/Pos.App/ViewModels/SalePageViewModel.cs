@@ -33,6 +33,7 @@ public sealed record TicketLineRow(TicketLine Line, string Description, int Quan
 /// VEN-01: añadir por categoría, búsqueda o código de barras. VEN-02: cambiar cantidades y quitar líneas.
 /// VEN-03/04: cobro. HW-04: lector en modo teclado. BAZ-02: artículo genérico. BAZ-03: alta rápida.
 /// CAJ-01: con la caja cerrada solo deja abrirla. BAZ-05: variantes. BAZ-06: verificador de precios (F9).
+/// HW-02: mantiene al día la pantalla de cliente. HW-03: abre el cajón al cobrar en efectivo y a mano con PIN.
 /// </summary>
 public partial class SalePageViewModel(
     ILocalizer localizer,
@@ -44,13 +45,17 @@ public partial class SalePageViewModel(
     PrintService printing,
     ProfileStore profiles,
     UserService users,
-    RegionFormatter formatter) : PageViewModel(localizer)
+    RegionFormatter formatter,
+    CustomerDisplayViewModel customerDisplay) : PageViewModel(localizer)
 {
     /// <summary>VEN-05: admin que autorizó con su PIN un descuento por encima del límite del cajero.</summary>
     private string? _discountAuthorizedBy;
 
     /// <summary>Última impresión lanzada (para esperar a que termine en los tests).</summary>
     public Task LastPrint { get; private set; } = Task.CompletedTask;
+
+    /// <summary>Última apertura del cajón (HW-03), para esperarla en los tests.</summary>
+    public Task LastDrawer { get; private set; } = Task.CompletedTask;
 
     private const int SearchLimit = 40;
     private const int MinBarcodeLength = 4;
@@ -425,6 +430,11 @@ public partial class SalePageViewModel(
         _discountAuthorizedBy = null;
         CloseDialog();
         RefreshTicket();
+        customerDisplay.ShowThanks(sale.Total, change);
+
+        // HW-03: el cajón se abre solo si se cobra algo en efectivo.
+        if (payment.CardAmount < sale.Total && profiles.GetHardware().OpenDrawerOnCash)
+            LastDrawer = OpenDrawerAndReportAsync();
 
         var invoice = invoices.GetCurrentForSale(sale.Id);
         var completed = string.Format(L["SaleCompleted"], invoice?.Code ?? sale.Id.ToString(L.Culture), formatter.FormatMoney(change));
@@ -451,6 +461,42 @@ public partial class SalePageViewModel(
             }
         }
         return OperationResult.Ok();
+    }
+
+    // --- Cajón (HW-03) ---
+
+    /// <summary>Apertura manual (sin venta): un cajero necesita el PIN de un administrador; queda en la auditoría.</summary>
+    [RelayCommand]
+    private void OpenDrawer()
+    {
+        if (!IsCashOpen || IsDialogOpen)
+            return;
+        var user = session.CurrentUser!;
+        if (user.IsAdmin)
+        {
+            cash.RecordDrawerOpened(user.Id, authorizedBy: null);
+            LastDrawer = OpenDrawerAndReportAsync();
+            return;
+        }
+
+        Dialog = new AdminPinPromptViewModel(L, users,
+            onAuthorized: admin =>
+            {
+                CloseDialog();
+                cash.RecordDrawerOpened(user.Id, admin.Name);
+                LastDrawer = OpenDrawerAndReportAsync();
+            },
+            onCancel: CloseDialog);
+    }
+
+    private async Task OpenDrawerAndReportAsync()
+    {
+        var outcome = await printing.OpenDrawerAsync();
+        if (!outcome.Success)
+        {
+            Message = string.Format(L["ErrorDrawerFailed"], outcome.Error);
+            MessageIsError = true;
+        }
     }
 
     /// <summary>Imprime sin bloquear la caja; si falla, la venta ya está guardada y solo se avisa.</summary>
@@ -506,6 +552,7 @@ public partial class SalePageViewModel(
 
     private void RefreshTicket()
     {
+        customerDisplay.ShowTicket(_ticket);
         TicketLines.Clear();
         foreach (var line in _ticket.Lines)
         {

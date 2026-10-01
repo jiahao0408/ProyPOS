@@ -458,5 +458,19 @@
   "BillingExport": "Exporter le registre…",
   "BillingVerify": "Vérifier un export…",
   "ColReplacedBy": "Remplacée par",
-  "InvoiceBookReplacedNote": "Les tickets remplacés par une facture complète (FAC-06) sont barrés et ne comptent pas dans les totaux : la vente est déjà dans la facture complète."
+  "InvoiceBookReplacedNote": "Les tickets remplacés par une facture complète (FAC-06) sont barrés et ne comptent pas dans les totaux : la vente est déjà dans la facture complète.",
+  "OpenDrawer": "Ouvrir le tiroir",
+  "ErrorDrawerFailed": "Impossible d'ouvrir le tiroir : {0}",
+  "DrawerTestSent": "Impulsion envoyée au tiroir.",
+  "CashDrawer": "Tiroir-caisse",
+  "CashDrawerHint": "Le tiroir est relié à l'imprimante de tickets (connecteur RJ11) et s'ouvre par une impulsion. L'ouvrir à la main sans vente demande le PIN d'un administrateur et est enregistré dans l'audit.",
+  "OpenDrawerOnCash": "Ouvrir le tiroir lors d'un paiement en espèces",
+  "CustomerDisplay": "Afficheur client",
+  "CustomerDisplayHint": "Deuxième écran ou afficheur face au client : montre chaque produit et le total, et un message de bienvenue au repos. Avec un deuxième moniteur, il occupe tout cet écran.",
+  "CustomerDisplayEnabled": "Afficher l'écran client",
+  "CustomerDisplayWelcomeLabel": "Message de bienvenue",
+  "CustomerDisplayWelcome": "Bienvenue !",
+  "CustomerDisplayThanks": "Merci de votre achat !",
+  "CustomerDisplayChange": "Rendu : {0}",
+  "DrawerTest": "Tester le tiroir"
 }

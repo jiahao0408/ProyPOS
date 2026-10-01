@@ -77,9 +77,22 @@
         </ComboBox>
       </StackPanel>
 
+      <!-- HW-03: cajón portamonedas -->
+      <TextBlock Text="{Binding L[CashDrawer]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <TextBlock Text="{Binding L[CashDrawerHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" />
+      <CheckBox Content="{Binding L[OpenDrawerOnCash]}" IsChecked="{Binding OpenDrawerOnCash}" />
+
+      <!-- HW-02: pantalla de cliente -->
+      <TextBlock Text="{Binding L[CustomerDisplay]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <TextBlock Text="{Binding L[CustomerDisplayHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" />
+      <CheckBox Content="{Binding L[CustomerDisplayEnabled]}" IsChecked="{Binding CustomerDisplayEnabled}" />
+      <TextBlock Classes="label" Text="{Binding L[CustomerDisplayWelcomeLabel]}" />
+      <TextBox Text="{Binding WelcomeMessage}" Watermark="{Binding L[CustomerDisplayWelcome]}" />
+
       <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
         <Button Classes="primary" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />
         <Button Content="{Binding L[PrinterTest]}" Command="{Binding TestCommand}" IsEnabled="{Binding !IsTesting}" />
+        <Button Content="{Binding L[DrawerTest]}" Command="{Binding TestDrawerCommand}" />
       </StackPanel>
       <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
         <TextBlock Text="{Binding Message}" />

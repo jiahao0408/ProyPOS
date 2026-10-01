@@ -458,5 +458,19 @@
   "BillingExport": "导出记录…",
   "BillingVerify": "验证导出…",
   "ColReplacedBy": "被替换为",
-  "InvoiceBookReplacedNote": "已被完整发票替换的小票（FAC-06）显示为删除线，不计入合计：销售额已计入完整发票。"
+  "InvoiceBookReplacedNote": "已被完整发票替换的小票（FAC-06）显示为删除线，不计入合计：销售额已计入完整发票。",
+  "OpenDrawer": "打开钱箱",
+  "ErrorDrawerFailed": "无法打开钱箱：{0}",
+  "DrawerTestSent": "已向钱箱发送脉冲。",
+  "CashDrawer": "钱箱",
+  "CashDrawerHint": "钱箱连接在小票打印机上（RJ11 接口），通过脉冲打开。无销售时手动打开需要管理员 PIN，并记录在审计中。",
+  "OpenDrawerOnCash": "现金收款时打开钱箱",
+  "CustomerDisplay": "顾客显示屏",
+  "CustomerDisplayHint": "面向顾客的第二屏幕或客显：显示每件商品和合计，空闲时显示欢迎语。有第二台显示器时全屏显示。",
+  "CustomerDisplayEnabled": "显示顾客显示屏",
+  "CustomerDisplayWelcomeLabel": "欢迎语",
+  "CustomerDisplayWelcome": "欢迎光临！",
+  "CustomerDisplayThanks": "谢谢惠顾！",
+  "CustomerDisplayChange": "找零：{0}",
+  "DrawerTest": "测试钱箱"
 }
