@@ -10,6 +10,17 @@ namespace Pos.App.ViewModels;
 
 public sealed record DateFormatOption(string Format, string Title);
 
+/// <summary>v1.1.5: un atajo editable en Ajustes.</summary>
+public sealed partial class ShortcutRowViewModel(ShortcutAction action, string title, string keys) : ObservableObject
+{
+    public ShortcutAction Action { get; } = action;
+
+    public string Title { get; } = title;
+
+    [ObservableProperty]
+    private string _keys = keys;
+}
+
 /// <summary>CFG-01 (idioma de la interfaz), idioma de impresión de los tickets, CFG-04 (moneda y formatos), más la inactividad (USR-01).</summary>
 public partial class SettingsPageViewModel(
     ILocalizer localizer,
@@ -18,6 +29,7 @@ public partial class SettingsPageViewModel(
     PrintLocalization print,
     ISession session,
     UserLanguage userLanguage,
+    ShortcutSettings shortcuts,
     TimeProvider clock,
     IEnumerable<IModule> modules) : PageViewModel(localizer)
 {
@@ -33,6 +45,31 @@ public partial class SettingsPageViewModel(
 
     [ObservableProperty]
     private string _currencySymbol = "";
+
+    /// <summary>v1.1.5: modo de la pantalla de venta (táctil o teclado).</summary>
+    [ObservableProperty]
+    private Choice<string>? _saleMode;
+
+    [ObservableProperty]
+    private IReadOnlyList<Choice<string>> _saleModes = [];
+
+    public System.Collections.ObjectModel.ObservableCollection<ShortcutRowViewModel> ShortcutRows { get; } = [];
+
+    /// <summary>Vuelve a los atajos de fábrica (no guarda lo demás).</summary>
+    [RelayCommand]
+    private void ResetShortcuts()
+    {
+        shortcuts.ResetToDefaults();
+        LoadShortcuts();
+        ShowInfo("ShortcutsResetDone");
+    }
+
+    private void LoadShortcuts()
+    {
+        ShortcutRows.Clear();
+        foreach (var action in Enum.GetValues<ShortcutAction>())
+            ShortcutRows.Add(new ShortcutRowViewModel(action, L[$"Shortcut{action}"], shortcuts.GetText(action)));
+    }
 
     [ObservableProperty]
     private DateFormatOption? _selectedDateFormat;
@@ -68,6 +105,8 @@ public partial class SettingsPageViewModel(
             System.Globalization.CultureInfo.InvariantCulture, out var max) ? max : Pos.Modules.Sales.SalesSettingKeys.DefaultMaxCashierDiscount).ToString("0.##", L.Culture);
         UpdateFeedUrl = settings.Get(SettingKeys.UpdateFeedUrl) is { Length: > 0 } feed ? feed : Pos.App.Updates.UpdateService.DefaultFeedUrl;
         RefreshTexts(formatter.DateFormat);
+        SaleMode = SaleModes.FirstOrDefault(m => m.Value == (settings.Get(SettingKeys.SaleMode) == "Keyboard" ? "Keyboard" : "Touch"));
+        LoadShortcuts();
         SelectedPrintLanguage = PrintLanguages.FirstOrDefault(l => l.Code == (print.Language ?? ""));
     }
 
@@ -113,6 +152,11 @@ public partial class SettingsPageViewModel(
         }
         settings.Set(SettingKeys.UpdateFeedUrl, feedUri.ToString());
 
+        // v1.1.5: atajos (se comprueban antes de guardar nada más) y modo de la venta.
+        if (!Check(shortcuts.Save(ShortcutRows.ToDictionary(r => r.Action, r => r.Keys))))
+            return;
+        settings.Set(SettingKeys.SaleMode, SaleMode?.Value ?? "Touch");
+
         var printLanguage = SelectedPrintLanguage?.Code ?? "";
         settings.Set(SettingKeys.PrintLanguage, printLanguage);
         print.Language = printLanguage.Length == 0 ? null : printLanguage;
@@ -130,6 +174,9 @@ public partial class SettingsPageViewModel(
             .ToList();
         SelectedDateFormat = DateFormats.FirstOrDefault(f => f.Format == dateFormat) ?? DateFormats[0];
         PrintLanguages = [new LanguageInfo("", L["PrintLanguageSameAsApp"]), .. Languages];
+        var mode = SaleMode?.Value;
+        SaleModes = [new("Touch", L["ModeTouchLong"]), new("Keyboard", L["ModeKeyboardLong"])];
+        SaleMode = SaleModes.FirstOrDefault(m => m.Value == mode) ?? SaleMode;
         ModuleNames = modules.Select(m => $"{m.Id} · {L[m.NameKey]}").ToList();
         Preview = $"{formatter.FormatMoney(1234.5m)}   ·   {formatter.FormatDate(clock.GetLocalNow().DateTime)}";
     }

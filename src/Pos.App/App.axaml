@@ -35,6 +35,7 @@
     <DataTemplate DataType="vm:AuditPageViewModel"><v:AuditPageView /></DataTemplate>
     <DataTemplate DataType="vm:VariantPickerViewModel"><v:VariantPickerView /></DataTemplate>
     <DataTemplate DataType="vm:PriceCheckViewModel"><v:PriceCheckView /></DataTemplate>
+    <DataTemplate DataType="vm:ShortcutHelpViewModel"><v:ShortcutHelpView /></DataTemplate>
     <DataTemplate DataType="vm:PricesPageViewModel"><v:PricesPageView /></DataTemplate>
     <DataTemplate DataType="vm:SalesReportPageViewModel"><v:SalesReportPageView /></DataTemplate>
   </Application.DataTemplates>

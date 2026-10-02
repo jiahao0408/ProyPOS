@@ -36,12 +36,14 @@ public partial class SalePageView : UserControl
         base.OnAttachedToVisualTree(e);
         _topLevel = TopLevel.GetTopLevel(this);
         _topLevel?.AddHandler(TextInputEvent, OnTextInput, RoutingStrategies.Tunnel);
+        _topLevel?.AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         FocusSearch();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         _topLevel?.RemoveHandler(TextInputEvent, OnTextInput);
+        _topLevel?.RemoveHandler(KeyDownEvent, OnKeyDown);
         _topLevel = null;
         base.OnDetachedFromVisualTree(e);
     }
@@ -56,8 +58,35 @@ public partial class SalePageView : UserControl
             }
         });
 
+    /// <summary>
+    /// v1.1.5: atajos de teclado (configurables en Ajustes). Las teclas que también sirven para escribir
+    /// (Enter, Supr…) solo actúan con el buscador vacío: así el lector de códigos sigue funcionando.
+    /// </summary>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm || vm.IsDialogOpen || !IsEffectivelyVisible)
+            return;
+        // Con la caja cerrada, solo el atajo de abrirla.
+        var searchIsEmpty = string.IsNullOrWhiteSpace(vm.IsCashOpen ? SearchBox.Text : null);
+        if (vm.Shortcuts.Match(e, searchIsEmpty) is { } action
+            && (vm.IsCashOpen || action == ShortcutAction.OpenCashOrDrawer)
+            && vm.ExecuteShortcut(action))
+        {
+            e.Handled = true;
+        }
+    }
+
     private void OnTextInput(object? sender, TextInputEventArgs e)
     {
+        // v1.1.5: atajos de un carácter ("+" = cobrar con tarjeta), solo con el buscador vacío.
+        if (Vm is { IsCashOpen: true, IsDialogOpen: false } shortcutVm && IsEffectivelyVisible
+            && shortcutVm.Shortcuts.MatchCharacter(e.Text, string.IsNullOrWhiteSpace(SearchBox.Text)) is { } action
+            && shortcutVm.ExecuteShortcut(action))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (Vm is not { IsCashOpen: true, IsDialogOpen: false } || e.Source is TextBox || string.IsNullOrEmpty(e.Text))
             return;
 

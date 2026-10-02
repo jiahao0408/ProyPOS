@@ -290,6 +290,22 @@ public class ScreenshotTests
         Capture(displayWindow, "82-pantalla-cliente-gracias");
         displayWindow.Close();
 
+        // v1.1.5: modo teclado y ayuda de atajos
+        workspace.NavigateCommand.Execute(workspace.NavItems.Single(n => n.PageType == typeof(SalePageViewModel)));
+        var sale115 = (SalePageViewModel)workspace.CurrentPage!;
+        foreach (var text in new[] { "8410000000011", "2*8410000000028", "2,50" })
+        {
+            sale115.SearchText = text;
+            sale115.SubmitSearchCommand.Execute(null);
+        }
+        sale115.ToggleModeCommand.Execute(null);
+        Capture(window, "90-modo-teclado");
+        sale115.ExecuteShortcut(Pos.App.ShortcutAction.Help);
+        Capture(window, "91-ayuda-atajos");
+        sale115.CloseDialogCommand.Execute(null);
+        sale115.ToggleModeCommand.Execute(null);
+        sale115.ClearTicketCommand.Execute(null);
+
         // Sección 10: Verifactu (modalidad, panel y eventos)
         OpenAdmin(typeof(VerifactuPageViewModel));
         Capture(window, "83-verifactu-modalidad");

@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 357 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 365 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -285,6 +285,28 @@ Al cambiar el precio del producto, las variantes que tenían el mismo precio lo 
 | Lector de códigos | Lectores **serie o USB-COM** (los de teclado siguen sin configurar). En el verificador de precios el código va al verificador. En modo teclado, el código también puede terminar en **Tab** | Impresora > Lector de códigos, `SerialScanner` |
 
 Todo lo nuevo tiene valores por defecto que dejan el comportamiento de la versión 1.0 igual.
+
+### Versión 1.1.5: atajos de teclado y modo teclado (rama `v1.1.5`)
+
+**Atajos de la pantalla de venta** (por defecto; se cambian en **Ajustes > Atajos de teclado**, con «Restaurar los atajos de fábrica»). **F1** o el botón «Atajos» los muestran.
+
+| Tecla | Acción |
+|---|---|
+| **Enter** (buscador vacío) / **F12** | Cobrar en efectivo; Enter otra vez = importe justo |
+| **+** (buscador vacío) | Cobrar con tarjeta; Enter confirma |
+| **Insert** | Con la caja cerrada, abrirla (fondo vacío = 0 €); con la caja abierta, abrir el cajón (el cajero necesita PIN de administrador) |
+| **Supr** (buscador vacío) | Quitar la última línea |
+| **F8** | Vaciar el ticket |
+| **F2** / **F3** | Descuento del ticket / de la última línea |
+| **F9** | Consultar precio |
+| **F10** | Cambiar modo táctil / teclado |
+| **F1** | Ver los atajos |
+
+**En el buscador** (y Enter): `n*` añade n unidades a la última línea; `-n*` las quita (quitarlas todas quita la línea); `2,50` o `2.50` añade un «Artículo» de ese precio (IVA general); `n*2,50` n artículos de ese precio; `n*código` sigue igual.
+
+Las teclas que también sirven para escribir (Enter, Supr, «+») solo actúan con el buscador vacío: el lector de códigos (código + Enter) funciona igual que antes. Los atajos no admiten letras ni números sin Ctrl/Alt ni los caracteres `* - . ,` (son de la sintaxis del buscador).
+
+**Modo de la pantalla de venta** (Ajustes, botón en la venta o **F10**; se recuerda): **táctil** (categorías y botones de productos, como hasta ahora) o **teclado** (ticket grande y leyenda de atajos; los productos solo aparecen al buscar por nombre).
 
 ## Primeros pasos
 

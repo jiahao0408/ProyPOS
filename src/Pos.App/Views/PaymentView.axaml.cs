@@ -11,6 +11,13 @@ public partial class PaymentView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        Dispatcher.UIThread.Post(() => CashBox.Focus());
+        // Con tarjeta (atajo "+") no hay importe que teclear: Enter confirma el cobro.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (DataContext is Pos.App.ViewModels.PaymentViewModel { IsCard: true })
+                ConfirmButton.Focus();
+            else
+                CashBox.Focus();
+        });
     }
 }

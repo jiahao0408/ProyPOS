@@ -4,8 +4,7 @@
              x:Class="Pos.App.Views.SalePageView"
              x:DataType="vm:SalePageViewModel">
   <UserControl.KeyBindings>
-    <KeyBinding Gesture="F12" Command="{Binding ChargeCommand}" />
-    <KeyBinding Gesture="F9" Command="{Binding CheckPriceCommand}" />
+    <!-- v1.1.5: el resto de atajos son configurables (Ajustes) y los gestiona SalePageView.axaml.cs -->
     <KeyBinding Gesture="Escape" Command="{Binding CloseDialogCommand}" />
   </UserControl.KeyBindings>
 
@@ -28,7 +27,12 @@
     </StackPanel>
 
     <!-- Caja abierta: catálogo a la izquierda, ticket a la derecha -->
-    <Grid IsVisible="{Binding IsCashOpen}" ColumnDefinitions="*,16,440">
+    <Grid IsVisible="{Binding IsCashOpen}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="{Binding CatalogWidth}" />
+        <ColumnDefinition Width="16" />
+        <ColumnDefinition Width="{Binding TicketWidth}" />
+      </Grid.ColumnDefinitions>
 
       <DockPanel Grid.Column="0">
         <!-- Buscador: aquí escribe el lector de códigos (HW-04) -->
@@ -40,24 +44,51 @@
             <KeyBinding Gesture="Tab" Command="{Binding SubmitSearchCommand}" />
           </TextBox.KeyBindings>
         </TextBox>
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-          <TextBlock Text="{Binding CashInfo}" FontSize="13" Opacity="0.6" VerticalAlignment="Center" />
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+        <DockPanel DockPanel.Dock="Top" Margin="0,4,0,0">
+          <TextBlock DockPanel.Dock="Top" Text="{Binding CashInfo}" FontSize="13" Opacity="0.6" />
+          <!-- Se reparte en varias filas si no cabe (modo teclado: columna estrecha) -->
+          <WrapPanel HorizontalAlignment="Right" Margin="0,4,-8,0">
+            <!-- v1.1.5: modo táctil / teclado y ayuda de atajos -->
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4" Margin="0,0,8,6"
+                    Content="{Binding ModeButtonText}" Command="{Binding ToggleModeCommand}" />
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4" Margin="0,0,8,6"
+                    Content="{Binding L[ShortcutsButton]}" Command="{Binding ShowHelpCommand}" />
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4" Margin="0,0,8,6"
                     Content="{Binding L[PriceCheckF9]}" Command="{Binding CheckPriceCommand}" />
-            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4" Margin="0,0,8,6"
                     Content="{Binding L[OpenDrawer]}" Command="{Binding OpenDrawerCommand}" />
-            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4"
+            <Button Focusable="False" MinHeight="36" FontSize="14" Padding="12,4" Margin="0,0,8,6"
                     Content="{Binding L[CloseCash]}" Command="{Binding StartCloseCashCommand}" />
-          </StackPanel>
-        </Grid>
+          </WrapPanel>
+        </DockPanel>
 
         <Border DockPanel.Dock="Top" Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">
           <TextBlock Text="{Binding Message}" FontSize="18" />
         </Border>
 
+        <!-- v1.1.5: modo teclado: leyenda de atajos en lugar de los botones (salvo al buscar por nombre) -->
+        <Border DockPanel.Dock="Top" IsVisible="{Binding !ShowProductTiles}" Margin="0,12,0,0" Padding="16" CornerRadius="8"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding L[ShortcutsTitle]}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,6" />
+            <ItemsControl ItemsSource="{Binding ShortcutLegend}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShortcutHelpRow">
+                  <Grid ColumnDefinitions="140,*" Margin="0,3">
+                    <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" CornerRadius="4" Padding="8,2"
+                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Keys}" FontFamily="Consolas, monospace" FontSize="15" FontWeight="SemiBold" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="15" VerticalAlignment="Center" TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <!-- Categorías (PRE-02) -->
-        <ItemsControl DockPanel.Dock="Top" Margin="0,12,0,0" ItemsSource="{Binding Categories}" IsVisible="{Binding !IsSearching}">
+        <ItemsControl DockPanel.Dock="Top" Margin="0,12,0,0" ItemsSource="{Binding Categories}" IsVisible="{Binding ShowCategories}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
@@ -74,7 +105,7 @@
 
         <!-- Artículo genérico por sección (BAZ-02) -->
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,4,0,8"
-                    IsVisible="{Binding !IsSearching}">
+                    IsVisible="{Binding ShowCategories}">
           <TextBlock Text="{Binding L[GenericItem]}" VerticalAlignment="Center" FontSize="15" Opacity="0.75" />
           <ItemsControl ItemsSource="{Binding GenericSections}">
             <ItemsControl.ItemsPanel>
@@ -92,7 +123,7 @@
         </StackPanel>
 
         <!-- Productos (de la categoría o de la búsqueda) -->
-        <ScrollViewer>
+        <ScrollViewer IsVisible="{Binding ShowProductTiles}">
           <ItemsControl ItemsSource="{Binding Products}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>

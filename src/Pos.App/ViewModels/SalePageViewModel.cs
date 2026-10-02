@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
+using Avalonia.Controls;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -26,6 +28,19 @@ public sealed record GenericButton(Category Section, IBrush? Background);
 /// <param name="HasVariants">BAZ-05: al tocarlo se elige la variante.</param>
 public sealed record ProductButton(Product Product, string Name, string Price, bool HasVariants = false);
 
+/// <summary>v1.1.5: una fila de la ayuda de atajos.</summary>
+public sealed record ShortcutHelpRow(string Keys, string Description);
+
+/// <summary>v1.1.5: ventana de ayuda con los atajos (F1).</summary>
+public sealed partial class ShortcutHelpViewModel(ILocalizer localizer, IReadOnlyList<ShortcutHelpRow> rows, Action close)
+    : ViewModelBase(localizer)
+{
+    public IReadOnlyList<ShortcutHelpRow> Rows { get; } = rows;
+
+    [RelayCommand]
+    private void Close() => close();
+}
+
 public sealed record TicketLineRow(TicketLine Line, string Description, int Quantity, string UnitPrice, string Total, string? DiscountText);
 
 /// <summary>
@@ -47,8 +62,136 @@ public partial class SalePageViewModel(
     UserService users,
     RegionFormatter formatter,
     CustomerDisplayViewModel customerDisplay,
-    PrintLocalization printLocalization) : PageViewModel(localizer), IBarcodeTarget
+    PrintLocalization printLocalization,
+    ShortcutSettings shortcuts,
+    SettingsStore settings) : PageViewModel(localizer), IBarcodeTarget
 {
+    // --- v1.1.5: atajos de teclado y modo teclado ---
+
+    /// <summary>"n*" o "-n*": suma o quita n unidades a la última línea.</summary>
+    private static readonly Regex QuantityAdjust = new(@"^([+-]?\d{1,3})\*$", RegexOptions.CultureInvariant);
+
+    /// <summary>"a.bc" o "a,bc": artículo sin código de ese precio.</summary>
+    private static readonly Regex PriceOnly = new(@"^\d{1,6}[.,]\d{1,2}$", RegexOptions.CultureInvariant);
+
+    public ShortcutSettings Shortcuts { get; } = shortcuts;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTouchMode), nameof(CatalogWidth), nameof(TicketWidth), nameof(ShowProductTiles), nameof(ShowCategories), nameof(ModeButtonText))]
+    private bool _isKeyboardMode = settings.Get(SettingKeys.SaleMode) == "Keyboard";
+
+    public bool IsTouchMode => !IsKeyboardMode;
+
+    /// <summary>En modo teclado el ticket ocupa el sitio de los botones de productos.</summary>
+    public GridLength CatalogWidth => IsKeyboardMode ? new GridLength(480) : new GridLength(1, GridUnitType.Star);
+
+    public GridLength TicketWidth => IsKeyboardMode ? new GridLength(1, GridUnitType.Star) : new GridLength(440);
+
+    /// <summary>Botones de productos: siempre en táctil; en modo teclado solo como resultado de una búsqueda.</summary>
+    public bool ShowProductTiles => IsTouchMode || IsSearching;
+
+    /// <summary>Categorías y secciones genéricas: solo en modo táctil y sin búsqueda.</summary>
+    public bool ShowCategories => IsTouchMode && !IsSearching;
+
+    public string ModeButtonText => L[IsKeyboardMode ? "ModeTouch" : "ModeKeyboard"];
+
+    /// <summary>Leyenda de atajos del modo teclado.</summary>
+    public IReadOnlyList<ShortcutHelpRow> ShortcutLegend => BuildHelpRows();
+
+    [RelayCommand]
+    private void ToggleMode()
+    {
+        IsKeyboardMode = !IsKeyboardMode;
+        settings.Set(SettingKeys.SaleMode, IsKeyboardMode ? "Keyboard" : "Touch");
+        OnPropertyChanged(nameof(ShortcutLegend));
+        FocusSearchRequested?.Invoke();
+    }
+
+    /// <summary>Ejecuta la acción de un atajo. Devuelve false si ahora no aplica (la tecla sigue su curso).</summary>
+    public bool ExecuteShortcut(ShortcutAction action)
+    {
+        if (action == ShortcutAction.OpenCashOrDrawer && !IsCashOpen)
+        {
+            OpenCash();
+            return true;
+        }
+        if (!IsCashOpen || IsDialogOpen)
+            return false;
+
+        switch (action)
+        {
+            case ShortcutAction.Pay:
+                Charge();
+                break;
+            case ShortcutAction.PayCard:
+                Charge();
+                if (Dialog is PaymentViewModel payment)
+                    payment.SetModeCommand.Execute(PaymentMode.Card);
+                break;
+            case ShortcutAction.OpenCashOrDrawer:
+                OpenDrawer();
+                break;
+            case ShortcutAction.RemoveLastLine:
+                if (TicketLines.Count == 0)
+                    return false;
+                ChangeQuantity(TicketLines[^1], 0);
+                break;
+            case ShortcutAction.ClearTicket:
+                ClearTicket();
+                break;
+            case ShortcutAction.TicketDiscount:
+                if (!HasTicketLines)
+                    return false;
+                EditTicketDiscount();
+                break;
+            case ShortcutAction.LineDiscount:
+                if (TicketLines.Count == 0)
+                    return false;
+                EditLineDiscount(TicketLines[^1]);
+                break;
+            case ShortcutAction.PriceCheck:
+                CheckPrice();
+                break;
+            case ShortcutAction.ToggleMode:
+                ToggleMode();
+                break;
+            case ShortcutAction.Help:
+                Dialog = new ShortcutHelpViewModel(L, BuildHelpRows(), CloseDialog);
+                break;
+        }
+        return true;
+    }
+
+    [RelayCommand]
+    private void ShowHelp() => ExecuteShortcut(ShortcutAction.Help);
+
+    private List<ShortcutHelpRow> BuildHelpRows()
+    {
+        var rows = Enum.GetValues<ShortcutAction>()
+            .Where(a => Shortcuts.Get(a).Count > 0)
+            .Select(a => new ShortcutHelpRow(Shortcuts.GetText(a).Replace(",", " /"), L[$"Shortcut{a}"]))
+            .ToList();
+        rows.Add(new ShortcutHelpRow("n*", L["SyntaxAddQuantity"]));
+        rows.Add(new ShortcutHelpRow("-n*", L["SyntaxRemoveQuantity"]));
+        rows.Add(new ShortcutHelpRow("2,50", L["SyntaxPriceOnly"]));
+        rows.Add(new ShortcutHelpRow("n*" + L["SyntaxCode"], L["SyntaxQuantityAndCode"]));
+        return rows;
+    }
+
+    /// <summary>"n*" / "-n*" sobre la última línea; quitar todas las unidades quita la línea.</summary>
+    private void AdjustLastLine(int delta)
+    {
+        SearchText = "";
+        if (TicketLines.Count == 0)
+        {
+            ShowError("ErrorNoLineToChange");
+            return;
+        }
+        var last = TicketLines[^1];
+        ChangeQuantity(last, Math.Max(0, last.Line.Quantity + delta));
+        ClearMessage();
+    }
+
     /// <summary>
     /// v1.1: código de un lector por puerto COM. Hace lo mismo que el lector en modo teclado: si está abierto
     /// el verificador de precios va ahí; si no, al ticket.
@@ -161,7 +304,9 @@ public partial class SalePageViewModel(
     [RelayCommand]
     private void OpenCash()
     {
-        if (!formatter.TryParseAmount(OpeningFloatText, out var amount))
+        // Sin fondo escrito, la caja se abre con 0 € (v1.1.5: Insert abre la caja directamente).
+        var amount = 0m;
+        if (OpeningFloatText.Trim().Length > 0 && !formatter.TryParseAmount(OpeningFloatText, out amount))
         {
             ShowError("ErrorAmountFormat");
             return;
@@ -175,7 +320,12 @@ public partial class SalePageViewModel(
 
     // --- Añadir productos (VEN-01, HW-04) ---
 
-    partial void OnSearchTextChanged(string value) => RefreshProducts();
+    partial void OnSearchTextChanged(string value)
+    {
+        RefreshProducts();
+        OnPropertyChanged(nameof(ShowProductTiles));
+        OnPropertyChanged(nameof(ShowCategories));
+    }
 
     [RelayCommand]
     private void SelectCategory(CategoryButton category)
@@ -235,9 +385,32 @@ public partial class SalePageViewModel(
     [RelayCommand]
     private void SubmitSearch()
     {
-        var (quantity, text) = ParseQuantityPrefix(SearchText.Trim());
+        var raw = SearchText.Trim();
+        if (QuantityAdjust.Match(raw) is { Success: true } adjust)
+        {
+            AdjustLastLine(int.Parse(adjust.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+            return;
+        }
+
+        // v1.1.5: Enter con el buscador vacío = cobrar (si Enter es atajo de cobrar).
+        if (raw.Length == 0)
+        {
+            if (Shortcuts.Get(ShortcutAction.Pay).Any(sc => sc.Key?.Key == Avalonia.Input.Key.Enter && sc.Key.KeyModifiers == Avalonia.Input.KeyModifiers.None))
+                ExecuteShortcut(ShortcutAction.Pay);
+            return;
+        }
+
+        var (quantity, text) = ParseQuantityPrefix(raw);
         if (text.Length == 0)
             return;
+
+        // v1.1.5: "2,50" (o "3*2,50") añade un artículo sin código de ese precio.
+        if (PriceOnly.IsMatch(text) && formatter.TryParseAmount(text, out var price) && price > 0)
+        {
+            SearchText = "";
+            AddToTicket(new TicketItem(null, L["GenericArticle"], null, price, TicketItem.GenericVatRate), quantity);
+            return;
+        }
 
         // HW-04: un escaneo añade 1 unidad.
         var product = catalog.FindByBarcode(text);

@@ -77,7 +77,8 @@
       <Grid ColumnDefinitions="Auto,8,*" Margin="0,12,0,0">
         <Button Content="{Binding L[Cancel]}" Command="{Binding CancelCommand}" />
         <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                MinHeight="64" FontSize="24" Content="{Binding L[ConfirmPayment]}" Command="{Binding ConfirmCommand}" />
+                MinHeight="64" FontSize="24" Content="{Binding L[ConfirmPayment]}" Command="{Binding ConfirmCommand}"
+                Name="ConfirmButton" />
       </Grid>
 
       <Border Classes="message" Classes.error="{Binding MessageIsError}" IsVisible="{Binding HasMessage}">

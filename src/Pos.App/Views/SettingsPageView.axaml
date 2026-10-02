@@ -27,6 +27,14 @@
       </ComboBox>
       <TextBlock Text="{Binding L[PrintLanguageHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,4,0,0" />
 
+      <!-- v1.1.5: modo de la pantalla de venta -->
+      <TextBlock Classes="label" Text="{Binding L[SaleModeLabel]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding SaleModes}" SelectedItem="{Binding SaleMode}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+
       <TextBlock Classes="label" Text="{Binding L[CurrencySymbol]}" />
       <TextBox Text="{Binding CurrencySymbol}" MaxLength="5" />
 
@@ -50,6 +58,21 @@
 
       <TextBlock Classes="label" Text="{Binding L[Preview]}" />
       <TextBlock Text="{Binding Preview}" FontSize="18" />
+
+      <!-- v1.1.5: atajos de teclado de la venta -->
+      <TextBlock Text="{Binding L[ShortcutsTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <TextBlock Text="{Binding L[ShortcutsSettingsHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,0,0,8" />
+      <ItemsControl ItemsSource="{Binding ShortcutRows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ShortcutRowViewModel">
+            <Grid ColumnDefinitions="*,8,200" Margin="0,3">
+              <TextBlock Text="{Binding Title}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <TextBox Grid.Column="2" Text="{Binding Keys}" FontFamily="Consolas, monospace" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Margin="0,8,0,0" Content="{Binding L[ShortcutsReset]}" Command="{Binding ResetShortcutsCommand}" />
 
       <Button Classes="primary" Margin="0,20,0,0" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />
 

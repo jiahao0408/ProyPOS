@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Pos.App.ViewModels"
+             x:Class="Pos.App.Views.ShortcutHelpView"
+             x:DataType="vm:ShortcutHelpViewModel">
+  <!-- v1.1.5: ayuda de atajos (F1) -->
+  <Border Classes="dialog" Width="620">
+    <StackPanel>
+      <TextBlock Text="{Binding L[ShortcutsTitle]}" FontSize="24" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding L[ShortcutsHint]}" FontSize="14" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12" />
+      <ItemsControl ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ShortcutHelpRow">
+            <Grid ColumnDefinitions="170,*" Margin="0,4">
+              <Border Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" CornerRadius="4" Padding="8,2"
+                      HorizontalAlignment="Left" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Keys}" FontFamily="Consolas, monospace" FontSize="16" FontWeight="SemiBold" />
+              </Border>
+              <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="16" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Name="CloseButton" Margin="0,16,0,0" Content="{Binding L[Close]}" Command="{Binding CloseCommand}" />
+    </StackPanel>
+  </Border>
+</UserControl>

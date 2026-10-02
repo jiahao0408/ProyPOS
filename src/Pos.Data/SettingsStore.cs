@@ -14,6 +14,9 @@ public static class SettingKeys
     public const string DateFormat = "region.dateFormat";
     public const string InactivityMinutes = "security.inactivityMinutes";
 
+    /// <summary>v1.1.5: modo de la pantalla de venta, "Touch" (por defecto) o "Keyboard".</summary>
+    public const string SaleMode = "ui.saleMode";
+
     /// <summary>CFG-06: dirección del fichero update.json con la última versión.</summary>
     public const string UpdateFeedUrl = "updates.feedUrl";
 }

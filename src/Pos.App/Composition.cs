@@ -104,6 +104,7 @@ internal static class Composition
         }
 
         services.AddSingleton<UserLanguage>();
+        services.AddSingleton<ShortcutSettings>();
         // CFG-06: actualizaciones (los tests sustituyen el lanzador del instalador y el cliente HTTP).
         services.AddSingleton<Pos.App.Updates.IInstallerLauncher, Pos.App.Updates.MsiexecLauncher>();
         services.AddSingleton<Func<HttpClient>>(_ => () => new HttpClient { Timeout = TimeSpan.FromMinutes(10) });
