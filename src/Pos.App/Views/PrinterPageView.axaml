@@ -5,7 +5,7 @@
              x:DataType="vm:PrinterPageViewModel">
   <!-- HW-01: impresora térmica; IMP-01: impresión al cobrar -->
   <ScrollViewer>
-    <StackPanel MaxWidth="560" HorizontalAlignment="Left">
+    <StackPanel MaxWidth="680" HorizontalAlignment="Left">
       <TextBlock Classes="title" Text="{Binding L[NavPrinter]}" />
 
       <TextBlock Classes="label" Text="{Binding L[PrinterConnection]}" />
@@ -24,7 +24,48 @@
       <StackPanel IsVisible="{Binding ShowBaudRate}">
         <TextBlock Classes="label" Text="{Binding L[BaudRate]}" />
         <TextBox Text="{Binding BaudRateText}" />
+        <TextBlock Classes="label" Text="{Binding L[SerialHandshake]}" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Handshakes}" SelectedItem="{Binding Handshake}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
       </StackPanel>
+
+      <!-- v1.1: compatibilidad -->
+      <TextBlock Classes="label" Text="{Binding L[PrinterModel]}" />
+      <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Models}" SelectedItem="{Binding Model}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <TextBlock Text="{Binding L[PrinterModelHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,4,0,0" />
+      <Grid ColumnDefinitions="*,8,*,8,*">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{Binding L[PrinterCodePage]}" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding CodePages}" SelectedItem="{Binding CodePage}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="label" Text="{Binding L[PrinterCut]}" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding CutModes}" SelectedItem="{Binding Cut}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="4">
+          <TextBlock Classes="label" Text="{Binding L[PrinterQr]}" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding QrModes}" SelectedItem="{Binding Qr}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </Grid>
 
       <TextBlock Classes="label" Text="{Binding L[PaperWidth]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding PaperWidth}">
@@ -81,6 +122,21 @@
       <TextBlock Text="{Binding L[CashDrawer]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
       <TextBlock Text="{Binding L[CashDrawerHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" />
       <CheckBox Content="{Binding L[OpenDrawerOnCash]}" IsChecked="{Binding OpenDrawerOnCash}" />
+      <Grid ColumnDefinitions="120,8,*">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{Binding L[DrawerPin]}" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding DrawerPins}" SelectedItem="{Binding DrawerPin}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="label" Text="{Binding L[DrawerPort]}" />
+          <AutoCompleteBox Text="{Binding DrawerPort}" ItemsSource="{Binding ComPorts}" FilterMode="None" MinimumPrefixLength="0"
+                           Watermark="{Binding L[DrawerPortHint]}" MinHeight="44" />
+        </StackPanel>
+      </Grid>
 
       <!-- HW-02: pantalla de cliente -->
       <TextBlock Text="{Binding L[CustomerDisplay]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
@@ -88,6 +144,46 @@
       <CheckBox Content="{Binding L[CustomerDisplayEnabled]}" IsChecked="{Binding CustomerDisplayEnabled}" />
       <TextBlock Classes="label" Text="{Binding L[CustomerDisplayWelcomeLabel]}" />
       <TextBox Text="{Binding WelcomeMessage}" Watermark="{Binding L[CustomerDisplayWelcome]}" />
+
+      <!-- v1.1: visor de cliente por puerto serie (2 × 20) -->
+      <TextBlock Text="{Binding L[PoleDisplay]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <TextBlock Text="{Binding L[PoleDisplayHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" />
+      <Grid ColumnDefinitions="*,8,*,8,110">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{Binding L[SerialPort]}" />
+          <AutoCompleteBox Text="{Binding PolePort}" ItemsSource="{Binding ComPorts}" FilterMode="None" MinimumPrefixLength="0"
+                           Watermark="{Binding L[NoneDevice]}" MinHeight="44" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="label" Text="{Binding L[PoleProtocol]}" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PoleProtocols}" SelectedItem="{Binding PoleProtocol}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+        <StackPanel Grid.Column="4">
+          <TextBlock Classes="label" Text="{Binding L[BaudShort]}" />
+          <TextBox Text="{Binding PoleBaudText}" />
+        </StackPanel>
+      </Grid>
+      <Button Margin="0,8,0,0" Content="{Binding L[PoleTest]}" Command="{Binding TestPoleCommand}" />
+
+      <!-- v1.1: lector de códigos por puerto COM -->
+      <TextBlock Text="{Binding L[ScannerTitle]}" FontSize="20" FontWeight="SemiBold" Margin="0,24,0,0" />
+      <TextBlock Text="{Binding L[ScannerHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" />
+      <Grid ColumnDefinitions="*,8,110">
+        <StackPanel>
+          <TextBlock Classes="label" Text="{Binding L[SerialPort]}" />
+          <AutoCompleteBox Text="{Binding ScannerPort}" ItemsSource="{Binding ComPorts}" FilterMode="None" MinimumPrefixLength="0"
+                           Watermark="{Binding L[ScannerKeyboardShort]}" MinHeight="44" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="label" Text="{Binding L[BaudShort]}" />
+          <TextBox Text="{Binding ScannerBaudText}" />
+        </StackPanel>
+      </Grid>
+      <TextBlock Text="{Binding ScannerStatus}" TextWrapping="Wrap" Margin="0,4,0,0" />
 
       <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
         <Button Classes="primary" Content="{Binding L[Save]}" Command="{Binding SaveCommand}" />

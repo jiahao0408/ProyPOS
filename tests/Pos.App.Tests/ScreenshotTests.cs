@@ -133,6 +133,12 @@ public class ScreenshotTests
         foreach (var d in "1111")
             workspace.AdminPrompt!.PinEntry.Digit(d.ToString());
         Capture(window, "25-impresora");
+        foreach (var scroll in window.GetVisualDescendants().OfType<ScrollViewer>())
+            scroll.Offset = scroll.Offset.WithY(620);
+        Capture(window, "25b-impresora-compatibilidad");
+        foreach (var scroll in window.GetVisualDescendants().OfType<ScrollViewer>())
+            scroll.ScrollToEnd();
+        Capture(window, "25c-impresora-perifericos");
 
         // Sección 4: etiquetas, datos y cierre de caja
         void OpenAdmin(Type page)

@@ -5,7 +5,7 @@ namespace Pos.Modules.Printing;
 
 /// <summary>
 /// Convierte un ticket a comandos ESC/POS (compatibles con Epson y la mayoría de impresoras
-/// térmicas de 58 y 80 mm). HW-01.
+/// térmicas de 58 y 80 mm). HW-01. v1.1: tabla de caracteres, corte y QR según el modelo.
 /// </summary>
 public static class EscPosEncoder
 {
@@ -14,26 +14,75 @@ public static class EscPosEncoder
     private const byte Fs = 0x1C;
     private const byte Lf = 0x0A;
 
-    /// <summary>Número de la tabla PC858 (latín + €) en el comando ESC t de Epson.</summary>
-    private const byte Pc858Table = 19;
-
     static EscPosEncoder() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-    public static Encoding TextEncoding(PrinterEncoding encoding) =>
+    /// <summary>Número de la tabla en el comando ESC t y página de códigos de Windows equivalente.</summary>
+    public static (byte Table, int WindowsCodePage) CodePage(PrinterCodePage codePage) => codePage switch
+    {
+        PrinterCodePage.Wpc1252 => (16, 1252),
+        PrinterCodePage.Pc850 => (2, 850),
+        PrinterCodePage.Pc437 => (0, 437),
+        _ => (19, 858),
+    };
+
+    public static Encoding TextEncoding(PrinterEncoding encoding, PrinterCodePage codePage = PrinterCodePage.Pc858) =>
         encoding == PrinterEncoding.Chinese
             ? Encoding.GetEncoding("GB18030")
-            : Encoding.GetEncoding(858, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback);
+            : Encoding.GetEncoding(CodePage(codePage).WindowsCodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ReplacementFallback);
+
+    /// <summary>
+    /// Texto en bytes de la tabla elegida. Lo que no existe en ella se sustituye en vez de salir como "?":
+    /// € → EUR, letras acentuadas → sin acento.
+    /// </summary>
+    public static byte[] EncodeText(string value, Encoding encoding)
+    {
+        try
+        {
+            return encoding.GetBytes(value);
+        }
+        catch (EncoderFallbackException)
+        {
+            var sb = new StringBuilder(value.Length + 8);
+            foreach (var c in value)
+                sb.Append(CanEncode(encoding, c) ? c.ToString() : Substitute(c, encoding));
+            return encoding.GetBytes(sb.ToString());
+        }
+    }
+
+    private static bool CanEncode(Encoding encoding, char c)
+    {
+        try
+        {
+            encoding.GetBytes(c.ToString());
+            return true;
+        }
+        catch (EncoderFallbackException)
+        {
+            return false;
+        }
+    }
+
+    private static string Substitute(char c, Encoding encoding)
+    {
+        if (c == '€')
+            return "EUR";
+        var plain = new string(c.ToString().Normalize(NormalizationForm.FormD)
+            .Where(ch => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .ToArray());
+        return plain.Length > 0 && plain.All(ch => CanEncode(encoding, ch)) ? plain : "?";
+    }
 
     public static byte[] Encode(IEnumerable<ReceiptElement> receipt, PrinterProfile printer)
     {
-        var text = TextEncoding(printer.Encoding);
+        var text = TextEncoding(printer.Encoding, printer.CodePage);
         var o = new List<byte>(4096);
+        void AddText(string value) => o.AddRange(EncodeText(value, text));
 
         o.AddRange([Esc, (byte)'@']); // reiniciar
         if (printer.Encoding == PrinterEncoding.Chinese)
             o.AddRange([Fs, (byte)'&']); // modo de caracteres chinos
         else
-            o.AddRange([Esc, (byte)'t', Pc858Table]);
+            o.AddRange([Esc, (byte)'t', CodePage(printer.CodePage).Table]);
 
         foreach (var element in receipt)
         {
@@ -43,12 +92,12 @@ public static class EscPosEncoder
                     o.AddRange([Esc, (byte)'a', (byte)t.Align]);
                     o.AddRange([Esc, (byte)'E', t.Bold ? (byte)1 : (byte)0]);
                     o.AddRange([Gs, (byte)'!', t.Large ? (byte)0x11 : (byte)0]);
-                    o.AddRange(text.GetBytes(t.Text));
+                    AddText(t.Text);
                     o.Add(Lf);
                     o.AddRange([Gs, (byte)'!', 0, Esc, (byte)'E', 0, Esc, (byte)'a', 0]);
                     break;
                 case ReceiptSeparator:
-                    o.AddRange(text.GetBytes(new string('-', printer.CharsPerLine)));
+                    AddText(new string('-', printer.CharsPerLine));
                     o.Add(Lf);
                     break;
                 case ReceiptBlankLine:
@@ -56,7 +105,10 @@ public static class EscPosEncoder
                     break;
                 case ReceiptQr qr:
                     o.AddRange([Esc, (byte)'a', 1]);
-                    AddQr(o, Encoding.UTF8.GetBytes(qr.Data));
+                    if (printer.Qr == PrinterQrMode.Image)
+                        AddRaster(o, QrRaster.Render(qr.Data, printer.DotsPerLine)); // v1.1: impresoras sin GS ( k
+                    else
+                        AddQr(o, Encoding.UTF8.GetBytes(qr.Data));
                     o.AddRange([Esc, (byte)'a', 0]);
                     break;
                 case ReceiptBarcode barcode:
@@ -72,13 +124,25 @@ public static class EscPosEncoder
                         o.AddRange([Esc, (byte)'a', 0]);
                     }
                     break;
-                case ReceiptDrawerKick:
-                    // ESC p m t1 t2: pulso en el pin 2 (m = 0) de 50 ms encendido y 500 ms apagado (unidades de 2 ms).
-                    o.AddRange([Esc, (byte)'p', 0, 25, 250]);
+                case ReceiptDrawerKick kick:
+                    // ESC p m t1 t2: pulso en el pin 2 (m = 0) o 5 (m = 1), 50 ms encendido y 500 ms apagado (unidades de 2 ms).
+                    o.AddRange([Esc, (byte)'p', kick.Pin == 5 ? (byte)1 : (byte)0, 25, 250]);
                     break;
                 case ReceiptCut:
-                    o.AddRange([Esc, (byte)'d', 4]);  // avanzar 4 líneas
-                    o.AddRange([Gs, (byte)'V', 66, 0]); // corte parcial
+                    switch (printer.Cut)
+                    {
+                        case PrinterCutMode.Full:
+                            o.AddRange([Esc, (byte)'d', 4]);
+                            o.AddRange([Gs, (byte)'V', 65, 0]); // corte total
+                            break;
+                        case PrinterCutMode.None:
+                            o.AddRange([Esc, (byte)'d', 6]);    // sin cortador: papel suficiente para arrancarlo
+                            break;
+                        default:
+                            o.AddRange([Esc, (byte)'d', 4]);  // avanzar 4 líneas
+                            o.AddRange([Gs, (byte)'V', 66, 0]); // corte parcial
+                            break;
+                    }
                     break;
             }
         }

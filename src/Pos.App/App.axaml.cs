@@ -44,6 +44,9 @@ public partial class App : Application
                 Program.LogError("Registro de eventos", e);
             }
 
+            // v1.1: lector de códigos por puerto COM (si está configurado).
+            services.GetRequiredService<Pos.Modules.Hardware.SerialScanner>().Restart();
+
             // CFG-06: ¿hay versión nueva? Solo avisa; instalar lo decide un administrador.
             var updates = services.GetRequiredService<Pos.App.Updates.UpdateService>();
             _ = Task.Run(async () =>

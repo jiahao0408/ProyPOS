@@ -68,9 +68,16 @@ public sealed class PrintService(
     public string PreviewGift(InvoiceDocument doc) =>
         TextPreview.Render(builder.BuildGift(doc, profiles.GetBusiness(), profiles.GetPrinter()), profiles.GetPrinter());
 
-    /// <summary>HW-03: abre el cajón portamonedas con un pulso a través de la impresora de tickets.</summary>
-    public Task<PrintOutcome> OpenDrawerAsync(CancellationToken cancellationToken = default) =>
-        SendAsync([new ReceiptDrawerKick()], profiles.GetPrinter(), cancellationToken);
+    /// <summary>
+    /// HW-03: abre el cajón portamonedas con un pulso, por la impresora de tickets (pin 2 o 5) o, en v1.1,
+    /// por su propio puerto COM (cajones con disparador USB/serie).
+    /// </summary>
+    public Task<PrintOutcome> OpenDrawerAsync(CancellationToken cancellationToken = default)
+    {
+        var hardware = profiles.GetHardware();
+        var profile = profiles.GetPrinter(PrinterDestination.Drawer);
+        return SendAsync([new ReceiptDrawerKick(hardware.DrawerPin)], profile, cancellationToken, PrinterDestination.Drawer);
+    }
 
     public Task<PrintOutcome> PrintTestAsync(CancellationToken cancellationToken = default)
     {

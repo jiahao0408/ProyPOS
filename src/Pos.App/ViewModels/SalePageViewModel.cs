@@ -47,8 +47,26 @@ public partial class SalePageViewModel(
     UserService users,
     RegionFormatter formatter,
     CustomerDisplayViewModel customerDisplay,
-    PrintLocalization printLocalization) : PageViewModel(localizer)
+    PrintLocalization printLocalization) : PageViewModel(localizer), IBarcodeTarget
 {
+    /// <summary>
+    /// v1.1: código de un lector por puerto COM. Hace lo mismo que el lector en modo teclado: si está abierto
+    /// el verificador de precios va ahí; si no, al ticket.
+    /// </summary>
+    public void OnBarcode(string code)
+    {
+        if (Dialog is PriceCheckViewModel check)
+        {
+            check.SearchText = code;
+            check.SubmitCommand.Execute(null);
+            return;
+        }
+        if (!IsCashOpen || IsDialogOpen)
+            return;
+        SearchText = code;
+        SubmitSearch();
+    }
+
     /// <summary>VEN-05: admin que autorizó con su PIN un descuento por encima del límite del cajero.</summary>
     private string? _discountAuthorizedBy;
 

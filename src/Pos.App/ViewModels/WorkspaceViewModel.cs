@@ -96,9 +96,24 @@ public partial class WorkspaceViewModel : ViewModelBase
     private AdminPinPromptViewModel? _adminPrompt;
 
     public WorkspaceViewModel(IServiceProvider services, ILocalizer localizer, ISession session, UserService users, UserLanguage userLanguage,
-        Pos.App.Updates.UpdateService updates)
+        Pos.App.Updates.UpdateService updates, Pos.Modules.Hardware.SerialScanner scanner)
         : base(localizer)
     {
+        // v1.1: códigos del lector por puerto COM, a la página actual (solo la venta los usa).
+        void OnScanned(string code)
+        {
+            if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+                (CurrentPage as IBarcodeTarget)?.OnBarcode(code);
+            else
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => (CurrentPage as IBarcodeTarget)?.OnBarcode(code));
+        }
+        scanner.Scanned += OnScanned;
+        void OnSessionChanged(object? sender, EventArgs e)
+        {
+            scanner.Scanned -= OnScanned; // al cerrar la sesión este área de trabajo deja de existir
+            session.Changed -= OnSessionChanged;
+        }
+        session.Changed += OnSessionChanged;
         ShowUpdate(updates.Available);
         updates.UpdateFound += info =>
         {

@@ -28,7 +28,8 @@ public sealed record ReceiptBarcode(string Code) : ReceiptElement;
 public sealed record ReceiptCut : ReceiptElement;
 
 /// <summary>HW-03: pulso para abrir el cajón conectado a la impresora (no imprime nada).</summary>
-public sealed record ReceiptDrawerKick : ReceiptElement;
+/// <param name="Pin">Conector del cajón: 2 (el habitual) o 5.</param>
+public sealed record ReceiptDrawerKick(int Pin = 2) : ReceiptElement;
 
 /// <summary>Ayudas para maquetar líneas de ancho fijo.</summary>
 public static class ReceiptText2

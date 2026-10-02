@@ -21,7 +21,7 @@ public sealed class RawPrinter(ProfileStore profiles) : IRawPrinter
         return profile.Connection switch
         {
             PrinterConnection.Windows => Task.Run(() => WindowsSpooler.SendRaw(Required(profile.Target), data), cancellationToken),
-            PrinterConnection.Serial => Task.Run(() => SendSerial(Required(profile.Target), profile.BaudRate, data), cancellationToken),
+            PrinterConnection.Serial => Task.Run(() => SendSerial(Required(profile.Target), profile.BaudRate, profile.Handshake, data), cancellationToken),
             PrinterConnection.Network => SendNetworkAsync(Required(profile.Target), data, cancellationToken),
             _ => SendFileAsync(profile.Target, data, cancellationToken),
         };
@@ -38,15 +38,46 @@ public sealed class RawPrinter(ProfileStore profiles) : IRawPrinter
     private static string Required(string target) =>
         string.IsNullOrWhiteSpace(target) ? throw new InvalidOperationException("No printer selected") : target.Trim();
 
-    private static void SendSerial(string port, int baudRate, byte[] data)
+    private static void SendSerial(string port, int baudRate, SerialHandshake handshake, byte[] data)
     {
         using var serial = new SerialPort(port, baudRate)
         {
             WriteTimeout = (int)Timeout.TotalMilliseconds,
-            Handshake = Handshake.None,
+            // v1.1: control de flujo; con DTR/DSR (muy usado en impresoras serie) se activa DTR y se espera a DSR.
+            Handshake = handshake switch
+            {
+                SerialHandshake.XOnXOff => Handshake.XOnXOff,
+                SerialHandshake.RtsCts => Handshake.RequestToSend,
+                _ => Handshake.None,
+            },
+            DtrEnable = true,
+            RtsEnable = handshake != SerialHandshake.RtsCts,
         };
         serial.Open();
-        serial.Write(data, 0, data.Length);
+        if (handshake == SerialHandshake.DtrDsr)
+            WaitForDsr(serial);
+        // Por bloques: las impresoras serie tienen poco búfer y un ticket con logo puede pasar de 20 KB.
+        for (var offset = 0; offset < data.Length; offset += 1024)
+        {
+            if (handshake == SerialHandshake.DtrDsr)
+                WaitForDsr(serial);
+            serial.Write(data, offset, Math.Min(1024, data.Length - offset));
+        }
+        // Que salga todo antes de cerrar el puerto (al cerrarlo se descarta lo que quede en el búfer).
+        var deadline = DateTime.UtcNow + Timeout;
+        while (serial.BytesToWrite > 0 && DateTime.UtcNow < deadline)
+            Thread.Sleep(20);
+    }
+
+    private static void WaitForDsr(SerialPort serial)
+    {
+        var deadline = DateTime.UtcNow + Timeout;
+        while (!serial.DsrHolding)
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException($"{serial.PortName}: la impresora no está lista (DSR)");
+            Thread.Sleep(20);
+        }
     }
 
     /// <summary>"192.168.1.50" o "192.168.1.50:9100".</summary>

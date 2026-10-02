@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 334 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 357 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -274,6 +274,17 @@ Al cambiar el precio del producto, las variantes que tenían el mismo precio lo 
 | CFG-06 Actualizaciones automáticas | `UpdateService`, **Acerca de**, aviso en la barra superior | Al arrancar mira `update.json` (versión, dirección del MSI y su SHA-256) y avisa si hay versión nueva. Un administrador la instala: se descarga el MSI, se comprueba su SHA-256 (si no coincide, no se instala), se hace una **copia de seguridad** de la base de datos y se lanza el instalador, que sustituye la versión anterior sin tocar los datos. La versión nueva aplica las migraciones al arrancar. `build-installer.ps1` genera el `update.json` junto al MSI |
 
 **Ojo con la modalidad por defecto:** mientras no se elija VERI\*FACTU (con el certificado cargado), la aplicación funciona como **No VERI\*FACTU**: los registros no se envían, se firman en cuanto haya certificado y quedan guardados. Los registros generados en una modalidad se quedan en ella: pasar a VERI\*FACTU no envía los anteriores.
+
+### Versión 1.1: compatibilidad de periféricos (rama `v1.1`)
+
+| Periférico | Qué se ha añadido | Dónde |
+|---|---|---|
+| Impresora térmica | **Modelo** con ajustes de compatibilidad: Epson TM y compatibles, genérica de 80 mm (Xprinter, HPRT…), genérica de 58 mm sin cortador o personalizada. **Tabla de caracteres** (PC858, Windows-1252, PC850, PC437): lo que no existe en la tabla se sustituye (€ → EUR, á → a) en vez de salir como «?». **Corte** parcial, total o sin cortador. **QR como imagen** para impresoras sin el comando de QR. **Control de flujo** (XON/XOFF, RTS/CTS, DTR/DSR) y envío por bloques en impresoras COM. La prueba de impresión muestra los ajustes | Impresora, `EscPosEncoder`, `QrRaster`, `RawPrinter` |
+| Cajón | **Pin 2 o 5** y cajón con **puerto COM propio** (disparadores USB/serie) | Impresora > Cajón, `PrintService.OpenDrawerAsync` |
+| Visor de cliente | **Visor de 2 × 20** por puerto serie o USB-COM, protocolo **ESC/POS** (Epson DM-D) o **CD5220**: último producto y total, total y cambio al cobrar, bienvenida en reposo. Sin acentos ni € (solo ASCII es fiable en un VFD). Botón **Probar visor** | Impresora > Visor de cliente, `PoleDisplay` |
+| Lector de códigos | Lectores **serie o USB-COM** (los de teclado siguen sin configurar). En el verificador de precios el código va al verificador. En modo teclado, el código también puede terminar en **Tab** | Impresora > Lector de códigos, `SerialScanner` |
+
+Todo lo nuevo tiene valores por defecto que dejan el comportamiento de la versión 1.0 igual.
 
 ## Primeros pasos
 

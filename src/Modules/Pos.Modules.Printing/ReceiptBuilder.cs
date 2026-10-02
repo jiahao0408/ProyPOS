@@ -183,6 +183,8 @@ public sealed class ReceiptBuilder(PrintLocalization print)
         r.Add(new ReceiptText(business.Name, ReceiptAlign.Center));
         r.Add(new ReceiptSeparator());
         r.Add(new ReceiptText(Columns($"{printer.PaperWidthMm} mm", $"{width} col.", width)));
+        // v1.1: ajustes de compatibilidad, para saber qué cambiar si algo sale mal.
+        r.Add(new ReceiptText(Columns(printer.CodePage.ToString(), $"{printer.Cut} / QR {printer.Qr}", width)));
         r.Add(new ReceiptText("áéíóú ñÑ çÇ àè €"));
         r.Add(new ReceiptText(new string('0', width).Select((_, i) => (char)('0' + i % 10)).Aggregate("", (s, c) => s + c)));
         r.Add(new ReceiptText(Columns(localizer["Total"], formatter.FormatMoney(1234.5m), width)));

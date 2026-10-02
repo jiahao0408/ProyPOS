@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Pos.Core.Localization;
 using Pos.Data;
 using Pos.Localization;
+using Pos.Modules.Hardware;
 using Pos.Modules.Sales;
 
 namespace Pos.App.ViewModels;
@@ -30,6 +31,7 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
 {
     private readonly PrintLocalization _print;
     private readonly ProfileStore _profiles;
+    private readonly PoleDisplay _pole;
 
     [ObservableProperty]
     private bool _isEnabled;
@@ -56,10 +58,11 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
     [ObservableProperty]
     private string _changeText = "";
 
-    public CustomerDisplayViewModel(PrintLocalization print, ProfileStore profiles)
+    public CustomerDisplayViewModel(PrintLocalization print, ProfileStore profiles, PoleDisplay pole)
     {
         _print = print;
         _profiles = profiles;
+        _pole = pole;
         IsEnabled = profiles.GetHardware().CustomerDisplay;
         ShowWelcome();
     }
@@ -71,6 +74,17 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
     public bool IsTicket => State == CustomerDisplayState.Ticket;
 
     public bool IsThanks => State == CustomerDisplayState.Thanks;
+
+    /// <summary>v1.1: lo último enviado al visor de 2 × 20 (para las pruebas).</summary>
+    public (string Line1, string Line2) PoleLines { get; private set; }
+
+    public Task LastPole { get; private set; } = Task.CompletedTask;
+
+    private void Pole(string line1, string line2)
+    {
+        PoleLines = (line1, line2);
+        LastPole = _pole.ShowAsync(line1, line2);
+    }
 
     /// <summary>El ticket ha cambiado. Vacío: se queda en "gracias" si se acaba de cobrar, o vuelve a la bienvenida.</summary>
     public void ShowTicket(Ticket ticket)
@@ -89,6 +103,11 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
         TotalLabel = L["Total"];
         TotalText = formatter.FormatMoney(ticket.Total);
         State = CustomerDisplayState.Ticket;
+
+        // Visor: el último producto añadido y el total.
+        var last = ticket.Lines[^1];
+        Pole(PoleDisplay.Columns2(last.Item.Description, formatter.FormatAmount(last.Total)),
+            PoleDisplay.Columns2(L["Total"].ToUpperInvariant(), formatter.FormatAmount(ticket.Total)));
     }
 
     public void ShowThanks(decimal total, decimal change)
@@ -100,6 +119,9 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
         ThanksText = L["CustomerDisplayThanks"];
         ChangeText = change > 0 ? string.Format(L["CustomerDisplayChange"], formatter.FormatMoney(change)) : "";
         State = CustomerDisplayState.Thanks;
+
+        Pole(PoleDisplay.Columns2(L["Total"].ToUpperInvariant(), formatter.FormatAmount(total)),
+            change > 0 ? PoleDisplay.Columns2(L["Change"], formatter.FormatAmount(change)) : PoleDisplay.Center(L["CustomerDisplayThanks"]));
     }
 
     public void ShowWelcome()
@@ -110,5 +132,6 @@ public sealed partial class CustomerDisplayViewModel : ObservableObject
         WelcomeText = hardware.WelcomeMessage.Length > 0 ? hardware.WelcomeMessage : L["CustomerDisplayWelcome"];
         Lines.Clear();
         State = CustomerDisplayState.Welcome;
+        Pole(PoleDisplay.Center(BusinessName), PoleDisplay.Center(WelcomeText));
     }
 }

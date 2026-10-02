@@ -15,11 +15,110 @@ public interface IChoice
 
 public sealed record Choice<T>(T Value, string Title) : IChoice;
 
-/// <summary>HW-01: impresora térmica (USB, COM/Bluetooth o red), papel de 58 u 80 mm y prueba de impresión. IMP-01: impresión al cobrar.</summary>
+/// <summary>
+/// HW-01: impresora térmica (USB, COM/Bluetooth o red), papel de 58 u 80 mm y prueba de impresión. IMP-01: impresión al cobrar.
+/// v1.1: compatibilidad (modelo, tabla de caracteres, corte, QR, control de flujo), cajón por pin o puerto propio,
+/// visor de cliente por puerto serie y lector de códigos por puerto COM.
+/// </summary>
 public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore profiles, PrintService printing,
-    CustomerDisplayViewModel customerDisplay)
+    CustomerDisplayViewModel customerDisplay, SerialScanner scanner)
     : PageViewModel(localizer)
 {
+    private bool _applyingModel;
+
+    // --- v1.1: compatibilidad de la impresora ---
+
+    [ObservableProperty]
+    private Choice<PrinterModel>? _model;
+
+    [ObservableProperty]
+    private Choice<PrinterCodePage>? _codePage;
+
+    [ObservableProperty]
+    private Choice<PrinterCutMode>? _cut;
+
+    [ObservableProperty]
+    private Choice<PrinterQrMode>? _qr;
+
+    [ObservableProperty]
+    private Choice<SerialHandshake>? _handshake;
+
+    public IReadOnlyList<Choice<PrinterModel>> Models { get; private set; } = [];
+
+    public IReadOnlyList<Choice<PrinterCodePage>> CodePages { get; private set; } = [];
+
+    public IReadOnlyList<Choice<PrinterCutMode>> CutModes { get; private set; } = [];
+
+    public IReadOnlyList<Choice<PrinterQrMode>> QrModes { get; private set; } = [];
+
+    public IReadOnlyList<Choice<SerialHandshake>> Handshakes { get; private set; } = [];
+
+    // --- v1.1: cajón, visor y lector ---
+
+    [ObservableProperty]
+    private Choice<int>? _drawerPin;
+
+    [ObservableProperty]
+    private string _drawerPort = "";
+
+    [ObservableProperty]
+    private string _polePort = "";
+
+    [ObservableProperty]
+    private Choice<PoleDisplayProtocol>? _poleProtocol;
+
+    [ObservableProperty]
+    private string _poleBaudText = "9600";
+
+    [ObservableProperty]
+    private string _scannerPort = "";
+
+    [ObservableProperty]
+    private string _scannerBaudText = "9600";
+
+    [ObservableProperty]
+    private string _scannerStatus = "";
+
+    public IReadOnlyList<Choice<int>> DrawerPins { get; } = [new(2, "2"), new(5, "5")];
+
+    public IReadOnlyList<Choice<PoleDisplayProtocol>> PoleProtocols { get; } =
+        [new(PoleDisplayProtocol.EscPos, "ESC/POS (Epson DM-D)"), new(PoleDisplayProtocol.Cd5220, "CD5220")];
+
+    /// <summary>Puertos COM del PC, para elegirlos en el cajón, el visor y el lector.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<string> _comPorts = [];
+
+    partial void OnModelChanged(Choice<PrinterModel>? value)
+    {
+        if (_applyingModel || value is null || value.Value == PrinterModel.Custom)
+            return;
+        var preset = PrinterProfile.Default.WithModel(value.Value);
+        _applyingModel = true;
+        CodePage = CodePages.First(c => c.Value == preset.CodePage);
+        Cut = CutModes.First(c => c.Value == preset.Cut);
+        Qr = QrModes.First(q => q.Value == preset.Qr);
+        if (value.Value == PrinterModel.Generic58NoCutter)
+            PaperWidth = PaperWidths.First(w => w.Value == 58);
+        _applyingModel = false;
+    }
+
+    // Tocar un ajuste a mano convierte el modelo en "personalizado".
+    partial void OnCodePageChanged(Choice<PrinterCodePage>? value) => MarkCustom();
+
+    partial void OnCutChanged(Choice<PrinterCutMode>? value) => MarkCustom();
+
+    partial void OnQrChanged(Choice<PrinterQrMode>? value) => MarkCustom();
+
+    private void MarkCustom()
+    {
+        if (!_applyingModel && Models.Count > 0)
+        {
+            _applyingModel = true;
+            Model = Models.First(m => m.Value == PrinterModel.Custom);
+            _applyingModel = false;
+        }
+    }
+
     // --- HW-03 cajón y HW-02 pantalla de cliente ---
 
     [ObservableProperty]
@@ -114,6 +213,32 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         OnPropertyChanged(nameof(Connections));
         OnPropertyChanged(nameof(Encodings));
         OnPropertyChanged(nameof(AutoPrintModes));
+        Models =
+        [
+            new(PrinterModel.EpsonCompatible, L["ModelEpson"]),
+            new(PrinterModel.Generic80, L["ModelGeneric80"]),
+            new(PrinterModel.Generic58NoCutter, L["ModelGeneric58"]),
+            new(PrinterModel.Custom, L["ModelCustom"]),
+        ];
+        CodePages =
+        [
+            new(PrinterCodePage.Pc858, "PC858 (€)"),
+            new(PrinterCodePage.Wpc1252, "Windows-1252 (€)"),
+            new(PrinterCodePage.Pc850, L["CodePage850"]),
+            new(PrinterCodePage.Pc437, L["CodePage437"]),
+        ];
+        CutModes = [new(PrinterCutMode.Partial, L["CutPartial"]), new(PrinterCutMode.Full, L["CutFull"]), new(PrinterCutMode.None, L["CutNone"])];
+        QrModes = [new(PrinterQrMode.Native, L["QrNative"]), new(PrinterQrMode.Image, L["QrImage"])];
+        Handshakes =
+        [
+            new(SerialHandshake.None, L["HandshakeNone"]),
+            new(SerialHandshake.XOnXOff, "XON/XOFF"),
+            new(SerialHandshake.RtsCts, "RTS/CTS"),
+            new(SerialHandshake.DtrDsr, "DTR/DSR"),
+        ];
+        foreach (var name in new[] { nameof(Models), nameof(CodePages), nameof(CutModes), nameof(QrModes), nameof(Handshakes) })
+            OnPropertyChanged(name);
+        ComPorts = SafeList(RawPrinter.SerialPorts);
 
         var p = profiles.GetPrinter();
         Connection = Connections.First(c => c.Value == p.Connection);
@@ -122,6 +247,13 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         PaperWidth = PaperWidths.FirstOrDefault(w => w.Value == p.PaperWidthMm) ?? PaperWidths[0];
         Encoding = Encodings.First(e => e.Value == p.Encoding);
         AutoPrint = AutoPrintModes.First(a => a.Value == p.AutoPrint);
+        _applyingModel = true;
+        Model = Models.First(m => m.Value == p.Model);
+        CodePage = CodePages.First(c => c.Value == p.CodePage);
+        Cut = CutModes.First(c => c.Value == p.Cut);
+        Qr = QrModes.First(q => q.Value == p.Qr);
+        Handshake = Handshakes.First(h => h.Value == p.Handshake);
+        _applyingModel = false;
 
         var labels = profiles.GetLabelPrinterSettings();
         LabelsSameAsReceipt = profiles.LabelsUseReceiptPrinter;
@@ -133,6 +265,35 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         OpenDrawerOnCash = hardware.OpenDrawerOnCash;
         CustomerDisplayEnabled = hardware.CustomerDisplay;
         WelcomeMessage = hardware.WelcomeMessage;
+        DrawerPin = DrawerPins.First(d => d.Value == hardware.DrawerPin);
+        DrawerPort = hardware.DrawerPort;
+        PolePort = hardware.PolePort;
+        PoleProtocol = PoleProtocols.First(p2 => p2.Value == hardware.PoleProtocol);
+        PoleBaudText = hardware.PoleBaudRate.ToString(L.Culture);
+        ScannerPort = hardware.ScannerPort;
+        ScannerBaudText = hardware.ScannerBaudRate.ToString(L.Culture);
+        RefreshScannerStatus();
+    }
+
+    private void RefreshScannerStatus() => ScannerStatus = ScannerPort.Trim().Length == 0 ? L["ScannerKeyboard"]
+        : scanner.IsRunning ? string.Format(L["ScannerListening"], ScannerPort.Trim())
+        : string.Format(L["ScannerPortError"], ScannerPort.Trim(), scanner.LastError);
+
+    /// <summary>v1.1: manda un texto de prueba al visor de cliente.</summary>
+    [RelayCommand]
+    private void TestPole()
+    {
+        if (!SaveHardware())
+            return;
+        LastTest = TestPoleAsync();
+    }
+
+    private async Task TestPoleAsync()
+    {
+        await customerDisplay.LastPole;
+        customerDisplay.ShowWelcome();
+        await customerDisplay.LastPole;
+        ShowInfo("PoleTestSent");
     }
 
     partial void OnConnectionChanged(Choice<PrinterConnection>? value)
@@ -158,11 +319,28 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
                 Target = LabelTarget.Trim(),
                 PaperWidthMm = LabelPaperWidth?.Value ?? 58,
             });
-            profiles.SaveHardware(new HardwareProfile(OpenDrawerOnCash, CustomerDisplayEnabled, WelcomeMessage));
-            customerDisplay.IsEnabled = CustomerDisplayEnabled; // abre o cierra la ventana del segundo monitor
-            customerDisplay.ShowWelcome();
+            if (!SaveHardware())
+                return;
             ShowInfo("Saved");
         }
+    }
+
+    /// <summary>Cajón, pantalla y visor de cliente y lector. Reinicia el lector COM con el puerto nuevo.</summary>
+    private bool SaveHardware()
+    {
+        if (!int.TryParse(PoleBaudText, out var poleBaud) || poleBaud <= 0 || !int.TryParse(ScannerBaudText, out var scannerBaud) || scannerBaud <= 0)
+        {
+            ShowError("ErrorNumberFormat");
+            return false;
+        }
+        profiles.SaveHardware(new HardwareProfile(OpenDrawerOnCash, CustomerDisplayEnabled, WelcomeMessage,
+            DrawerPin?.Value ?? 2, DrawerPort.Trim(), PolePort.Trim(), PoleProtocol?.Value ?? PoleDisplayProtocol.EscPos, poleBaud,
+            ScannerPort.Trim(), scannerBaud));
+        customerDisplay.IsEnabled = CustomerDisplayEnabled; // abre o cierra la ventana del segundo monitor
+        customerDisplay.ShowWelcome();
+        scanner.Restart();
+        RefreshScannerStatus();
+        return true;
     }
 
     /// <summary>HW-03: prueba del cajón.</summary>
@@ -219,7 +397,9 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
             return null;
         }
         return new PrinterProfile(connection, Target.Trim(), PaperWidth?.Value ?? 80,
-            Encoding?.Value ?? PrinterEncoding.Western, AutoPrint?.Value ?? AutoPrintMode.Ask, baud);
+            Encoding?.Value ?? PrinterEncoding.Western, AutoPrint?.Value ?? AutoPrintMode.Ask, baud,
+            CodePage?.Value ?? PrinterCodePage.Pc858, Cut?.Value ?? PrinterCutMode.Partial, Qr?.Value ?? PrinterQrMode.Native,
+            Handshake?.Value ?? SerialHandshake.None, Model?.Value ?? PrinterModel.Custom);
     }
 
     private static IReadOnlyList<string> SafeList(Func<IReadOnlyList<string>> list)

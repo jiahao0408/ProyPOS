@@ -218,11 +218,19 @@ No hace falta hardware para compilar ni para pasar los tests. Para probar los pe
 
 | Periférico | Cómo probar | Sin el aparato |
 |---|---|---|
-| **Lector de códigos** (HW-04) | Lector USB configurado en **modo teclado** (HID) y con sufijo **Enter** | Escribir el código en el campo de búsqueda y pulsar Enter: es exactamente lo que hace el lector |
-| **Impresora térmica** (HW-01) | ESC/POS por USB (instalada en Windows, también con el driver «Generic / Text Only»), puerto COM o red (puerto 9100), papel de 58 u 80 mm. Ajustes > Impresora > Imprimir prueba | Conexión «Sin impresora»: cada ticket se guarda como `.bin` en `%LOCALAPPDATA%StarSeaPOS	ickets`. Se puede mandar a una impresora real con `copy /b ticket.bin \PCImpresora` |
+| **Lector de códigos** (HW-04) | USB en **modo teclado** (HID) con sufijo **Enter** o **Tab**: no se configura nada. v1.1: lectores **serie** o en modo **USB-COM** en Impresora > Lector de códigos (puerto y baudios) | Escribir el código en el campo de búsqueda y pulsar Enter: es exactamente lo que hace el lector |
+| **Impresora térmica** (HW-01) | ESC/POS por USB (instalada en Windows, también con el driver «Generic / Text Only»), puerto COM o red (puerto 9100), papel de 58 u 80 mm. v1.1: **Modelo** (Epson y compatibles, genérica de 80 mm, genérica de 58 mm sin cortador o personalizada), **tabla de caracteres** (PC858, Windows-1252, PC850, PC437), **corte** (parcial, total o sin cortador), **QR** (de la impresora o como imagen) y **control de flujo** en COM. Ajustes > Impresora > Imprimir prueba: el ticket de prueba lleva los ajustes | Conexión «Sin impresora»: cada ticket se guarda como `.bin` en `%LOCALAPPDATA%\StarSeaPOS\tickets`. Se puede mandar a una impresora compartida con `copy /b ticket.bin \\PC\Impresora` |
 | **Impresora de etiquetas** (BAZ-01) | Depende del modelo (ESC/POS, ZPL o TSPL): **modelo pendiente de decidir** | — |
-| **Cajón portamonedas** (HW-03) | Conectado a la impresora; se abre con un pulso ESC/POS | — |
-| **Pantalla de cliente** (HW-02) | Segundo monitor, o visor por puerto COM | Ventana normal en el mismo monitor |
+| **Cajón portamonedas** (HW-03) | Conectado a la impresora (pin 2 o 5) o, v1.1, con su **propio puerto COM** (disparadores USB/serie) | — |
+| **Pantalla de cliente** (HW-02) | Segundo monitor y, v1.1, **visor de 2 × 20** por puerto serie o USB-COM (protocolo ESC/POS de Epson DM-D o CD5220) | Ventana normal en el mismo monitor |
+
+**Si algo no sale bien en la impresora** (v1.1):
+
+- Acentos o € raros → cambiar la **tabla de caracteres** (primero PC858; si no, Windows-1252; las impresoras más básicas solo traen PC437, y entonces el € sale como «EUR»).
+- No sale el QR, o sale texto raro en su lugar → **QR como imagen**.
+- La impresora no tiene cortador y deja comandos sin efecto o no avanza el papel → **Sin cortador**.
+- Impresora COM que corta tickets largos o pierde datos → **control de flujo** (DTR/DSR es el más habitual en impresoras serie; XON/XOFF en algunas Bluetooth).
+- El cajón no se abre → probar el **pin 5**; si el cajón va con su propio disparador USB, indicar su puerto COM.
 
 ### Puertos serie (COM)
 

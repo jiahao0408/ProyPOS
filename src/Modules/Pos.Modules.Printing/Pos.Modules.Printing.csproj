@@ -9,4 +9,8 @@
     <!-- Logo del ticket: leer y escalar la imagen (solo Windows) -->
     <PackageReference Include="System.Drawing.Common" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- v1.1: QR como imagen (impresoras sin GS ( k) -->
+    <PackageReference Include="QRCoder" />
+  </ItemGroup>
 </Project>

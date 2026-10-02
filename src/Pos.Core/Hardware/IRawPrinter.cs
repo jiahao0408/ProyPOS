@@ -5,6 +5,9 @@ public enum PrinterDestination
 {
     Receipt = 0,
     Labels = 1,
+
+    /// <summary>v1.1: el cajón. Por defecto va por la impresora de tickets; puede tener su propio puerto COM.</summary>
+    Drawer = 2,
 }
 
 /// <summary>
