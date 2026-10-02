@@ -18,7 +18,7 @@
     <Launch Condition="Installed OR WindowsBuild &gt;= 22000"
             Message="StarSeaPOS necesita Windows 11." />
 
-    <Icon Id="AppIcon" SourceFile="$(PublishDir)\StarSeaPOS.exe" />
+    <Icon Id="AppIcon" SourceFile="..\src\Pos.App\Assets\starseapos.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
 
     <StandardDirectory Id="ProgramFiles64Folder">

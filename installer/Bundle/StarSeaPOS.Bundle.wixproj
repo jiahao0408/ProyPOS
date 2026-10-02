@@ -1,0 +1,18 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    Instalador .exe (bundle de WiX Burn) que envuelve el MSI. Lo genera build-installer.ps1:
+      dotnet build installer\Bundle\StarSeaPOS.Bundle.wixproj -p:ProductVersion=1.0.0 -p:MsiPath=...\StarSeaPOS-1.0.0.msi
+  -->
+  <PropertyGroup>
+    <OutputType>Bundle</OutputType>
+    <OutputName>StarSeaPOS-Setup-$(ProductVersion)</OutputName>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.0.0</ProductVersion>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <MsiPath Condition="'$(MsiPath)' == ''">..\..\artifacts\installer\StarSeaPOS-$(ProductVersion).msi</MsiPath>
+    <DefineConstants>ProductVersion=$(ProductVersion);MsiPath=$(MsiPath)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Bal.wixext" />
+  </ItemGroup>
+</Project>

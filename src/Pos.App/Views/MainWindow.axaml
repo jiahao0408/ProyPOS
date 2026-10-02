@@ -4,6 +4,7 @@
         x:Class="Pos.App.Views.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="{Binding L[AppTitle]}"
+        Icon="/Assets/starseapos.ico"
         MinWidth="1024" MinHeight="700">
   <ContentControl Content="{Binding CurrentScreen}" />
 </Window>

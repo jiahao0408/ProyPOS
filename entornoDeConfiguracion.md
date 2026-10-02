@@ -147,13 +147,21 @@ dotnet build
 
 El ejecutable se llama `StarSeaPOS.exe`. Al compilar se copian los idiomas a `bin/.../locales/`.
 
-### Generar el instalador (MSI)
+### Generar el instalador (.exe y MSI)
 
 ```powershell
 .\installer\build-installer.ps1 -Version 1.0.0
 ```
 
-Pasa los tests, publica la app *self-contained* para `win-x64` (el PC de la tienda no necesita .NET) y genera `artifacts\installer\StarSeaPOS-1.0.0.msi` con WiX Toolset 5 (se descarga solo como paquete NuGet). El MSI instala en `C:\Program Files\StarSeaPOS`, crea accesos directos en el menú Inicio y el escritorio, solo se instala en Windows 11 y, al instalar una versión nueva, sustituye a la anterior. Desinstalar **no** borra los datos de `%LOCALAPPDATA%\StarSeaPOS`.
+Pasa los tests (`-SkipTests` para saltarlos), publica la app *self-contained* para `win-x64` y genera en `artifacts\installer`:
+
+- **`StarSeaPOS-Setup-1.0.0.exe`**: el instalador para la tienda. Un solo fichero: comprueba que el PC es Windows 11 de 64 bits, instala la app y al terminar ofrece abrirla.
+- `StarSeaPOS-1.0.0.msi`: lo mismo en MSI (instalación silenciosa con `msiexec /i … /qn`, y lo que usan las actualizaciones automáticas).
+- `update.json`: versión y SHA-256 del MSI para las actualizaciones (CFG-06).
+
+**El PC de la tienda no necesita instalar nada más:** la app lleva dentro su propio .NET 8, SQLite/SQLCipher y el motor gráfico; las fuentes (Segoe UI y Microsoft YaHei) vienen con Windows 11. La configuración del entorno la hace la propia app al arrancar la primera vez: crea `%LOCALAPPDATA%\StarSeaPOS` (base de datos cifrada con su clave protegida por DPAPI, copias, registros de errores) y pide crear el administrador. Lo único externo es el hardware: el driver de la impresora (o «Generic / Text Only») y el lector de códigos en modo teclado.
+
+Se generan con WiX Toolset 5 (se descarga solo como paquete NuGet). El MSI instala en `C:\Program Files\StarSeaPOS`, crea accesos directos en el menú Inicio y el escritorio, solo se instala en Windows 11 y, al instalar una versión nueva, sustituye a la anterior. Desinstalar **no** borra los datos de `%LOCALAPPDATA%\StarSeaPOS`.
 
 Antes de entregar una versión: copiar `src\Pos.App\producer.example.json` como `src\Pos.App\producer.json` y completarlo (datos del productor para Verifactu). `producer.json` está en `.gitignore`: los datos personales no se suben al repositorio.
 

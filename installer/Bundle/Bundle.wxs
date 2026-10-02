@@ -1,0 +1,36 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <!--
+    Instalador .exe de StarSeaPOS (WiX Burn): un solo fichero que comprueba que el PC es Windows 11 x64,
+    instala la aplicación (MSI) y al terminar ofrece abrirla.
+    No hace falta instalar .NET ni nada más: la aplicación va publicada "self-contained" (lleva su propio
+    .NET 8, SQLCipher y Skia). Los datos (BD cifrada, copias, certificado) se crean en %LOCALAPPDATA%\StarSeaPOS
+    al arrancar la primera vez.
+    UpgradeCode fijo: una versión nueva del instalador sustituye a la anterior. No cambiarlo nunca.
+  -->
+  <Bundle Name="StarSeaPOS"
+          Manufacturer="StarSeaPOS"
+          Version="$(ProductVersion)"
+          UpgradeCode="3C7E5A10-8B2F-4D91-A6E4-2F9C1B7D5E63"
+          IconSourceFile="..\..\src\Pos.App\Assets\starseapos.ico">
+
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl=""
+          LogoFile="logo.png"
+          LaunchTarget="[ProgramFiles64Folder]StarSeaPOS\StarSeaPOS.exe"
+          SuppressOptionsUI="yes"
+          SuppressRepair="yes"
+          ShowVersion="yes" />
+    </BootstrapperApplication>
+
+    <!-- Solo Windows 11 de 64 bits (build 22000 o superior) -->
+    <bal:Condition Message="StarSeaPOS necesita Windows 11 de 64 bits."
+                   Condition="VersionNT64 AND WindowsBuildNumber &gt;= 22000" />
+
+    <Chain>
+      <MsiPackage Id="StarSeaPOS" SourceFile="$(MsiPath)" Vital="yes" Visible="no" />
+    </Chain>
+  </Bundle>
+</Wix>

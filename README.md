@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador MSI. **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 332 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 334 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -106,7 +106,7 @@ Tres capas (UI → lógica → datos) y cuatro periféricos.
 | Pantalla de cliente | Segunda ventana en monitor secundario, o visor por COM |
 | Códigos de barras | Lector USB en modo teclado |
 | Backend (opcional) | ASP.NET Core o Node.js + PostgreSQL |
-| Entrega | Instalador MSI para Windows con actualización automática |
+| Entrega | Instalador `.exe` (y MSI) para Windows 11 con actualización automática |
 
 **Alternativa web:** Tauri (Rust) + React con i18next. Más ligera, pero con más trabajo para acceder a puertos serie e impresoras.
 
@@ -215,7 +215,7 @@ Los datos de facturación (facturas y desgloses) tampoco se pueden modificar ni 
 | VFA-02 Envío | `VerifactuXml`, `VerifactuSender` | Mensaje SOAP `RegFactuSistemaFacturacion` (hasta 1000 registros) con certificado de cliente. Se guarda la respuesta de cada registro: aceptado, aceptado con errores o rechazado, con su código de error |
 | VFA-03 Cola sin conexión | `VerifactuQueue` | Cola persistente en la BD; un proceso en segundo plano intenta enviar cada 30 s. Respeta el `TiempoEsperaEnvio` de la AEAT; sin conexión reintenta con esperas crecientes (hasta 1 h). La venta nunca espera a la AEAT |
 | VFA-06 Declaración responsable | Página **Acerca de** | Texto con sistema, versión, productor, NIF, dirección, fecha y lugar (art. 13 de la Orden HAC/1177/2024). Los datos del productor se leen de `producer.json` junto al ejecutable |
-| Instalador | `installer/` | MSI (WiX 5) por máquina, solo Windows 11, con la app *self-contained* (no hace falta instalar .NET), accesos directos en el menú Inicio y el escritorio. Desinstalar no borra los datos. `.\installer\build-installer.ps1 -Version 1.0.0` |
+| Instalador | `installer/` | `StarSeaPOS-Setup-<versión>.exe` (bundle WiX Burn: comprueba Windows 11 x64, instala y ofrece abrir la app) y el MSI que lleva dentro (WiX 5) por máquina, solo Windows 11, con la app *self-contained* (no hace falta instalar .NET), accesos directos en el menú Inicio y el escritorio. Desinstalar no borra los datos. `.\installer\build-installer.ps1 -Version 1.0.0` |
 
 **Antes de usar Verifactu en producción:**
 1. Completar `src\Pos.App\producer.json` con los datos reales del productor del software (la página Acerca de avisa mientras falten). Ese fichero **no se sube a git** (lleva NIF y dirección personales): en el repositorio solo está la plantilla `producer.example.json`, que se copia como `producer.json` en cada PC donde se compile el instalador.

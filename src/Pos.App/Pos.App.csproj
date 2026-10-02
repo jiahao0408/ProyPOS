@@ -7,7 +7,12 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <!-- Bindings compilados: un error en un binding de XAML falla al compilar, no en la tienda. -->
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationIcon>Assets\starseapos.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\starseapos.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Pos.App.Tests" />

@@ -13,6 +13,7 @@
     <DefineConstants>ProductVersion=$(ProductVersion);PublishDir=$(PublishDir)</DefineConstants>
     <BindPaths>publish=$(PublishDir)</BindPaths>
     <SuppressValidation>false</SuppressValidation>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!--
       Instalación por máquina: los accesos directos van al menú Inicio y escritorio comunes, pero las
       reglas ICE38/43/57 los tratan como del perfil del usuario (falso positivo conocido en instaladores
@@ -20,4 +21,8 @@
     -->
     <SuppressIces>ICE38;ICE43;ICE57;ICE60</SuppressIces>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- El instalador .exe (bundle) es otro proyecto, en la subcarpeta Bundle. -->
+    <Compile Include="Package.wxs" />
+  </ItemGroup>
 </Project>
