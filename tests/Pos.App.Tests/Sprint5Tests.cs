@@ -187,6 +187,7 @@ public class Sprint5Tests
         Assert.Contains($"Versión: {about.Producer.Version}", about.Declaration);
         Assert.Contains("Orden HAC/1177/2024", about.Declaration);
         Assert.Equal("1.0.0", about.Producer.Version); // la de StarSeaPOS, no la del proceso de tests
-        Assert.True(about.IsIncomplete); // producer.json aún con [COMPLETAR]
+        // El aviso depende de producer.json, que es local de cada PC (no está en git).
+        Assert.Equal(!about.Producer.IsComplete, about.IsIncomplete);
     }
 }

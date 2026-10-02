@@ -117,7 +117,7 @@ StarSeaPOS/
 ├── StarSeaPOS.sln
 ├── Directory.Build.props        # net8.0, nullable, usings implícitos para todos los proyectos
 ├── Directory.Packages.props     # Versiones de NuGet centralizadas
-├── global.json                  # Fija el SDK .NET 8
+├── global.json                  # SDK .NET 8 o más nuevo
 ├── src/
 │   ├── Pos.App/                 # Shell Avalonia: ventanas, MVVM, DI (Composition.cs), temas
 │   ├── Pos.Core/                # Dominio, IModule, ILocalizer, PinHasher, cálculo de IVA

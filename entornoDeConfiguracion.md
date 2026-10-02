@@ -64,7 +64,7 @@ Si todo va bien se abre la app a pantalla completa con el selector de idioma. Pa
 
 > **Ojo:** hace falta el **SDK**, no solo el *runtime*. Con solo el runtime, `dotnet build` falla con *"No .NET SDKs were found"*.
 
-El fichero [global.json](global.json) fija el SDK 8.0 y acepta cualquier 8.0.x más reciente (`rollForward: latestFeature`). Si tienes instalado solo el SDK 9 o 10, también falla: instala además el 8.
+El fichero [global.json](global.json) pide como mínimo el SDK 8.0 y acepta cualquier SDK más reciente (`rollForward: latestMajor`): el SDK 9 o 10 también compila los proyectos `net8.0`. Así funciona aunque VS Code use el .NET instalado en `C:\Program Files\dotnet` y la terminal el instalado para tu usuario. Para **ejecutar** la app y los tests hace falta el runtime de .NET 8 (lo trae el SDK 8, o el runtime suelto).
 
 ```powershell
 winget install Git.Git
@@ -251,7 +251,8 @@ Reglas:
 | Síntoma | Causa | Solución |
 |---|---|---|
 | `No .NET SDKs were found` | Solo está el runtime | `winget install Microsoft.DotNet.SDK.8` y abrir una terminal nueva |
-| `A compatible .NET SDK was not found` / error de `global.json` | Solo hay SDK 9 o 10 | Instalar también el SDK 8 |
+| `A compatible .NET SDK was not found` / error de `global.json` | No hay ningún SDK 8 o superior en el `dotnet` que se usa | Instalar el SDK 8 (o uno más nuevo) |
+| VS Code: «No se pudieron restaurar los paquetes NuGet para la solución» | VS Code usa otro `dotnet` (`C:\Program Files\dotnet`) cuyo SDK no aceptaba `global.json` | Ya resuelto con `rollForward: latestMajor`; si vuelve a pasar: *Developer: Reload Window* |
 | `dotnet` no se reconoce | PATH sin recargar | Cerrar y abrir la terminal (o el IDE) |
 | Error NU1008 al restaurar | Un `.csproj` lleva versión en `PackageReference` | Quitar la versión y ponerla en `Directory.Packages.props` |
 | Error NU1010 al restaurar | El paquete no está en `Directory.Packages.props` | Añadir allí su `PackageVersion` |
