@@ -185,7 +185,7 @@
   "Logo": "Logo",
   "ChooseLogo": "Choisir un logo",
   "PrinterConnection": "Connexion",
-  "PrinterUsbWindows": "USB (imprimante installée dans Windows)",
+  "PrinterUsbWindows": "Thermique installée dans Windows (USB, ESC/POS)",
   "PrinterSerial": "Port COM ou Bluetooth",
   "PrinterNetwork": "Réseau (IP)",
   "PrinterFile": "Sans imprimante (enregistrer dans un fichier)",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "Mode de l'écran de vente",
   "ErrorShortcutInvalid": "Un raccourci est incompréhensible ou utilise une touche non autorisée.",
   "ErrorShortcutDuplicate": "La même touche est utilisée dans deux raccourcis.",
-  "ShortcutsResetDone": "Raccourcis rétablis. Appuyez sur Enregistrer pour confirmer les autres réglages."
+  "ShortcutsResetDone": "Raccourcis rétablis. Appuyez sur Enregistrer pour confirmer les autres réglages.",
+  "PrinterStandard": "Imprimante Windows standard (HP, Brother, Canon, Epson…)",
+  "PrinterTargetStandard": "Imprimante Windows (laser, jet d'encre ou étiquettes avec son pilote)",
+  "PageLayout": "Format de page",
+  "PageLayoutHint": "Facture A4 : tickets et factures en pleine page, comme le PDF. Ticket : la colonne du ticket sur le papier. Ajuster à la largeur : pour imprimantes d'étiquettes ou à rouleau avec pilote (Brother QL, Dymo…), chaque étiquette sur sa page. Le tiroir a besoin de son propre port COM.",
+  "LayoutFullPage": "Facture A4 (pleine page)",
+  "LayoutTicket": "Ticket sur le papier",
+  "LayoutFitWidth": "Ajuster à la largeur du papier (étiquettes, rouleau)"
 }

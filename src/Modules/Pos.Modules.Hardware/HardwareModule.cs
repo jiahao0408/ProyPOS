@@ -13,6 +13,7 @@ public sealed class HardwareModule : IModule
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IRawPrinter, RawPrinter>();
+        services.AddSingleton<IPagePrinter, DriverPagePrinter>();
         services.AddSingleton<PoleDisplay>();
         services.AddSingleton<SerialScanner>();
     }

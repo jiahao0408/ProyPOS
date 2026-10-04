@@ -7,5 +7,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="QuestPDF" />
+    <!-- FAC-04: QR de la AEAT en el PDF y en la factura A4 -->
+    <PackageReference Include="QRCoder" />
   </ItemGroup>
 </Project>

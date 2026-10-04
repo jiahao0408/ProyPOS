@@ -38,6 +38,26 @@ public enum PrinterConnection
 
     /// <summary>Sin impresora: guarda cada ticket en un fichero (para probar).</summary>
     File = 3,
+
+    /// <summary>
+    /// v2: impresora normal de Windows (láser o de tinta: HP, Brother, Canon, Epson…) con su driver. No usa
+    /// ESC/POS: el ticket, la factura o la etiqueta se dibujan como página. Sirve también para impresoras de
+    /// etiquetas con driver (Brother QL, Dymo…).
+    /// </summary>
+    WindowsDriver = 4,
+}
+
+/// <summary>v2: cómo se coloca lo impreso en una impresora normal.</summary>
+public enum PageLayout
+{
+    /// <summary>La columna del ticket (58 u 80 mm de ancho) arriba del papel.</summary>
+    Ticket = 0,
+
+    /// <summary>Ajustado al ancho del papel: impresoras de etiquetas o de rollo con driver.</summary>
+    FitWidth = 1,
+
+    /// <summary>Las facturas y los tickets en A4 completo, como el PDF; el resto como ticket.</summary>
+    FullPage = 2,
 }
 
 public enum PrinterEncoding
@@ -137,8 +157,15 @@ public sealed record PrinterProfile(
     PrinterCutMode Cut = PrinterCutMode.Partial,
     PrinterQrMode Qr = PrinterQrMode.Native,
     SerialHandshake Handshake = SerialHandshake.None,
-    PrinterModel Model = PrinterModel.EpsonCompatible)
+    PrinterModel Model = PrinterModel.EpsonCompatible,
+    PageLayout Layout = PageLayout.FullPage)
 {
+    /// <summary>v2: impresora normal (con driver): no entiende ESC/POS.</summary>
+    public bool IsPagePrinter => Connection == PrinterConnection.WindowsDriver;
+
+    /// <summary>Ancho imprimible del ticket en mm: 48 en papel de 58 mm y 72 en papel de 80 mm.</summary>
+    public double PrintableWidthMm => PaperWidthMm <= 58 ? 48 : 72;
+
     public static PrinterProfile Default { get; } = new(PrinterConnection.File, "", 80, PrinterEncoding.Western, AutoPrintMode.Ask);
 
     /// <summary>Caracteres por línea con la fuente normal: 32 en papel de 58 mm y 48 en papel de 80 mm.</summary>
@@ -274,7 +301,8 @@ public sealed class ProfileStore(SettingsStore settings)
             Enum.TryParse<PrinterCutMode>(settings.Get($"{prefix}.cut"), out var cut) ? cut : d.Cut,
             Enum.TryParse<PrinterQrMode>(settings.Get($"{prefix}.qr"), out var qr) ? qr : d.Qr,
             Enum.TryParse<SerialHandshake>(settings.Get($"{prefix}.handshake"), out var hs) ? hs : d.Handshake,
-            Enum.TryParse<PrinterModel>(settings.Get($"{prefix}.model"), out var model) ? model : d.Model);
+            Enum.TryParse<PrinterModel>(settings.Get($"{prefix}.model"), out var model) ? model : d.Model,
+            Enum.TryParse<PageLayout>(settings.Get($"{prefix}.layout"), out var layout) ? layout : d.Layout);
     }
 
     private void Write(string prefix, PrinterProfile p)
@@ -291,5 +319,6 @@ public sealed class ProfileStore(SettingsStore settings)
         settings.Set($"{prefix}.qr", p.Qr.ToString());
         settings.Set($"{prefix}.handshake", p.Handshake.ToString());
         settings.Set($"{prefix}.model", p.Model.ToString());
+        settings.Set($"{prefix}.layout", p.Layout.ToString());
     }
 }

@@ -15,13 +15,19 @@ public sealed record PrintOutcome(string? Error)
     public static PrintOutcome Ok { get; } = new((string?)null);
 }
 
-/// <summary>Imprime tickets y facturas (IMP-01, IMP-02) y la prueba de impresora (HW-01).</summary>
+/// <summary>
+/// Imprime tickets y facturas (IMP-01, IMP-02) y la prueba de impresora (HW-01).
+/// v2: en una impresora normal de Windows (HP, Brother, Canon…) lo mismo se imprime como páginas con su driver;
+/// las facturas, en A4 con el diseño del PDF si así se configura.
+/// </summary>
 public sealed class PrintService(
     IRawPrinter printer,
     IInvoiceDocuments invoices,
     ProfileStore profiles,
     ReceiptBuilder builder,
-    ReportBuilder reports)
+    ReportBuilder reports,
+    IPagePrinter? pagePrinter = null,
+    IInvoicePageRenderer? invoicePages = null)
 {
     /// <summary>CAJ-02: imprime el cierre Z.</summary>
     public Task<PrintOutcome> PrintZReportAsync(ZReportDocument z, CancellationToken cancellationToken = default)
@@ -48,6 +54,9 @@ public sealed class PrintService(
         if (doc is null)
             return Task.FromResult(new PrintOutcome("Invoice not found"));
         var profile = profiles.GetPrinter();
+        // v2: factura en A4 completo en una impresora normal. Las copias (IMP-02) van como ticket, con su marca.
+        if (profile.IsPagePrinter && profile.Layout == PageLayout.FullPage && invoicePages is not null && !copy)
+            return SendPagesAsync(invoicePages.RenderPages(doc, language), invoicePages.Dpi, WidthMm: null, profile, doc.Code, cancellationToken);
         return SendAsync(builder.Build(doc, profiles.GetBusiness(), profile, copy, language), profile, cancellationToken);
     }
 
@@ -76,6 +85,9 @@ public sealed class PrintService(
     {
         var hardware = profiles.GetHardware();
         var profile = profiles.GetPrinter(PrinterDestination.Drawer);
+        // Un cajón no se puede abrir a través de una impresora normal: necesita su propio puerto COM.
+        if (profile.IsPagePrinter)
+            return Task.FromResult(new PrintOutcome("La impresora no es térmica: indica el puerto COM del cajón (Impresora > Cajón)"));
         return SendAsync([new ReceiptDrawerKick(hardware.DrawerPin)], profile, cancellationToken, PrinterDestination.Drawer);
     }
 
@@ -96,6 +108,13 @@ public sealed class PrintService(
     private async Task<PrintOutcome> SendAsync(IReadOnlyList<ReceiptElement> receipt, PrinterProfile profile,
         CancellationToken cancellationToken, PrinterDestination destination = PrinterDestination.Receipt)
     {
+        if (profile.IsPagePrinter)
+        {
+            // Ticket: la columna con su ancho real (58/80 mm); ajustado: todo el ancho del papel (etiquetas).
+            var width = profile.Layout == PageLayout.FitWidth ? (double?)null : profile.PrintableWidthMm;
+            return await SendPagesAsync(PageRenderer.Render(receipt, profile), PageRenderer.Dpi, width, profile, "StarSeaPOS", cancellationToken);
+        }
+
         try
         {
             await printer.PrintAsync(EscPosEncoder.Encode(receipt, profile), destination, cancellationToken);
@@ -105,6 +124,26 @@ public sealed class PrintService(
         {
             // La venta ya está guardada: un fallo de impresora nunca debe perderla ni bloquear la caja.
             return new PrintOutcome(e.Message);
+        }
+    }
+
+    private async Task<PrintOutcome> SendPagesAsync(IReadOnlyList<byte[]> pages, int dpi, double? WidthMm, PrinterProfile profile,
+        string documentName, CancellationToken cancellationToken)
+    {
+        if (pagePrinter is null)
+            return new PrintOutcome("No page printer");
+        if (string.IsNullOrWhiteSpace(profile.Target))
+            return new PrintOutcome("No printer selected");
+        if (pages.Count == 0)
+            return PrintOutcome.Ok;
+        try
+        {
+            await pagePrinter.PrintAsync(new PagePrintJob(profile.Target.Trim(), pages, WidthMm, dpi, documentName), cancellationToken);
+            return PrintOutcome.Ok;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return new PrintOutcome(e.Message); // la venta ya está guardada
         }
     }
 

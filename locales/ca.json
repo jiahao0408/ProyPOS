@@ -185,7 +185,7 @@
   "Logo": "Logotip",
   "ChooseLogo": "Triar logotip",
   "PrinterConnection": "Connexió",
-  "PrinterUsbWindows": "USB (impressora instal·lada a Windows)",
+  "PrinterUsbWindows": "Tèrmica instal·lada a Windows (USB, ESC/POS)",
   "PrinterSerial": "Port COM o Bluetooth",
   "PrinterNetwork": "Xarxa (IP)",
   "PrinterFile": "Sense impressora (desar en fitxer)",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "Mode de la pantalla de venda",
   "ErrorShortcutInvalid": "Hi ha una drecera que no s'entén o fa servir una tecla no permesa.",
   "ErrorShortcutDuplicate": "Hi ha una tecla repetida en dues dreceres.",
-  "ShortcutsResetDone": "Dreceres restaurades. Prem Desar per confirmar la resta d'ajustos."
+  "ShortcutsResetDone": "Dreceres restaurades. Prem Desar per confirmar la resta d'ajustos.",
+  "PrinterStandard": "Impressora normal de Windows (HP, Brother, Canon, Epson…)",
+  "PrinterTargetStandard": "Impressora de Windows (làser, de tinta o d'etiquetes amb el seu driver)",
+  "PageLayout": "Format de pàgina",
+  "PageLayoutHint": "Factura A4: tiquets i factures en foli, com el PDF. Tiquet: la columna del tiquet al paper. Ajustar a l'amplada: per a impressores d'etiquetes o de rotlle amb driver (Brother QL, Dymo…), cada etiqueta a la seva pàgina. El calaix necessita el seu propi port COM.",
+  "LayoutFullPage": "Factura A4 (pàgina completa)",
+  "LayoutTicket": "Tiquet al paper",
+  "LayoutFitWidth": "Ajustar a l'amplada del paper (etiquetes, rotlle)"
 }

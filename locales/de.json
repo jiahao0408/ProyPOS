@@ -185,7 +185,7 @@
   "Logo": "Logo",
   "ChooseLogo": "Logo wählen",
   "PrinterConnection": "Verbindung",
-  "PrinterUsbWindows": "USB (in Windows installierter Drucker)",
+  "PrinterUsbWindows": "Thermodrucker in Windows (USB, ESC/POS)",
   "PrinterSerial": "COM-Port oder Bluetooth",
   "PrinterNetwork": "Netzwerk (IP)",
   "PrinterFile": "Kein Drucker (in Datei speichern)",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "Modus des Verkaufsbildschirms",
   "ErrorShortcutInvalid": "Ein Tastenkürzel ist unverständlich oder nutzt eine nicht erlaubte Taste.",
   "ErrorShortcutDuplicate": "Dieselbe Taste wird in zwei Tastenkürzeln verwendet.",
-  "ShortcutsResetDone": "Tastenkürzel wiederhergestellt. Mit Speichern die übrigen Einstellungen bestätigen."
+  "ShortcutsResetDone": "Tastenkürzel wiederhergestellt. Mit Speichern die übrigen Einstellungen bestätigen.",
+  "PrinterStandard": "Normaler Windows-Drucker (HP, Brother, Canon, Epson…)",
+  "PrinterTargetStandard": "Windows-Drucker (Laser, Tinte oder Etikettendrucker mit Treiber)",
+  "PageLayout": "Seitenformat",
+  "PageLayoutHint": "A4-Rechnung: Bons und Rechnungen auf ganzer Seite wie das PDF. Bon: die Bonspalte auf dem Papier. Breite anpassen: für Etiketten- oder Rollendrucker mit Treiber (Brother QL, Dymo…), jedes Etikett auf eigener Seite. Die Kassenlade braucht einen eigenen COM-Port.",
+  "LayoutFullPage": "A4-Rechnung (ganze Seite)",
+  "LayoutTicket": "Bon auf dem Papier",
+  "LayoutFitWidth": "An Papierbreite anpassen (Etiketten, Rolle)"
 }

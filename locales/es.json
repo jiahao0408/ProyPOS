@@ -185,7 +185,7 @@
   "Logo": "Logo",
   "ChooseLogo": "Elegir logo",
   "PrinterConnection": "Conexión",
-  "PrinterUsbWindows": "USB (impresora instalada en Windows)",
+  "PrinterUsbWindows": "Térmica instalada en Windows (USB, ESC/POS)",
   "PrinterSerial": "Puerto COM o Bluetooth",
   "PrinterNetwork": "Red (IP)",
   "PrinterFile": "Sin impresora (guardar en fichero)",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "Modo de la pantalla de venta",
   "ErrorShortcutInvalid": "Hay un atajo que no se entiende o usa una tecla no permitida.",
   "ErrorShortcutDuplicate": "Hay una tecla repetida en dos atajos.",
-  "ShortcutsResetDone": "Atajos restaurados. Pulsa Guardar para confirmar el resto de ajustes."
+  "ShortcutsResetDone": "Atajos restaurados. Pulsa Guardar para confirmar el resto de ajustes.",
+  "PrinterStandard": "Impresora normal de Windows (HP, Brother, Canon, Epson…)",
+  "PrinterTargetStandard": "Impresora de Windows (láser, de tinta o de etiquetas con su driver)",
+  "PageLayout": "Formato de página",
+  "PageLayoutHint": "Factura A4: tickets y facturas en folio, como el PDF. Ticket: la columna del ticket en el papel. Ajustar al ancho: para impresoras de etiquetas o de rollo con driver (Brother QL, Dymo…), cada etiqueta en su página. El cajón necesita su propio puerto COM.",
+  "LayoutFullPage": "Factura A4 (página completa)",
+  "LayoutTicket": "Ticket en el papel",
+  "LayoutFitWidth": "Ajustar al ancho del papel (etiquetas, rollo)"
 }

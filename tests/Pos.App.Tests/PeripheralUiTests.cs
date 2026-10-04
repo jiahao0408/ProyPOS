@@ -111,4 +111,29 @@ public class PeripheralUiTests
         Assert.Equal((5, PoleDisplayProtocol.Cd5220), (hardware.DrawerPin, hardware.PoleProtocol));
         Assert.Equal("Lector en modo teclado.", page.ScannerStatus);
     }
+
+    [AvaloniaFact]
+    public void PrinterPage_StandardPrinter_ShowsPageLayout_AndHidesThermalOptions()
+    {
+        // v2: impresora normal de Windows (HP, Brother…).
+        using var shop = new Shop(asAdmin: true);
+        var page = shop.Open<PrinterPageViewModel>();
+        Assert.True(page.IsThermalSelected);
+
+        page.Connection = page.Connections.Single(c => c.Value == PrinterConnection.WindowsDriver);
+        Assert.True(page.IsPagePrinterSelected);
+        Assert.False(page.IsThermalSelected);
+        page.Target = "HP LaserJet Pro";
+        page.Layout = page.Layouts.Single(l => l.Value == PageLayout.Ticket);
+        page.LabelsSameAsReceipt = false;
+        page.LabelConnection = page.Connections.Single(c => c.Value == PrinterConnection.WindowsDriver);
+        page.LabelTarget = "Brother QL-800";
+        page.SaveCommand.Execute(null);
+
+        var profiles = shop.App.Get<ProfileStore>();
+        var printer = profiles.GetPrinter();
+        Assert.Equal((PrinterConnection.WindowsDriver, "HP LaserJet Pro", PageLayout.Ticket), (printer.Connection, printer.Target, printer.Layout));
+        var labels = profiles.GetPrinter(Pos.Core.Hardware.PrinterDestination.Labels);
+        Assert.Equal(("Brother QL-800", PageLayout.FitWidth), (labels.Target, labels.Layout)); // cada etiqueta llena el papel
+    }
 }

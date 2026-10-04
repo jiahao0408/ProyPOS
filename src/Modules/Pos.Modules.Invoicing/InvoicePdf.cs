@@ -15,8 +15,15 @@ namespace Pos.Modules.Invoicing;
 /// número y serie, fecha, emisor y cliente con NIF y domicilio, precio unitario sin IVA,
 /// base, tipo y cuota por cada tipo de IVA y total.
 /// </summary>
-public sealed class InvoicePdf(PrintLocalization print)
+public sealed class InvoicePdf(PrintLocalization print) : IInvoicePageRenderer
 {
+    /// <summary>v2: resolución de las páginas para imprimir en una impresora normal.</summary>
+    public int Dpi => 200;
+
+    /// <summary>v2: la factura como imágenes A4 (una por página), en el idioma de impresión o en el indicado.</summary>
+    public IReadOnlyList<byte[]> RenderPages(InvoiceDocument doc, string? language = null) =>
+        Build(doc, language).GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = Dpi }).ToList();
+
     static InvoicePdf()
     {
         // Licencia Community: gratuita para empresas con ingresos anuales inferiores a 1 M$.
@@ -27,9 +34,16 @@ public sealed class InvoicePdf(PrintLocalization print)
 
     public void Save(InvoiceDocument doc, string path) => Build(doc).GeneratePdf(path);
 
-    private Document Build(InvoiceDocument doc)
+    private static byte[] QrPng(string data)
     {
-        var (L, formatter) = print.For();
+        using var generator = new QRCoder.QRCodeGenerator();
+        using var code = generator.CreateQrCode(data, QRCoder.QRCodeGenerator.ECCLevel.M, forceUtf8: true);
+        return new QRCoder.PngByteQRCode(code).GetGraphic(10);
+    }
+
+        private Document Build(InvoiceDocument doc, string? language = null)
+    {
+        var (L, formatter) = print.For(language);
         string Money(decimal amount) => formatter.FormatMoney(amount);
         string Amount(decimal amount) => formatter.FormatAmount(amount);
 
@@ -139,6 +153,21 @@ public sealed class InvoicePdf(PrintLocalization print)
                 });
 
                 col.Item().PaddingTop(12).AlignRight().Text($"{L["Total"]}  {Money(doc.Total)}").FontSize(16).Bold();
+
+                // FAC-04: QR de cotejo de la AEAT (y la leyenda VERI*FACTU si se envía), también en papel.
+                if (doc.QrUrl is { } qr)
+                {
+                    col.Item().PaddingTop(24).Row(row =>
+                    {
+                        row.ConstantItem(90).Image(QrPng(qr));
+                        row.RelativeItem().PaddingLeft(12).AlignMiddle().Column(c =>
+                        {
+                            c.Item().Text(L["QrHint"]).FontSize(9);
+                            if (doc.VerifactuMode)
+                                c.Item().Text(Pos.Core.Verifactu.VerifactuQr.VerifactuLegend).Bold();
+                        });
+                    });
+                }
             });
 
             page.Footer().AlignCenter().Text(t =>

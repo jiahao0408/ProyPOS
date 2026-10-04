@@ -131,7 +131,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
     private string _welcomeMessage = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TargetHint), nameof(ShowBaudRate))]
+    [NotifyPropertyChangedFor(nameof(TargetHint), nameof(ShowBaudRate), nameof(IsPagePrinterSelected), nameof(IsThermalSelected))]
     private Choice<PrinterConnection>? _connection;
 
     [ObservableProperty]
@@ -173,6 +173,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
     public string LabelTargetHint => L[LabelConnection?.Value switch
     {
         PrinterConnection.Windows => "PrinterTargetWindows",
+        PrinterConnection.WindowsDriver => "PrinterTargetStandard",
         PrinterConnection.Serial => "PrinterTargetSerial",
         PrinterConnection.Network => "PrinterTargetNetwork",
         _ => "PrinterTargetFile",
@@ -189,12 +190,25 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
     public string TargetHint => L[Connection?.Value switch
     {
         PrinterConnection.Windows => "PrinterTargetWindows",
+        PrinterConnection.WindowsDriver => "PrinterTargetStandard",
         PrinterConnection.Serial => "PrinterTargetSerial",
         PrinterConnection.Network => "PrinterTargetNetwork",
         _ => "PrinterTargetFile",
     }];
 
     public bool ShowBaudRate => Connection?.Value == PrinterConnection.Serial;
+
+    // --- v2: impresoras normales (HP, Brother, Canon…) ---
+
+    /// <summary>Impresora normal con driver: se elige el formato de página y no hay opciones ESC/POS.</summary>
+    public bool IsPagePrinterSelected => Connection?.Value == PrinterConnection.WindowsDriver;
+
+    public bool IsThermalSelected => !IsPagePrinterSelected;
+
+    [ObservableProperty]
+    private Choice<PageLayout>? _layout;
+
+    public IReadOnlyList<Choice<PageLayout>> Layouts { get; private set; } = [];
 
     /// <summary>Última prueba lanzada (para esperarla en los tests).</summary>
     public Task LastTest { get; private set; } = Task.CompletedTask;
@@ -204,6 +218,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         Connections =
         [
             new(PrinterConnection.Windows, L["PrinterUsbWindows"]),
+            new(PrinterConnection.WindowsDriver, L["PrinterStandard"]),
             new(PrinterConnection.Serial, L["PrinterSerial"]),
             new(PrinterConnection.Network, L["PrinterNetwork"]),
             new(PrinterConnection.File, L["PrinterFile"]),
@@ -236,7 +251,13 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
             new(SerialHandshake.RtsCts, "RTS/CTS"),
             new(SerialHandshake.DtrDsr, "DTR/DSR"),
         ];
-        foreach (var name in new[] { nameof(Models), nameof(CodePages), nameof(CutModes), nameof(QrModes), nameof(Handshakes) })
+        Layouts =
+        [
+            new(PageLayout.FullPage, L["LayoutFullPage"]),
+            new(PageLayout.Ticket, L["LayoutTicket"]),
+            new(PageLayout.FitWidth, L["LayoutFitWidth"]),
+        ];
+        foreach (var name in new[] { nameof(Models), nameof(CodePages), nameof(CutModes), nameof(QrModes), nameof(Handshakes), nameof(Layouts) })
             OnPropertyChanged(name);
         ComPorts = SafeList(RawPrinter.SerialPorts);
 
@@ -253,6 +274,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         Cut = CutModes.First(c => c.Value == p.Cut);
         Qr = QrModes.First(q => q.Value == p.Qr);
         Handshake = Handshakes.First(h => h.Value == p.Handshake);
+        Layout = Layouts.First(l => l.Value == p.Layout);
         _applyingModel = false;
 
         var labels = profiles.GetLabelPrinterSettings();
@@ -300,7 +322,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
     {
         TargetSuggestions = value?.Value switch
         {
-            PrinterConnection.Windows => SafeList(RawPrinter.InstalledPrinters),
+            PrinterConnection.Windows or PrinterConnection.WindowsDriver => SafeList(RawPrinter.InstalledPrinters),
             PrinterConnection.Serial => SafeList(RawPrinter.SerialPorts),
             PrinterConnection.File => [RawPrinter.DefaultOutputFolder],
             _ => [],
@@ -318,6 +340,8 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
                 Connection = LabelConnection?.Value ?? PrinterConnection.File,
                 Target = LabelTarget.Trim(),
                 PaperWidthMm = LabelPaperWidth?.Value ?? 58,
+                // v2: en una impresora de etiquetas con driver (Brother QL, Dymo…) cada etiqueta llena el papel.
+                Layout = PageLayout.FitWidth,
             });
             if (!SaveHardware())
                 return;
@@ -399,7 +423,7 @@ public partial class PrinterPageViewModel(ILocalizer localizer, ProfileStore pro
         return new PrinterProfile(connection, Target.Trim(), PaperWidth?.Value ?? 80,
             Encoding?.Value ?? PrinterEncoding.Western, AutoPrint?.Value ?? AutoPrintMode.Ask, baud,
             CodePage?.Value ?? PrinterCodePage.Pc858, Cut?.Value ?? PrinterCutMode.Partial, Qr?.Value ?? PrinterQrMode.Native,
-            Handshake?.Value ?? SerialHandshake.None, Model?.Value ?? PrinterModel.Custom);
+            Handshake?.Value ?? SerialHandshake.None, Model?.Value ?? PrinterModel.Custom, Layout?.Value ?? PageLayout.FullPage);
     }
 
     private static IReadOnlyList<string> SafeList(Func<IReadOnlyList<string>> list)

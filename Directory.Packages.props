@@ -29,6 +29,8 @@
     <PackageVersion Include="System.IO.Ports" Version="8.0.0" />
     <!-- v1.1: QR como imagen para impresoras sin comando de QR -->
     <PackageVersion Include="QRCoder" Version="1.6.0" />
+    <!-- v2: códigos de barras como imagen para impresoras normales -->
+    <PackageVersion Include="ZXing.Net" Version="0.16.11" />
 
     <!-- Instalador .exe (bundle WiX) -->
     <PackageVersion Include="WixToolset.Bal.wixext" Version="5.0.2" />

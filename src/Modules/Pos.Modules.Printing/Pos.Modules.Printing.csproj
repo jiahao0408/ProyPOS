@@ -12,5 +12,7 @@
   <ItemGroup>
     <!-- v1.1: QR como imagen (impresoras sin GS ( k) -->
     <PackageReference Include="QRCoder" />
+    <!-- v2: códigos de barras dibujados para impresoras normales (láser, tinta, etiquetas con driver) -->
+    <PackageReference Include="ZXing.Net" />
   </ItemGroup>
 </Project>

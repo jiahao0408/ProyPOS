@@ -17,5 +17,6 @@ public sealed class InvoicingModule : IModule
         services.AddSingleton<IInvoiceDocuments>(sp => sp.GetRequiredService<InvoiceService>());
         services.AddSingleton<ISaleHook, InvoiceSaleHook>();
         services.AddSingleton<InvoicePdf>();
+        services.AddSingleton<IInvoicePageRenderer>(sp => sp.GetRequiredService<InvoicePdf>());
     }
 }

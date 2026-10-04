@@ -185,7 +185,7 @@
   "Logo": "标志",
   "ChooseLogo": "选择标志",
   "PrinterConnection": "连接方式",
-  "PrinterUsbWindows": "USB（已在 Windows 中安装的打印机）",
+  "PrinterUsbWindows": "安装在 Windows 中的热敏打印机（USB，ESC/POS）",
   "PrinterSerial": "COM 端口或蓝牙",
   "PrinterNetwork": "网络（IP）",
   "PrinterFile": "无打印机（保存到文件）",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "销售界面模式",
   "ErrorShortcutInvalid": "有快捷键无法识别或使用了不允许的按键。",
   "ErrorShortcutDuplicate": "有按键在两个快捷键中重复。",
-  "ShortcutsResetDone": "快捷键已恢复。按保存以确认其他设置。"
+  "ShortcutsResetDone": "快捷键已恢复。按保存以确认其他设置。",
+  "PrinterStandard": "普通 Windows 打印机（惠普、兄弟、佳能、爱普生…）",
+  "PrinterTargetStandard": "Windows 打印机（激光、喷墨或带驱动的标签打印机）",
+  "PageLayout": "页面格式",
+  "PageLayoutHint": "A4 发票：小票和发票按整页打印，与 PDF 相同。小票：在纸上打印小票栏。适应宽度：用于带驱动的标签或卷纸打印机（兄弟 QL、Dymo…），每张标签一页。钱箱需要自己的 COM 端口。",
+  "LayoutFullPage": "A4 发票（整页）",
+  "LayoutTicket": "小票打印在纸上",
+  "LayoutFitWidth": "适应纸张宽度（标签、卷纸）"
 }

@@ -2,7 +2,7 @@
 
 TPV (punto de venta) de escritorio para PC, pensado para una **tienda de bazar**. Gestiona **ventas, cobro, productos y precios, tickets, facturas, caja y Verifactu**. **No lleva stock:** la tienda no depende de las existencias. Es multidioma y modular, funciona **sin conexión** y sincroniza con un backend opcional cuando hay red.
 
-> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 365 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
+> **Estado:** **MVP completo: secciones 1 a 5** (Sprints 1 a 5, las 34 historias M): login con PIN, roles, catálogo, caja, idiomas y formatos regionales; venta con escáner, ticket, cobro en efectivo, tarjeta o mixto, artículo genérico y alta rápida. Impresora térmica ESC/POS, tickets con reimpresión, factura simplificada y completa, facturar un ticket ya emitido y PDF. Cierre Z, etiquetas, importación de catálogo y copias de seguridad. Verifactu (huella encadenada, QR, certificado, envío a la AEAT y cola sin conexión), declaración responsable e instalador (`StarSeaPOS-Setup.exe` y MSI). **Versión 2 en curso:** sección 6 (descuentos, devoluciones, rectificativas, cambios, auditoría) sección 7 (cambio masivo de precios, variantes, verificador de precios) sección 8 (informe de ventas, exportaciones y registro de facturación), sección 9 (pantalla de cliente y cajón) y sección 10 (idioma por usuario y por ticket, modalidad VERI\*FACTU / No VERI\*FACTU, panel de Verifactu con subsanaciones y actualizaciones automáticas) hechas: **versión 2 completa**. 379 tests. Pendiente de homologar contra el entorno de pruebas de la AEAT. Especificación completa en [docs/user-stories.md](docs/user-stories.md).
 
 ---
 
@@ -307,6 +307,23 @@ Todo lo nuevo tiene valores por defecto que dejan el comportamiento de la versi�
 Las teclas que también sirven para escribir (Enter, Supr, «+») solo actúan con el buscador vacío: el lector de códigos (código + Enter) funciona igual que antes. Los atajos no admiten letras ni números sin Ctrl/Alt ni los caracteres `* - . ,` (son de la sintaxis del buscador).
 
 **Modo de la pantalla de venta** (Ajustes, botón en la venta o **F10**; se recuerda): **táctil** (categorías y botones de productos, como hasta ahora) o **teclado** (ticket grande y leyenda de atajos; los productos solo aparecen al buscar por nombre).
+
+### Versión 2: impresoras normales además de las térmicas (rama `v2`)
+
+En **Impresora > Conexión** hay una nueva opción, **«Impresora normal de Windows (HP, Brother, Canon, Epson…)»**: láser, de tinta o de etiquetas con su driver. No usa comandos ESC/POS: lo impreso se dibuja como página (`PageRenderer`) y se manda con el driver de Windows (`DriverPagePrinter`).
+
+| Formato de página | Para qué |
+|---|---|
+| **Factura A4** (por defecto) | Tickets y facturas en folio completo, con el mismo diseño que el PDF (`InvoicePdf.RenderPages`), incluido el QR de la AEAT. Las reimpresiones, el ticket regalo, el cierre Z y la prueba salen como ticket |
+| **Ticket en el papel** | La columna del ticket (58 u 80 mm) a su tamaño real, centrada en el folio |
+| **Ajustar al ancho del papel** | Impresoras de etiquetas o de rollo con driver (Brother QL, Dymo…): cada etiqueta en su página, ocupando todo el ancho. La impresora de etiquetas con driver usa siempre este formato |
+
+- Mismo contenido que en la térmica: texto con letra de ancho fijo y los mismos caracteres por línea, logo, y QR y códigos de barras (EAN-13 o CODE128, con ZXing.Net) dibujados a 300 ppp. Las líneas más largas que el ticket se reducen para que quepan.
+- Los tickets largos siguen en la página siguiente si no caben en el papel.
+- El **cajón** no se puede abrir a través de una impresora normal: hay que indicar su propio puerto COM (Impresora > Cajón).
+- Las opciones de las térmicas (modelo, tabla de caracteres, corte, QR, juego de caracteres) se ocultan con una impresora normal.
+- Las térmicas siguen igual (ESC/POS por USB, COM o red); la opción USB se llama ahora «Térmica instalada en Windows (USB, ESC/POS)».
+- **FAC-04:** el PDF de la factura lleva ahora también el QR de la AEAT y, en VERI\*FACTU, la leyenda.
 
 ## Primeros pasos
 

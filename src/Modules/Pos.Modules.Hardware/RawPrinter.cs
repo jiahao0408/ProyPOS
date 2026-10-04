@@ -23,6 +23,7 @@ public sealed class RawPrinter(ProfileStore profiles) : IRawPrinter
             PrinterConnection.Windows => Task.Run(() => WindowsSpooler.SendRaw(Required(profile.Target), data), cancellationToken),
             PrinterConnection.Serial => Task.Run(() => SendSerial(Required(profile.Target), profile.BaudRate, profile.Handshake, data), cancellationToken),
             PrinterConnection.Network => SendNetworkAsync(Required(profile.Target), data, cancellationToken),
+            PrinterConnection.WindowsDriver => throw new InvalidOperationException("A standard printer does not accept ESC/POS"),
             _ => SendFileAsync(profile.Target, data, cancellationToken),
         };
     }

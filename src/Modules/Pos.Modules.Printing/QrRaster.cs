@@ -11,14 +11,17 @@ public static class QrRaster
     private const int ModuleDots = 6;
     private const int QuietZoneModules = 2;
 
-    public static MonochromeImage Render(string data, int maxWidthDots)
+    public static MonochromeImage Render(string data, int maxWidthDots) => Render(data, maxWidthDots, ModuleDots);
+
+    /// <param name="moduleDots">Puntos por módulo como máximo (6 en la térmica de 203 ppp; 9 a 300 ppp).</param>
+    public static MonochromeImage Render(string data, int maxWidthDots, int moduleDots)
     {
         using var generator = new QRCodeGenerator();
         using var code = generator.CreateQrCode(data, QRCodeGenerator.ECCLevel.M, forceUtf8: true);
         var matrix = code.ModuleMatrix; // incluye una zona blanca de 4 módulos alrededor
         var border = 4 - QuietZoneModules;
         var modules = matrix.Count - 2 * border;
-        var dots = Math.Max(1, Math.Min(ModuleDots, maxWidthDots / modules));
+        var dots = Math.Max(1, Math.Min(moduleDots, maxWidthDots / modules));
         var size = modules * dots;
 
         var bytesPerRow = (size + 7) / 8;

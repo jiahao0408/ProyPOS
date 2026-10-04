@@ -32,7 +32,19 @@
         </ComboBox>
       </StackPanel>
 
-      <!-- v1.1: compatibilidad -->
+      <!-- v2: impresora normal (HP, Brother, Canon…): formato de página -->
+      <StackPanel IsVisible="{Binding IsPagePrinterSelected}">
+        <TextBlock Classes="label" Text="{Binding L[PageLayout]}" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout}">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:IChoice"><TextBlock Text="{Binding Title}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Text="{Binding L[PageLayoutHint]}" TextWrapping="Wrap" FontSize="13" Opacity="0.7" Margin="0,4,0,0" />
+      </StackPanel>
+
+      <!-- v1.1: compatibilidad de las térmicas (ESC/POS) -->
+      <StackPanel IsVisible="{Binding IsThermalSelected}">
       <TextBlock Classes="label" Text="{Binding L[PrinterModel]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Models}" SelectedItem="{Binding Model}">
         <ComboBox.ItemTemplate>
@@ -66,6 +78,7 @@
           </ComboBox>
         </StackPanel>
       </Grid>
+      </StackPanel>
 
       <TextBlock Classes="label" Text="{Binding L[PaperWidth]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding PaperWidths}" SelectedItem="{Binding PaperWidth}">
@@ -76,6 +89,7 @@
         </ComboBox.ItemTemplate>
       </ComboBox>
 
+      <StackPanel IsVisible="{Binding IsThermalSelected}">
       <TextBlock Classes="label" Text="{Binding L[PrinterEncoding]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Encodings}" SelectedItem="{Binding Encoding}">
         <ComboBox.ItemTemplate>
@@ -84,6 +98,7 @@
           </DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
+      </StackPanel>
 
       <TextBlock Classes="label" Text="{Binding L[AutoPrint]}" />
       <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding AutoPrintModes}" SelectedItem="{Binding AutoPrint}">

@@ -185,7 +185,7 @@
   "Logo": "Logo",
   "ChooseLogo": "Choose logo",
   "PrinterConnection": "Connection",
-  "PrinterUsbWindows": "USB (printer installed in Windows)",
+  "PrinterUsbWindows": "Thermal installed in Windows (USB, ESC/POS)",
   "PrinterSerial": "COM port or Bluetooth",
   "PrinterNetwork": "Network (IP)",
   "PrinterFile": "No printer (save to file)",
@@ -579,5 +579,12 @@
   "SaleModeLabel": "Sale screen mode",
   "ErrorShortcutInvalid": "A shortcut cannot be understood or uses a key that is not allowed.",
   "ErrorShortcutDuplicate": "The same key is used in two shortcuts.",
-  "ShortcutsResetDone": "Shortcuts restored. Press Save to confirm the other settings."
+  "ShortcutsResetDone": "Shortcuts restored. Press Save to confirm the other settings.",
+  "PrinterStandard": "Standard Windows printer (HP, Brother, Canon, Epson…)",
+  "PrinterTargetStandard": "Windows printer (laser, inkjet or label printer with its driver)",
+  "PageLayout": "Page format",
+  "PageLayoutHint": "A4 invoice: tickets and invoices on a full page, like the PDF. Ticket: the ticket column on the paper. Fit width: for label or roll printers with a driver (Brother QL, Dymo…), each label on its own page. The cash drawer needs its own COM port.",
+  "LayoutFullPage": "A4 invoice (full page)",
+  "LayoutTicket": "Ticket on the paper",
+  "LayoutFitWidth": "Fit to paper width (labels, roll)"
 }
